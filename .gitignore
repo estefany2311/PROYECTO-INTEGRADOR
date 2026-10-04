@@ -1,0 +1,36 @@
+# Python / Django
+backend/admin/__pycache__/
+backend/admin/*.pyc
+backend/admin/venv/
+backend/admin/.env
+backend/admin/db.sqlite3
+
+# Java / Spring Boot
+backend/usuario/target/
+backend/usuario/.mvn/
+backend/usuario/*.class
+*.jar
+!backend/usuario/.mvn/wrapper/maven-wrapper.jar
+
+# Node / React
+web-portal/admin/node_modules/
+web-portal/admin/build/
+web-portal/admin/.env
+web-portal/docente/node_modules/
+web-portal/docente/build/
+web-portal/docente/.env
+
+# Android
+app-movil/*.iml
+app-movil/.gradle/
+app-movil/local.properties
+app-movil/.idea/
+app-movil/build/
+app-movil/app/build/
+
+# Generales
+.env
+.vscode/
+.idea/
+*.log
+.DS_Store
