@@ -3,7 +3,7 @@ from .models import Usuario, Rol
 
 
 class DocenteCreateSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(required=True)  # valida formato de correo
+    email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, min_length=8)
 
     class Meta:
@@ -22,6 +22,14 @@ class DocenteCreateSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        rol_docente = Rol.objects.get(nombre='DOCENTE')  # sembrado por tu migración
-        # create_user aplica hash a la contraseña (nunca se guarda en texto plano)
+        rol_docente = Rol.objects.get(nombre='DOCENTE')
         return Usuario.objects.create_user(rol=rol_docente, **validated_data)
+
+
+class DocenteListSerializer(serializers.ModelSerializer):
+    rol = serializers.CharField(source='rol.nombre', read_only=True)
+
+    class Meta:
+        model = Usuario
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'rol', 'is_active', 'date_joined']
+        read_only_fields = fields
