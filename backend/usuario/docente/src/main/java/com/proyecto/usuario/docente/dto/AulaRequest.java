@@ -1,9 +1,15 @@
 package com.proyecto.usuario.docente.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
-// Record para la petición HTTP (POST): recibe el nombre del aula y la lista de IDs de los grados asignados
 public record AulaRequest(
-        String nombre,          // Nombre del aula (ejemplo: "Aula Rural")
-        List<Short> gradoIds    // Lista de IDs de los grados seleccionados (ejemplo: [1, 2, 3])
+        // Valida que el nombre no sea nulo ni esté vacío o lleno de espacios
+        @NotBlank(message = "El nombre del aula es obligatorio")
+        String nombre,
+
+        // Valida que la lista contenga al menos un elemento de grado
+        @NotEmpty(message = "Debes seleccionar al menos un grado")
+        List<Short> gradoIds
 ) {}

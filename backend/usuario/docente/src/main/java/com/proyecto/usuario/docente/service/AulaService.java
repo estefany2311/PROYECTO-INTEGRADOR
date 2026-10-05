@@ -17,6 +17,10 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
+import com.proyecto.usuario.docente.exception.ReglaNegocioException;
+import org.springframework.http.HttpStatus;
+import java.util.Set;
+
 // Le indica a Spring que esta clase es un componente de servicio (capa de lógica de negocio)
 @Service
 public class AulaService {
@@ -35,20 +39,34 @@ public class AulaService {
     // Si algo falla, se hace un rollback automático sin guardar datos a medias.
     @Transactional
     public AulaResponse crear(Long docenteId, AulaRequest req) {
-        // 1. Instanciar una nueva entidad Aula
+        // Elimina espacios al inicio y final del nombre recibido
+        String nombre = req.nombre().trim();
+
+        // Verifica si el docente ya tiene un aula registrada con el mismo nombre
+        if (aulaRepository.existsByDocenteIdAndNombreIgnoreCase(docenteId, nombre)) {
+            // Lanza excepción de conflicto (HTTP 409) si ya existe
+            throw new ReglaNegocioException("Ya tienes un aula con ese nombre", HttpStatus.CONFLICT);
+        }
+
+        // Convierte la lista de IDs a un Set para eliminar posibles duplicados
+        Set<Short> ids = new HashSet<>(req.gradoIds());
+
+        // Consulta en la base de datos los grados existentes segun los IDs proporcionados
+        List<Grado> grados = gradoRepository.findAllById(ids);
+
+        // Valida si la cantidad de grados encontrados es distinta a los IDs solicitados
+        if (grados.size() != ids.size()) {
+            // Lanza excepción Bad Request (HTTP 400) si al menos un grado no existe
+            throw new ReglaNegocioException("Alguno de los grados no existe", HttpStatus.BAD_REQUEST);
+        }
+
+        // Instancia una nueva entidad Aula y asigna sus propiedades
         Aula aula = new Aula();
-
-        // 2. Asignar el nombre limpiando espacios en blanco al inicio y final
-        aula.setNombre(req.nombre().trim());
-
-        // 3. Vincular el ID del docente correspondiente
+        aula.setNombre(nombre);
         aula.setDocenteId(docenteId);
+        aula.setGrados(new HashSet<>(grados));
 
-        // 4. Buscar en la BD los objetos Grado que coinciden con la lista de IDs enviados en la petición (req.gradoIds())
-        // y asignarlos al Set de grados del aula
-        aula.setGrados(new HashSet<>(gradoRepository.findAllById(req.gradoIds())));
-
-        // 5. Guardar el aula en la base de datos (aulaRepository.save) y convertir la entidad guardada a un DTO de respuesta
+        // Guarda el aula en la base de datos y mapea la respuesta a DTO
         return toResponse(aulaRepository.save(aula));
     }
 
