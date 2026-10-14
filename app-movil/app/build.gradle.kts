@@ -67,4 +67,6 @@ dependencies {
 
 // Coil (para cargar las imágenes de los avatares, lo usarás en la tarea 5)
     implementation("io.coil-kt:coil:2.6.0")
+//Agregar la dependencia de navegación
+    implementation("androidx.navigation:navigation-compose:2.8.0")
 }
