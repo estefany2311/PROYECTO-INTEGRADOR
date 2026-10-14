@@ -1,14 +1,21 @@
 package com.proyecto.movil.view
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.proyecto.movil.model.Perfil
 import com.proyecto.movil.viewmodel.PerfilViewModel
 import com.proyecto.movil.viewmodel.PerfilesUiState
 
@@ -36,8 +43,27 @@ fun PantallaPerfiles(codigoAula: String, viewModel: PerfilViewModel = viewModel(
                 }
             }
             is PerfilesUiState.Exito -> {
-                Text("${s.perfiles.size} perfiles encontrados")
-                // La cuadrícula con los avatares la conectamos en la T-5
+                CuadriculaPerfiles(perfiles = s.perfiles)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CuadriculaPerfiles(perfiles: List<Perfil>) {
+    LazyVerticalGrid(columns = GridCells.Fixed(3)) {
+        items(perfiles) { perfil ->
+            Column(
+                modifier = Modifier.padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                AsyncImage(
+                    model = perfil.avatarUrl,
+                    contentDescription = "Avatar de ${perfil.nombre}",
+                    modifier = Modifier.size(80.dp).clip(CircleShape)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = perfil.nombre, fontSize = 16.sp)
             }
         }
     }
