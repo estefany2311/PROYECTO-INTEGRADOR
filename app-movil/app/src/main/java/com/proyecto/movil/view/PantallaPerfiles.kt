@@ -39,11 +39,32 @@ fun PantallaPerfiles(codigoAula: String, viewModel: PerfilViewModel = viewModel(
             }
             is PerfilesUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No se pudo cargar: ${s.mensaje}")
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "¡Ups! Algo no funcionó.",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Pídele ayuda a tu profesor.",
+                            fontSize = 16.sp
+                        )
+                    }
                 }
             }
             is PerfilesUiState.Exito -> {
-                CuadriculaPerfiles(perfiles = s.perfiles)
+                if (s.perfiles.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "Todavía no hay estudiantes en esta aula.\nPídele a tu profesor que te agregue.",
+                            fontSize = 16.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                } else {
+                    CuadriculaPerfiles(perfiles = s.perfiles)
+                }
             }
         }
     }
