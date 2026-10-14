@@ -18,12 +18,12 @@ public class EstudianteController {
             throw new CodigoAulaInvalidoException("El código de aula no existe");
         }
         return List.of(
-                new PerfilDTO(1, "Ana", "https://i.pravatar.cc/150?img=1"),
-                new PerfilDTO(2, "Luis", "https://i.pravatar.cc/150?img=2"),
-                new PerfilDTO(3, "Mía", "https://i.pravatar.cc/150?img=3"),
-                new PerfilDTO(4, "Pedro", "https://i.pravatar.cc/150?img=4"),
-                new PerfilDTO(5, "Sofía", "https://i.pravatar.cc/150?img=5"),
-                new PerfilDTO(6, "Iker", "https://i.pravatar.cc/150?img=6")
+                new PerfilDTO(1, "Ana", "https://api.dicebear.com/9.x/adventurer/png?seed=Ana&backgroundColor=b6e3f4"),
+                new PerfilDTO(2, "Luis", "https://api.dicebear.com/9.x/adventurer/png?seed=Luis&backgroundColor=ffd5dc"),
+                new PerfilDTO(3, "Mía", "https://api.dicebear.com/9.x/adventurer/png?seed=Mia&backgroundColor=c0f5d8"),
+                new PerfilDTO(4, "Pedro", "https://api.dicebear.com/9.x/adventurer/png?seed=Pedro&backgroundColor=ffe8b6"),
+                new PerfilDTO(5, "Sofía", "https://api.dicebear.com/9.x/adventurer/png?seed=Sofia&backgroundColor=e0c3fc"),
+                new PerfilDTO(6, "Iker", "https://api.dicebear.com/9.x/adventurer/png?seed=Iker&backgroundColor=b6e3f4")
         );
     }
 }
