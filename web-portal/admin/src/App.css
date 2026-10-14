@@ -5,3 +5,14 @@ main { max-width: 480px; margin: 40px auto; font-family: system-ui, sans-serif; 
 .error { color: #b00020; font-size: 0.85rem; }
 .exito { color: #1b6e2f; }
 button { padding: 10px; border: 0; border-radius: 6px; background: #3b6fd4; color: #fff; cursor: pointer; }
+
+/* Estilos */
+main { max-width: 720px; }
+.barra { display: flex; justify-content: space-between; align-items: center; }
+.secundario { background: #fff; color: #3b6fd4; border: 1px solid #3b6fd4; padding: 8px 12px; }
+.aviso { color: #8a5a00; background: #fff4d6; padding: 8px; border-radius: 6px; }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+.lista { margin-top: 24px; }
+.tabla-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid #dde; }
