@@ -1,36 +1,46 @@
+// Importación de hooks de React para manejar el estado y el ciclo de vida del componente
 import { useEffect, useState } from "react";
+// Importación de las funciones auxiliares que hacen las peticiones HTTP a la API (backend)
 import { listarGrados, listarAulas, crearAula } from "./api";
 
 export default function FormularioAula() {
-  // Estados para datos recibidos del servidor y entradas del usuario
+  // Estado para guardar la lista de grados obtenidos del backend (1.° a 6.°)
   const [grados, setGrados] = useState([]);
+  // Estado para guardar la lista de aulas registradas por el docente
   const [aulas, setAulas] = useState([]);
+  // Estado para guardar el texto que el usuario escribe en el campo del nombre del aula
   const [nombre, setNombre] = useState("");
+  // Estado para guardar un arreglo con los IDs de los grados seleccionados en los checkboxes
   const [gradoIds, setGradoIds] = useState([]);
+  // Estado para manejar los mensajes de error de validación local (frontend)
   const [errores, setErrores] = useState({});
-  const [mensaje, setMensaje] = useState(null); // { tipo: "ok" | "error", texto }
+  // Estado para mostrar avisos de éxito ("ok") o de error ("fallo") provenientes de la API
+  const [mensaje, setMensaje] = useState(null); // { tipo: "ok" | "fallo", texto }
 
-  // Función para obtener la lista actualizada de aulas desde la API
+  // Función para consultar las aulas a la API y actualizar el estado
   const cargarAulas = () =>
     listarAulas()
       .then(setAulas)
-      .catch((e) => setMensaje({ tipo: "error", texto: e.message }));
+      .catch((e) => setMensaje({ tipo: "fallo", texto: e.message }));
 
-  // Carga inicial de datos al montar el componente
+  // useEffect se ejecuta una sola vez al cargar la pantalla por primera vez
   useEffect(() => {
+    // Obtiene el catálogo de grados desde la API
     listarGrados()
       .then(setGrados)
-      .catch((e) => setMensaje({ tipo: "error", texto: e.message }));
+      .catch((e) => setMensaje({ tipo: "fallo", texto: e.message }));
+    // Carga la lista inicial de aulas existentes
     cargarAulas();
   }, []);
 
-  // Función para alternar la selección de checkboxes
+  // Función para marcar o desmarcar un grado (checkbox)
   const alternar = (id) =>
     setGradoIds((prev) =>
+      // Si el ID ya existía en el arreglo, lo remueve; si no existía, lo agrega
       prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]
     );
 
-  // Validación local del formulario
+  // Función para validar que los campos obligatorios del formulario no estén vacíos
   const validar = () => {
     const e = {};
     if (!nombre.trim()) e.nombre = "El nombre del aula es obligatorio";
@@ -38,82 +48,90 @@ export default function FormularioAula() {
     return e;
   };
 
-  // Manejador del envío del formulario hacia la API
+  // Función que maneja el evento de envío (submit) del formulario
   const enviar = async (ev) => {
-    ev.preventDefault();
+    ev.preventDefault(); // Evita que la página se recargue automáticamente
     const e = validar();
     setErrores(e);
-    if (Object.keys(e).length > 0) return;
+    if (Object.keys(e).length > 0) return; // Si hay errores locales, detiene el envío
 
     try {
+      // Envía la petición a la API con el nombre y los grados seleccionados
       await crearAula({ nombre, gradoIds });
-      setMensaje({ tipo: "ok", texto: "Aula registrada correctamente" });
+      // Muestra mensaje de éxito y limpia los campos del formulario
+      setMensaje({ tipo: "ok", texto: "¡Aula registrada correctamente!" });
       setNombre("");
       setGradoIds([]);
+      // Recarga la lista de aulas para mostrar la recién creada
       cargarAulas();
     } catch (error) {
-      setMensaje({ tipo: "error", texto: error.message });
+      // Captura y muestra los errores que devuelva el backend
+      setMensaje({ tipo: "fallo", texto: error.message });
     }
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: "2rem auto" }}>
-      <form onSubmit={enviar}>
+    <div className="app">
+      {/* Formulario de registro de aula */}
+      <form className="tarjeta" onSubmit={enviar}>
         <h2>Registrar aula multigrado</h2>
 
-        {/* Notificación de éxito o error devuelto por la API */}
+        {/* Muestra mensajes informativos si existen (éxito o error de API) */}
         {mensaje && (
-          <p style={{ color: mensaje.tipo === "ok" ? "green" : "red" }}>
-            {mensaje.texto}
-          </p>
+          <p className={`mensaje ${mensaje.tipo}`}>{mensaje.texto}</p>
         )}
 
-        {/* Input para el nombre del aula */}
-        <label>
+        {/* Campo de texto para el nombre del aula */}
+        <label className="campo">
           Nombre del aula
-          <input
-            style={{ display: "block", width: "100%", marginTop: 4 }}
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-          />
+          <input value={nombre} onChange={(e) => setNombre(e.target.value)} />
         </label>
-        {errores.nombre && <p style={{ color: "red" }}>{errores.nombre}</p>}
+        {errores.nombre && <p className="error">{errores.nombre}</p>}
 
-        {/* Renderizado dinámico de grados desde la API */}
-        <fieldset style={{ marginTop: 16 }}>
+        {/* Sección de checkboxes para elegir los grados */}
+        <fieldset>
           <legend>Grados que atiendes</legend>
-          {grados.map((g) => (
-            <label key={g.id} style={{ marginRight: 12 }}>
-              <input
-                type="checkbox"
-                checked={gradoIds.includes(g.id)}
-                onChange={() => alternar(g.id)}
-              />
-              {g.nombre}
-            </label>
-          ))}
+          <div className="grados">
+            {grados.map((g) => (
+              <label key={g.id} className="chip">
+                <input
+                  type="checkbox"
+                  checked={gradoIds.includes(g.id)}
+                  onChange={() => alternar(g.id)}
+                />
+                {g.nombre}
+              </label>
+            ))}
+          </div>
         </fieldset>
-        {errores.grados && <p style={{ color: "red" }}>{errores.grados}</p>}
+        {errores.grados && <p className="error">{errores.grados}</p>}
 
-        {/* Botón de submit */}
-        <button type="submit" style={{ marginTop: 16 }}>
+        {/* Botón para confirmar y enviar el formulario */}
+        <button className="boton" type="submit">
           Registrar aula
         </button>
       </form>
 
-      {/* Lista dinámicamente cargada desde la API */}
-      <h2 style={{ marginTop: 32 }}>Mis aulas</h2>
-      {aulas.length === 0 ? (
-        <p>Aún no has registrado aulas.</p>
-      ) : (
-        <ul>
-          {aulas.map((a) => (
-            <li key={a.id}>
-              <strong>{a.nombre}</strong> — {a.grados.map((g) => g.nombre).join(", ")}
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* Sección donde se listan las aulas previamente registradas */}
+      <section className="tarjeta">
+        <h2>Mis aulas</h2>
+        {aulas.length === 0 ? (
+          <p>Aún no has registrado aulas.</p>
+        ) : (
+          <ul className="aulas">
+            {aulas.map((a) => (
+              <li key={a.id} className="aula">
+                <strong>{a.nombre}</strong>
+                {a.grados.map((g) => (
+                  <span key={g.id} className={`insignia g${g.id % 4}`}>
+                    {g.nombre}
+                  </span>
+                ))}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

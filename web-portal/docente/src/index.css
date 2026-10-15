@@ -1,111 +1,172 @@
+/* Variables globales de color y estilo para mantener consistencia visual */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  --morado: #9B22E1;
+  --rojo: #F51E38;
+  --amarillo: #FFF133;
+  --azul: #2FC5F6;
+  --texto: #1F2937;
+  --borde: #E2E5EA;
+  --fondo: #F5F6F8;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* Configuración para que el padding y bordes se incluyan dentro del tamaño total del elemento */
+* { box-sizing: border-box; }
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
+/* Estilos generales de la página principal */
 body {
   margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: var(--texto);
+  background: var(--fondo);
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
+/* Contenedor principal centrado */
+.app {
+  max-width: 560px;
   margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
+  padding: 2rem 1rem;
+}
+
+/* Tarjetas contenedoras (para el formulario y la lista) */
+.tarjeta {
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-top: 4px solid var(--amarillo);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.tarjeta h2 {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  color: var(--morado);
+}
+
+/* Estilos de las etiquetas e inputs de texto */
+label.campo {
+  display: block;
+  font-weight: 600;
+}
+
+label.campo input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 0.65rem 0.8rem;
+  font-size: 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+/* Resaltado del input cuando el usuario hace clic para escribir */
+label.campo input:focus {
+  outline: none;
+  border-color: var(--azul);
+  box-shadow: 0 0 0 3px rgba(47, 197, 246, 0.35);
+}
+
+/* Agrupador de checkboxes de grados */
+fieldset {
+  margin: 1.2rem 0 0;
+  padding: 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+legend {
+  padding: 0 6px;
+  font-weight: 600;
+}
+
+.grados {
   display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
+/* Botones en forma de chip para cada checkbox de grado */
+.chip {
   display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+  align-items: center;
+  gap: 6px;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: #fff;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.chip input { accent-color: var(--morado); }
+
+/* Cambia el color del chip cuando su checkbox está seleccionado */
+.chip:has(input:checked) {
+  border-color: var(--azul);
+  background: rgba(47, 197, 246, 0.15);
+}
+
+/* Botón principal de enviar */
+.boton {
+  margin-top: 1.2rem;
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--morado);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.boton:hover { filter: brightness(1.08); }
+
+/* Estilos para textos de error */
+.error {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  color: var(--rojo);
+}
+
+/* Mensajes flotantes de confirmación/error de API */
+.mensaje {
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.mensaje.ok {
+  background: rgba(47, 197, 246, 0.15);
+  border-left: 4px solid var(--azul);
+}
+
+.mensaje.fallo {
+  background: rgba(245, 30, 56, 0.08);
+  border-left: 4px solid var(--rojo);
+  color: #B3122A;
+}
+
+/* Lista e items de las aulas registradas */
+.aulas { list-style: none; margin: 0; padding: 0; }
+
+.aula {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.aula:last-child { border-bottom: none; }
+
+.aula strong { display: block; margin-bottom: 6px; }
+
+/* Insignias o etiquetas para mostrar los grados asociados a un aula */
+.insignia {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.85rem;
+  color: var(--morado);
+  background: rgba(155, 34, 225, 0.1);
+  border-radius: 999px;
 }
