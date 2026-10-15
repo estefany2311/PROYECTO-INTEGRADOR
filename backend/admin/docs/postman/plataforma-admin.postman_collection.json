@@ -1,0 +1,449 @@
+{
+  "info": {
+    "_postman_id": "0140c404-f18b-4d2b-aabc-4e97eb22a9ad",
+    "name": "Plataforma Educativa - Admin",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "57980374",
+    "_collection_link": "https://go.postman.co/collection/57980374-0140c404-f18b-4d2b-aabc-4e97eb22a9ad?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Login admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "   pm.test(\"Login correcto (200)\", () => pm.response.to.have.status(200));\r\n   pm.collectionVariables.set(\"token\", pm.response.json().access);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "   { \"username\": \"Daniela\", \"password\": \"{{admin_password}}\" }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/login/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "login",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2 Crear docente valido",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "   pm.test(\"201 Created\", () => pm.response.to.have.status(201));\r\n   pm.test(\"No expone la contraseña\", () => pm.expect(pm.response.json()).to.not.have.property(\"password\"));\r\n   pm.collectionVariables.set(\"docente_user\", pm.response.json().username);"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "   pm.collectionVariables.set(\"sufijo\", Date.now());"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "   {\r\n     \"username\": \"doc{{sufijo}}\",\r\n     \"first_name\": \"Rosa\",\r\n     \"last_name\": \"Quispe\",\r\n     \"email\": \"doc{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/docentes/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "docentes",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3 Falta apellido",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "   pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "   {\r\n     \"username\": \"x1\",\r\n     \"first_name\": \"Ana\",\r\n     \"email\": \"x1@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/docentes/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "docentes",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4 Correo invalido",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "   pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "   {\r\n     \"username\": \"x2\",\r\n     \"first_name\": \"Ana\",\r\n     \"last_name\": \"Paz\",\r\n     \"email\": \"abc\",\r\n     \"password\": \"Clave12345\"\r\n   }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/docentes/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "docentes",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5 Correo repetido",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "   pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "   {\r\n     \"username\": \"otro{{sufijo}}\",\r\n     \"first_name\": \"Ana\",\r\n     \"last_name\": \"Paz\",\r\n     \"email\": \"doc{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/docentes/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "docentes",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6 Contraseña corta",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "   pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "   {\r\n     \"username\": \"x3\",\r\n     \"first_name\": \"Ana\",\r\n     \"last_name\": \"Paz\",\r\n     \"email\": \"x3@prueba.edu.pe\",\r\n     \"password\": \"123\"\r\n   }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/docentes/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "docentes",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7 Listar docentes",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "   pm.test(\"200 OK\", () => pm.response.to.have.status(200));\r\n   pm.test(\"Ningún docente expone la contraseña\", () => {\r\n     pm.response.json().forEach(d => pm.expect(d).to.not.have.property(\"password\"));\r\n   });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/docentes/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "docentes",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "8 Listar sin token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "   pm.test(\"401 Unauthorized\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/docentes/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "docentes",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "9a Login Docente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "   pm.test(\"Login docente (200)\", () => pm.response.to.have.status(200));\r\n   pm.collectionVariables.set(\"token_docente\", pm.response.json().access);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "   { \"username\": \"{{docente_user}}\", \"password\": \"Clave12345\" }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/login/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "login",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "9 Docente no puede crear",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "   pm.test(\"403 Forbidden\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "   pm.collectionVariables.set(\"sufijo\", Date.now());"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_docente}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "     {\r\n     \"username\": \"x{{sufijo}}\",\r\n     \"first_name\": \"Ana\",\r\n     \"last_name\": \"Paz\",\r\n     \"email\": \"x{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/docentes/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "docentes",
+            ""
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": ""
+    },
+    {
+      "key": "admin_password",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "sufijo",
+      "value": ""
+    },
+    {
+      "key": "docente_user",
+      "value": "",
+      "disabled": true
+    },
+    {
+      "key": "token_docente",
+      "value": ""
+    }
+  ]
+}
