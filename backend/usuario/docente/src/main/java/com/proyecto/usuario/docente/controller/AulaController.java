@@ -10,8 +10,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// Controlador principal para endpoints del docente
 @RestController
 @RequestMapping("/api/docente")
+// Permite llamadas desde el entorno de desarrollo de React (CORS)
+@CrossOrigin(origins = "http://localhost:5173")
 public class AulaController {
 
     private final AulaService service;
