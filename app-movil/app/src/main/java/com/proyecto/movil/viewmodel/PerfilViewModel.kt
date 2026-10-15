@@ -3,6 +3,7 @@ package com.proyecto.movil.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.proyecto.movil.model.Perfil
+import com.proyecto.movil.model.repository.IPerfilRepository
 import com.proyecto.movil.model.repository.PerfilRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,7 @@ sealed class PerfilesUiState {
 }
 
 class PerfilViewModel(
-    private val repository: PerfilRepository = PerfilRepository()
+    private val repository: IPerfilRepository = PerfilRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PerfilesUiState>(PerfilesUiState.Cargando)

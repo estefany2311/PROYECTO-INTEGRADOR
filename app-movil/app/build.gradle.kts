@@ -69,4 +69,6 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
 //Agregar la dependencia de navegación
     implementation("androidx.navigation:navigation-compose:2.8.0")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
