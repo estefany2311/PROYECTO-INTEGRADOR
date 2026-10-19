@@ -24,27 +24,53 @@ export default function App() {
 
   if (!autenticado) {
     return (
-      <main>
-        <h1>Panel de administración</h1>
-        <Login
-          aviso={aviso}
-          onLogin={() => {
-            setAviso("");
-            setAutenticado(true);
-          }}
-        />
-      </main>
+      <div className="login-viewport">
+        <div className="login-container">
+          <div className="login-header">
+            <span className="brand-badge"></span>
+            <h1>Panel de Administración</h1>
+            <p>Ingresa tus credenciales para gestionar el portal de docentes</p>
+          </div>
+          <Login
+            aviso={aviso}
+            onLogin={() => {
+              setAviso("");
+              setAutenticado(true);
+            }}
+          />
+        </div>
+      </div>
     );
   }
 
   return (
-    <main>
-      <header className="barra">
-        <h1>Panel de administración</h1>
-        <button className="secundario" onClick={cerrarSesion}>Cerrar sesión</button>
+    <div className="dashboard-layout">
+      <header className="dashboard-header">
+        <div className="header-brand">
+          
+          <div>
+            <h1>Panel de Administración</h1>
+            <span className="subtitle">Gestión de Usuarios y Docentes</span>
+          </div>
+        </div>
+        <div className="header-user">
+          <span className="user-badge">Administrador</span>
+          <button className="btn-logout" onClick={cerrarSesion}>
+            Cerrar sesión
+          </button>
+        </div>
       </header>
-      <CrearDocente onCreado={() => setRecarga((n) => n + 1)} onNoAutorizado={sesionExpirada} />
-      <ListaDocentes recarga={recarga} onNoAutorizado={sesionExpirada} />
-    </main>
+
+      <main className="dashboard-content">
+        <CrearDocente 
+          onCreado={() => setRecarga((n) => n + 1)} 
+          onNoAutorizado={sesionExpirada} 
+        />
+        <ListaDocentes 
+          recarga={recarga} 
+          onNoAutorizado={sesionExpirada} 
+        />
+      </main>
+    </div>
   );
 }

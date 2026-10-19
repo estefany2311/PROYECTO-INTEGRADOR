@@ -30,21 +30,37 @@ export default function Login({ onLogin, aviso }) {
   };
 
   return (
-    <form className="formulario" onSubmit={enviar} noValidate>
+    <form className="formulario-card" onSubmit={enviar} noValidate>
       <h2>Iniciar sesión</h2>
-      {aviso && <p className="aviso">{aviso}</p>}
+      {aviso && <div className="alerta aviso">{aviso}</div>}
+      
       <div className="campo">
         <label htmlFor="login-usuario">Usuario</label>
-        <input id="login-usuario" value={usuario} onChange={(e) => setUsuario(e.target.value)} />
+        <input 
+          id="login-usuario" 
+          type="text"
+          placeholder=""
+          value={usuario} 
+          onChange={(e) => setUsuario(e.target.value)} 
+        />
       </div>
+
       <div className="campo">
         <label htmlFor="login-clave">Contraseña</label>
-        <input id="login-clave" type="password" value={clave} onChange={(e) => setClave(e.target.value)} />
+        <input 
+          id="login-clave" 
+          type="password" 
+          placeholder="••••••••"
+          value={clave} 
+          onChange={(e) => setClave(e.target.value)} 
+        />
       </div>
-      <button type="submit" disabled={cargando}>
-        {cargando ? "Ingresando..." : "Ingresar"}
+
+      {error && <div className="alerta error">{error}</div>}
+
+      <button type="submit" className="btn-primary" disabled={cargando}>
+        {cargando ? "Autenticando..." : "Ingresar al Panel"}
       </button>
-      {error && <span className="error">{error}</span>}
     </form>
   );
 }
