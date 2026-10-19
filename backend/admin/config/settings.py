@@ -85,12 +85,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'plataforma_educativa',
+        'NAME': os.environ.get('DB_NAME', 'plataforma_educativa'),
         'USER': os.environ.get('DB_USER'),
         'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': 'ep-raspy-bird-b8uxg9cv.c-14.us-east-1.aws.neon.tech',
-        'PORT':'5432',
-        'OPTIONS': {'sslmode': 'require'},
+        'HOST': os.environ.get('DB_HOST', 'ep-raspy-bird-b8uxg9cv.c-14.us-east-1.aws.neon.tech'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
+        'OPTIONS': {'sslmode': os.environ.get('DB_SSLMODE', 'require')},
     }
 }
 

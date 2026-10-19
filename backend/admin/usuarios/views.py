@@ -19,3 +19,5 @@ class DocenteListCreateView(generics.ListCreateAPIView):
         if self.request.method == 'POST':
             return DocenteCreateSerializer
         return DocenteListSerializer
+
+        
