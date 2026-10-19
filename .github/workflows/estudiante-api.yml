@@ -1,0 +1,46 @@
+# Backend estudiante (Spring Boot): se ejecuta solo cuando cambia backend/usuario/estudiante.
+# Usa un PostgreSQL temporal de GitHub Actions, no la base compartida de Neon.
+
+name: estudiante-api
+
+on:
+  push:
+    paths: ['backend/usuario/estudiante/**']
+  pull_request:
+    branches: [main]
+    paths: ['backend/usuario/estudiante/**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: plataforma_educativa
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: backend/usuario/estudiante
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/plataforma_educativa
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/usuario/estudiante/pom.xml
+      - run: chmod +x mvnw
+      - run: ./mvnw -B test

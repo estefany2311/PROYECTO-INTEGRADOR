@@ -1,0 +1,54 @@
+# Backend admin (Django): se ejecuta solo cuando cambia backend/admin.
+# Usa un PostgreSQL temporal de GitHub Actions, no la base compartida de Neon.
+
+name: admin-api
+
+on:
+  push:
+    paths: ['backend/admin/**']
+  pull_request:
+    branches: [main]
+    paths: ['backend/admin/**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: plataforma_educativa
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: backend/admin
+    env:
+      SECRET_KEY: clave-solo-para-ci-no-usar-en-produccion
+      DB_NAME: plataforma_educativa
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: localhost
+      DB_PORT: '5432'
+      DB_SSLMODE: disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: backend/admin/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Revisión de configuración de Django
+        run: python manage.py check
+      - name: Migraciones al día con los modelos
+        run: python manage.py makemigrations --check --dry-run
+      - name: Pruebas unitarias
+        run: python manage.py test --verbosity 2

@@ -1,0 +1,42 @@
+# App móvil (Android / Kotlin): se ejecuta solo cuando cambia app-movil.
+
+name: mobile
+
+on:
+  push:
+    paths: ['app-movil/**']
+  pull_request:
+    branches: [main]
+    paths: ['app-movil/**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app-movil
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      # Se usa Gradle instalado (no ./gradlew) porque gradle-wrapper.jar no está
+      # en el repo: el patrón "*.jar" del .gitignore lo excluye.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.0'
+      - name: Pruebas unitarias
+        run: gradle testDebugUnitTest --stacktrace
+      - name: Compilar APK debug
+        run: gradle assembleDebug
+      - name: Guardar reporte de pruebas
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-pruebas-movil
+          path: app-movil/app/build/reports/tests/

@@ -1,0 +1,31 @@
+# Web docente (React + Vite): se ejecuta solo cuando cambia web-portal/docente.
+
+name: docente-web
+
+on:
+  push:
+    paths: ['web-portal/docente/**']
+  pull_request:
+    branches: [main]
+    paths: ['web-portal/docente/**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-portal/docente
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web-portal/docente/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
