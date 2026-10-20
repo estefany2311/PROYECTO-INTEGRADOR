@@ -1,0 +1,31 @@
+# Web admin (React + Vite): se ejecuta solo cuando cambia web-portal/admin.
+
+name: admin-web
+
+on:
+  push:
+    paths: ['web-portal/admin/**']
+  pull_request:
+    branches: [main]
+    paths: ['web-portal/admin/**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-portal/admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web-portal/admin/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
