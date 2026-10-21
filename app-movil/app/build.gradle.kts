@@ -64,6 +64,8 @@ dependencies {
 // ViewModel y LiveData (la V y el VM de MVVM)
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.4")
+    // viewModel() dentro de los @Composable
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
 
 // Coil (para cargar las imágenes de los avatares, lo usarás en la tarea 5)
     implementation("io.coil-kt:coil-compose:2.6.0")

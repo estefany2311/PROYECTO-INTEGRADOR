@@ -1,6 +1,7 @@
 package com.proyecto.movil.view
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -22,7 +23,11 @@ import com.proyecto.movil.viewmodel.PerfilViewModel
 import com.proyecto.movil.viewmodel.PerfilesUiState
 
 @Composable
-fun PantallaPerfiles(codigoAula: String, viewModel: PerfilViewModel = viewModel()) {
+fun PantallaPerfiles(
+    codigoAula: String,
+    onPerfilElegido: (Perfil) -> Unit,
+    viewModel: PerfilViewModel = viewModel()
+) {
     val estado by viewModel.uiState.collectAsState()
 
     LaunchedEffect(codigoAula) {
@@ -73,7 +78,7 @@ fun PantallaPerfiles(codigoAula: String, viewModel: PerfilViewModel = viewModel(
                         )
                     }
                 } else {
-                    CuadriculaPerfiles(perfiles = s.perfiles)
+                    CuadriculaPerfiles(perfiles = s.perfiles, onPerfilElegido = onPerfilElegido)
                 }
             }
         }
@@ -81,7 +86,7 @@ fun PantallaPerfiles(codigoAula: String, viewModel: PerfilViewModel = viewModel(
 }
 
 @Composable
-private fun CuadriculaPerfiles(perfiles: List<Perfil>) {
+private fun CuadriculaPerfiles(perfiles: List<Perfil>, onPerfilElegido: (Perfil) -> Unit) {
     // Lista de los colores vibrantes solicitados para las figuras/avatares
     val coloresAvatar = listOf(
         MoradoAvatar,    // #9B22E1
@@ -98,10 +103,12 @@ private fun CuadriculaPerfiles(perfiles: List<Perfil>) {
         itemsIndexed(perfiles) { index, perfil ->
             val colorFondo = coloresAvatar[index % coloresAvatar.size]
 
+            // Toda la tarjeta (avatar + nombre) se puede tocar para ir al PIN
             Column(
                 modifier = Modifier
                     .padding(12.dp)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .clickable { onPerfilElegido(perfil) },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
