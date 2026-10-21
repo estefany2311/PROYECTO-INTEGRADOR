@@ -1,6 +1,8 @@
+from django.db import IntegrityError, transaction
+from django.test import TestCase
 from rest_framework.test import APITestCase
 
-from .models import Rol, Usuario
+from .models import Permiso, Rol, RolPermiso, Usuario
 
 URL_DOCENTES = "/api/docentes/"
 URL_LOGIN = "/api/auth/login/"
@@ -143,3 +145,28 @@ class LoginTests(BaseApiTest):
         )
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
         self.assertEqual(self.client.get(URL_DOCENTES).status_code, 200)
+
+
+class PermisosTests(TestCase):
+    # Los permisos y sus asignaciones vienen de la migración 0005_cargar_permisos
+    def setUp(self):
+        self.admin = Rol.objects.get(nombre="ADMIN")
+        self.docente = Rol.objects.get(nombre="DOCENTE")
+
+    def test_existen_permisos_y_admin_tiene_todos(self):
+        total = Permiso.objects.count()
+        self.assertEqual(total, 29)  # 7 módulos x 4 acciones + reportes.ver
+        self.assertEqual(self.admin.permisos_asignados.count(), total)
+        self.assertTrue(self.admin.tiene_permiso("colegios.crear"))
+        self.assertTrue(self.admin.tiene_permiso("reportes.ver"))
+
+    def test_docente_tiene_alumnos_crear_pero_no_colegios_crear(self):
+        self.assertTrue(self.docente.tiene_permiso("alumnos.crear"))
+        self.assertTrue(self.docente.tiene_permiso("colegios.ver"))
+        self.assertFalse(self.docente.tiene_permiso("colegios.crear"))
+        self.assertFalse(self.docente.tiene_permiso("asignaciones.desactivar"))
+
+    def test_no_se_repite_el_mismo_permiso_en_un_rol(self):
+        permiso = Permiso.objects.get(codigo="colegios.ver")
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            RolPermiso.objects.create(rol=self.docente, permiso=permiso)
