@@ -1,172 +1,229 @@
-/* Variables globales de color y estilo para mantener consistencia visual */
 :root {
   --morado: #9B22E1;
-  --rojo: #F51E38;
-  --amarillo: #FFF133;
   --azul: #2FC5F6;
+  --amarillo: #FFF133;
+  --rojo: #F51E38;
+  --fondo: #F4F5FA;
+  --borde: #E6E8F0;
   --texto: #1F2937;
-  --borde: #E2E5EA;
-  --fondo: #F5F6F8;
 }
 
-/* Configuración para que el padding y bordes se incluyan dentro del tamaño total del elemento */
-* { box-sizing: border-box; }
-
-/* Estilos generales de la página principal */
 body {
   margin: 0;
-  min-height: 100vh;
-  font-family: "Segoe UI", Arial, sans-serif;
-  color: var(--texto);
   background: var(--fondo);
+  color: var(--texto);
+  font-family: "Segoe UI", Arial, sans-serif;
 }
 
-/* Contenedor principal centrado */
-.app {
-  max-width: 560px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-/* Tarjetas contenedoras (para el formulario y la lista) */
-.tarjeta {
-  background: #fff;
-  border: 1px solid var(--borde);
-  border-top: 4px solid var(--amarillo);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.tarjeta h2 {
-  margin: 0 0 1rem;
-  font-size: 1.25rem;
-  color: var(--morado);
-}
-
-/* Estilos de las etiquetas e inputs de texto */
-label.campo {
-  display: block;
-  font-weight: 600;
-}
-
-label.campo input {
-  display: block;
-  width: 100%;
-  margin-top: 6px;
-  padding: 0.65rem 0.8rem;
-  font-size: 1rem;
-  border: 1px solid var(--borde);
-  border-radius: 8px;
-}
-
-/* Resaltado del input cuando el usuario hace clic para escribir */
-label.campo input:focus {
-  outline: none;
-  border-color: var(--azul);
-  box-shadow: 0 0 0 3px rgba(47, 197, 246, 0.35);
-}
-
-/* Agrupador de checkboxes de grados */
-fieldset {
-  margin: 1.2rem 0 0;
-  padding: 0.8rem;
-  border: 1px solid var(--borde);
-  border-radius: 8px;
-}
-
-legend {
-  padding: 0 6px;
-  font-weight: 600;
-}
-
-.grados {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* Botones en forma de chip para cada checkbox de grado */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0.35rem 0.8rem;
-  cursor: pointer;
-  border: 1px solid var(--borde);
-  border-radius: 8px;
-  background: #fff;
-}
-
-.chip input { accent-color: var(--morado); }
-
-/* Cambia el color del chip cuando su checkbox está seleccionado */
-.chip:has(input:checked) {
-  border-color: var(--azul);
-  background: rgba(47, 197, 246, 0.15);
-}
-
-/* Botón principal de enviar */
-.boton {
-  margin-top: 1.2rem;
-  width: 100%;
-  padding: 0.75rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #fff;
-  background: var(--morado);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.boton:hover { filter: brightness(1.08); }
-
-/* Estilos para textos de error */
-.error {
-  margin: 6px 0 0;
-  font-size: 0.9rem;
-  color: var(--rojo);
-}
-
-/* Mensajes flotantes de confirmación/error de API */
-.mensaje {
-  padding: 0.65rem 0.9rem;
-  border-radius: 8px;
-  font-size: 0.95rem;
-}
-
-.mensaje.ok {
-  background: rgba(47, 197, 246, 0.15);
-  border-left: 4px solid var(--azul);
-}
-
-.mensaje.fallo {
-  background: rgba(245, 30, 56, 0.08);
-  border-left: 4px solid var(--rojo);
-  color: #B3122A;
-}
-
-/* Lista e items de las aulas registradas */
-.aulas { list-style: none; margin: 0; padding: 0; }
-
-.aula {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--borde);
-}
-
-.aula:last-child { border-bottom: none; }
-
-.aula strong { display: block; margin-bottom: 6px; }
-
-/* Insignias o etiquetas para mostrar los grados asociados a un aula */
-.insignia {
-  display: inline-block;
-  margin-right: 6px;
-  padding: 0.1rem 0.6rem;
-  font-size: 0.85rem;
-  color: var(--morado);
-  background: rgba(155, 34, 225, 0.1);
+/* botón principal en morado */
+.btn-primary {
+  --bs-btn-bg: #9B22E1;
+  --bs-btn-border-color: #9B22E1;
+  --bs-btn-hover-bg: #8419C0;
+  --bs-btn-hover-border-color: #8419C0;
+  --bs-btn-active-bg: #7415AB;
+  --bs-btn-active-border-color: #7415AB;
+  --bs-btn-disabled-bg: #9B22E1;
+  --bs-btn-disabled-border-color: #9B22E1;
   border-radius: 999px;
+  font-weight: 600;
+  padding: 0.55rem 1.2rem;
 }
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--azul);
+  box-shadow: 0 0 0 0.2rem rgba(47, 197, 246, 0.25);
+}
+
+/* estructura general */
+.app-shell { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  background: #fff;
+  border-right: 1px solid var(--borde);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 6px 12px;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.brand-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #9B22E1, #c15cf5);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-seccion {
+  margin: 22px 8px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #8A90A6;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border-radius: 12px;
+  color: #4B5563;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.menu-item:hover { background: #F3E8FC; color: var(--morado); }
+
+.menu-item.active {
+  background: var(--morado);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(155, 34, 225, 0.28);
+}
+
+.sidebar-user {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+}
+
+.sidebar-user small { display: block; font-size: 10px; letter-spacing: 0.08em; color: #8A90A6; }
+
+.content-wrap { flex: 1; min-width: 0; padding: 18px 26px 28px; }
+
+.topbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 26px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-radius: 20px;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 14px 4px 4px;
+  background: var(--fondo);
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.circulo {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--morado);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+/* tarjetas y tabla */
+.panel {
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.05);
+}
+
+.stat { display: flex; align-items: center; gap: 16px; }
+.stat b { display: block; font-size: 1.8rem; line-height: 1.1; }
+.stat span { color: #6B7280; }
+
+.stat-ico {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+.tabla thead th {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: #6B7280;
+  background: #F8F9FC;
+  border-bottom: 1px solid var(--borde);
+  padding: 12px 14px;
+}
+
+.tabla td { padding: 14px; }
+
+.inicial {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tag {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.tag-activo { background: rgba(47, 197, 246, 0.16); color: #0B7FA6; }
+.tag-inactivo { background: rgba(245, 30, 56, 0.12); color: #C0152B; }
+
+@media (max-width: 900px) {
+  .app-shell { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: static; }
+}
+
+/* estilos del formulario de aulas (US-23), para que "Mis aulas" siga viéndose bien */
+.app { max-width: 560px; margin: 0 auto; }
+.tarjeta { background: #fff; border: 1px solid var(--borde); border-top: 4px solid var(--amarillo); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.tarjeta h2 { margin: 0 0 1rem; font-size: 1.25rem; color: var(--morado); }
+label.campo { display: block; font-weight: 600; }
+label.campo input { display: block; width: 100%; margin-top: 6px; padding: 0.65rem 0.8rem; border: 1px solid var(--borde); border-radius: 8px; }
+fieldset { margin: 1.2rem 0 0; padding: 0.8rem; border: 1px solid var(--borde); border-radius: 8px; }
+.grados { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 0.35rem 0.8rem; border: 1px solid var(--borde); border-radius: 8px; cursor: pointer; }
+.boton { margin-top: 1.2rem; width: 100%; padding: 0.75rem; font-weight: 600; color: #fff; background: var(--morado); border: none; border-radius: 8px; }
+.error { margin: 6px 0 0; font-size: 0.9rem; color: var(--rojo); }
+.mensaje { padding: 0.65rem 0.9rem; border-radius: 8px; }
+.mensaje.ok { background: rgba(47, 197, 246, 0.15); }
+.mensaje.fallo { background: rgba(245, 30, 56, 0.08); color: #B3122A; }
+.aulas { list-style: none; margin: 0; padding: 0; }
+.aula { padding: 0.75rem 0; border-bottom: 1px solid var(--borde); }
+.insignia { display: inline-block; margin-right: 6px; padding: 0.1rem 0.6rem; font-size: 0.85rem; color: var(--morado); background: rgba(155, 34, 225, 0.1); border-radius: 999px; }
