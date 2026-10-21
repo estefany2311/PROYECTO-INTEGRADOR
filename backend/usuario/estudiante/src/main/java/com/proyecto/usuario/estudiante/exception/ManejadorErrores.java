@@ -22,7 +22,17 @@ public class ManejadorErrores {
 
     @ExceptionHandler(PinIncorrectoException.class)
     public ResponseEntity<Map<String, Object>> pinIncorrecto(PinIncorrectoException e) {
-        return respuesta(HttpStatus.UNAUTHORIZED, e.getMessage());
+        Map<String, Object> cuerpo = cuerpo(e.getMessage());
+        cuerpo.put("intentosRestantes", e.getIntentosRestantes());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(cuerpo);
+    }
+
+    // T-203 · 423 Locked: la cuenta está bloqueada temporalmente por muchos intentos fallidos
+    @ExceptionHandler(CuentaBloqueadaException.class)
+    public ResponseEntity<Map<String, Object>> cuentaBloqueada(CuentaBloqueadaException e) {
+        Map<String, Object> cuerpo = cuerpo(e.getMessage());
+        cuerpo.put("segundosRestantes", e.getSegundosRestantes());
+        return ResponseEntity.status(HttpStatus.LOCKED).body(cuerpo);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
