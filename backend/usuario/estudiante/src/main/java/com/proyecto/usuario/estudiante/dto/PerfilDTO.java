@@ -1,3 +1,3 @@
 package com.proyecto.usuario.estudiante.dto;
 
-public record PerfilDTO(int id, String nombre, String avatarUrl) {}
+public record PerfilDTO(long id, String nombre, String avatarUrl) {}
