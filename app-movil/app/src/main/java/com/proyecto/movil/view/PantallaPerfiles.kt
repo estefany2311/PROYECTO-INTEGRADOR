@@ -1,9 +1,10 @@
 package com.proyecto.movil.view
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.proyecto.movil.model.Perfil
+import com.proyecto.movil.ui.theme.*
 import com.proyecto.movil.viewmodel.PerfilViewModel
 import com.proyecto.movil.viewmodel.PerfilesUiState
 
@@ -28,8 +30,13 @@ fun PantallaPerfiles(codigoAula: String, viewModel: PerfilViewModel = viewModel(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("¿Quién eres?", fontSize = 24.sp, fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp))
+        Text(
+            text = "¿Quién eres?",
+            fontSize = 28.sp, // Título más grande para niños
+            fontWeight = FontWeight.Bold,
+            color = TextoOscuro,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
         when (val s = estado) {
             is PerfilesUiState.Cargando -> {
@@ -42,13 +49,15 @@ fun PantallaPerfiles(codigoAula: String, viewModel: PerfilViewModel = viewModel(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "¡Ups! Algo no funcionó.",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextoOscuro
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Pídele ayuda a tu profesor.",
-                            fontSize = 16.sp
+                            fontSize = 18.sp,
+                            color = TextoOscuro
                         )
                     }
                 }
@@ -58,7 +67,8 @@ fun PantallaPerfiles(codigoAula: String, viewModel: PerfilViewModel = viewModel(
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
                             text = "Todavía no hay estudiantes en esta aula.\nPídele a tu profesor que te agregue.",
-                            fontSize = 16.sp,
+                            fontSize = 18.sp,
+                            color = TextoOscuro,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
@@ -72,19 +82,53 @@ fun PantallaPerfiles(codigoAula: String, viewModel: PerfilViewModel = viewModel(
 
 @Composable
 private fun CuadriculaPerfiles(perfiles: List<Perfil>) {
-    LazyVerticalGrid(columns = GridCells.Fixed(3)) {
-        items(perfiles) { perfil ->
+    // Lista de los colores vibrantes solicitados para las figuras/avatares
+    val coloresAvatar = listOf(
+        MoradoAvatar,    // #9B22E1
+        RojoAvatar,      // #F51E38
+        AmarilloAvatar,  // #FFF133
+        AzulClaroAvatar  // #2FC5F6
+    )
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2), // 2 columnas para elementos más grandes y fáciles de tocar
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(8.dp)
+    ) {
+        itemsIndexed(perfiles) { index, perfil ->
+            val colorFondo = coloresAvatar[index % coloresAvatar.size]
+
             Column(
-                modifier = Modifier.padding(12.dp),
+                modifier = Modifier
+                    .padding(12.dp)
+                    .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                AsyncImage(
-                    model = perfil.avatarUrl,
-                    contentDescription = "Avatar de ${perfil.nombre}",
-                    modifier = Modifier.size(80.dp).clip(CircleShape)
+                Box(
+                    modifier = Modifier
+                        .size(110.dp) // Iconos más grandes (antes 80.dp)
+                        .clip(CircleShape)
+                        .background(colorFondo)
+                        .padding(6.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = perfil.avatarUrl,
+                        contentDescription = "Avatar de ${perfil.nombre}",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = perfil.nombre,
+                    fontSize = 20.sp, // Texto más legible para primaria
+                    fontWeight = FontWeight.Bold,
+                    color = TextoOscuro
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = perfil.nombre, fontSize = 16.sp)
             }
         }
     }
