@@ -66,7 +66,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "   pm.collectionVariables.set(\"sufijo\", Date.now());"
+              "   const docentes = [\r\n     [\"Rosa\", \"Quispe\"], [\"Jorge\", \"Mamani\"], [\"Lucia\", \"Condori\"],\r\n     [\"Ana\", \"Huaman\"], [\"Pedro\", \"Ccama\"], [\"Maria\", \"Apaza\"],\r\n   ];\r\n   const [nombre, apellido] = docentes[Math.floor(Math.random() * docentes.length)];\r\n   const numero = String(Date.now()).slice(-4);\r\n   pm.collectionVariables.set(\"nombre\", nombre);\r\n   pm.collectionVariables.set(\"apellido\", apellido);\r\n   pm.collectionVariables.set(\"sufijo\", `${nombre[0]}${apellido}${numero}`.toLowerCase());"
             ]
           }
         }
@@ -76,7 +76,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "   {\r\n     \"username\": \"doc{{sufijo}}\",\r\n     \"first_name\": \"Rosa\",\r\n     \"last_name\": \"Quispe\",\r\n     \"email\": \"doc{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
+          "raw": "   {\r\n     \"username\": \"{{sufijo}}\",\r\n     \"first_name\": \"{{nombre}}\",\r\n     \"last_name\": \"{{apellido}}\",\r\n     \"email\": \"{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
           "options": {
             "raw": {
               "language": "json"
@@ -190,7 +190,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "   {\r\n     \"username\": \"otro{{sufijo}}\",\r\n     \"first_name\": \"Ana\",\r\n     \"last_name\": \"Paz\",\r\n     \"email\": \"doc{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
+          "raw": "   {\r\n     \"username\": \"otro{{sufijo}}\",\r\n     \"first_name\": \"Ana\",\r\n     \"last_name\": \"Paz\",\r\n     \"email\": \"{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
           "options": {
             "raw": {
               "language": "json"
@@ -368,7 +368,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "   pm.collectionVariables.set(\"sufijo\", Date.now());"
+              "   const docentes = [\r\n     [\"Rosa\", \"Quispe\"], [\"Jorge\", \"Mamani\"], [\"Lucia\", \"Condori\"],\r\n     [\"Ana\", \"Huaman\"], [\"Pedro\", \"Ccama\"], [\"Maria\", \"Apaza\"],\r\n   ];\r\n   const [nombre, apellido] = docentes[Math.floor(Math.random() * docentes.length)];\r\n   const numero = String(Date.now()).slice(-4);\r\n   pm.collectionVariables.set(\"nombre\", nombre);\r\n   pm.collectionVariables.set(\"apellido\", apellido);\r\n   pm.collectionVariables.set(\"sufijo\", `${nombre[0]}${apellido}${numero}`.toLowerCase());"
             ]
           }
         }
@@ -388,7 +388,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "     {\r\n     \"username\": \"x{{sufijo}}\",\r\n     \"first_name\": \"Ana\",\r\n     \"last_name\": \"Paz\",\r\n     \"email\": \"x{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
+          "raw": "     {\r\n     \"username\": \"{{sufijo}}\",\r\n     \"first_name\": \"{{nombre}}\",\r\n     \"last_name\": \"{{apellido}}\",\r\n     \"email\": \"{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
           "options": {
             "raw": {
               "language": "json"
@@ -407,6 +407,529 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "Colegios",
+      "description": "US-44: registro de colegios y asignación de docentes. Ejecutar después de \"Login admin\" y \"2 Crear docente valido\".",
+      "item": [
+        {
+          "name": "1 Listar colegios",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve una lista\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/colegios/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "colegios",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2 Buscar colegio",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Todos los resultados coinciden con la búsqueda\", () => {",
+                  "  pm.response.json().forEach(c => pm.expect(`${c.nombre} ${c.codigo_modular}`.toLowerCase()).to.include(\"ccollpa\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/colegios/?search=Ccollpa",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "colegios",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Ccollpa"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3 Filtrar por región",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Todos son de la región Cusco\", () => {",
+                  "  pm.response.json().forEach(c => pm.expect(c.region.toLowerCase()).to.eql(\"cusco\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/colegios/?region=Cusco",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "colegios",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "region",
+                  "value": "Cusco"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4 Crear colegio válido",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"codigo_modular\", String(Date.now()).slice(-7));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+                  "const colegio = pm.response.json();",
+                  "pm.test(\"Empieza sin docentes\", () => pm.expect(colegio.total_docentes).to.eql(0));",
+                  "pm.collectionVariables.set(\"colegio_id\", colegio.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/colegios/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "colegios",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo_modular\": \"{{codigo_modular}}\",\n  \"nombre\": \"IE N° 50123 Ccollpa\",\n  \"region\": \"Cusco\",\n  \"distrito\": \"Ccatca\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5 Código de 6 dígitos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error en codigo_modular\", () => pm.expect(pm.response.json()).to.have.property(\"codigo_modular\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/colegios/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "colegios",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo_modular\": \"051234\",\n  \"nombre\": \"IE Prueba\",\n  \"region\": \"Cusco\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6 Código repetido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error en codigo_modular\", () => pm.expect(pm.response.json()).to.have.property(\"codigo_modular\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/colegios/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "colegios",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo_modular\": \"{{codigo_modular}}\",\n  \"nombre\": \"IE Repetida\",\n  \"region\": \"Cusco\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "7 Ver detalle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Es el colegio creado\", () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"colegio_id\"))));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/colegios/{{colegio_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "colegios",
+                "{{colegio_id}}",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "8 Editar colegio",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Distrito actualizado\", () => pm.expect(pm.response.json().distrito).to.eql(\"Ccatca - Centro poblado Ccollpa\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/colegios/{{colegio_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "colegios",
+                "{{colegio_id}}",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"distrito\": \"Ccatca - Centro poblado Ccollpa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "9 Desactivar colegio",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Queda inactivo\", () => pm.expect(pm.response.json().activo).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/colegios/{{colegio_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "colegios",
+                "{{colegio_id}}",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activo\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10 Asignar docentes",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.sendRequest({ url: pm.collectionVariables.get(\"base_url\") + \"/docentes/\", header: [{ key: \"Authorization\", value: \"Bearer \" + pm.collectionVariables.get(\"token\") }] }, (err, res) => {",
+                  "  const docentes = res.json();",
+                  "  const libre = docentes.find(d => d.username === pm.collectionVariables.get(\"docente_user\") && !d.colegio)",
+                  "    || docentes.find(d => !d.colegio);",
+                  "  pm.collectionVariables.set(\"docente_id\", libre ? libre.id : 0);",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"total_docentes se actualiza\", () => pm.expect(pm.response.json().total_docentes).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/colegios/{{colegio_id}}/docentes/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "colegios",
+                "{{colegio_id}}",
+                "docentes",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"docentes\": [\n    \"{{docente_id}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "11 Docente que ya tiene colegio",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.sendRequest({",
+                  "  url: pm.collectionVariables.get(\"base_url\") + \"/colegios/\",",
+                  "  method: \"POST\",",
+                  "  header: [{ key: \"Authorization\", value: \"Bearer \" + pm.collectionVariables.get(\"token\") }, { key: \"Content-Type\", value: \"application/json\" }],",
+                  "  body: { mode: \"raw\", raw: JSON.stringify({ codigo_modular: String(Date.now() + 1).slice(-7), nombre: \"IE N° 54210 Huaccana\", region: \"Apurímac\" }) },",
+                  "}, (err, res) => pm.collectionVariables.set(\"colegio2_id\", res.json().id));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Indica que ya pertenece a otro colegio\", () => pm.expect(pm.response.json().docentes.join(\" \")).to.include(\"ya pertenece al colegio\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/colegios/{{colegio2_id}}/docentes/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "colegios",
+                "{{colegio2_id}}",
+                "docentes",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"docentes\": [\n    \"{{docente_id}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "12 Eliminar colegio",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"405 Method Not Allowed\", () => pm.response.to.have.status(405));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/colegios/{{colegio_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "colegios",
+                "{{colegio_id}}",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "13 Listar sin token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"401 Unauthorized\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/colegios/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "colegios",
+                ""
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "auth": {
@@ -437,12 +960,36 @@
       "value": ""
     },
     {
+      "key": "apellido",
+      "value": ""
+    },
+    {
+      "key": "nombre",
+      "value": ""
+    },
+    {
       "key": "docente_user",
       "value": "",
       "disabled": true
     },
     {
       "key": "token_docente",
+      "value": ""
+    },
+    {
+      "key": "colegio_id",
+      "value": ""
+    },
+    {
+      "key": "colegio2_id",
+      "value": ""
+    },
+    {
+      "key": "codigo_modular",
+      "value": ""
+    },
+    {
+      "key": "docente_id",
       "value": ""
     }
   ]
