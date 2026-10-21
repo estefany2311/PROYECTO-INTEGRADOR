@@ -28,8 +28,15 @@ class DocenteCreateSerializer(serializers.ModelSerializer):
 
 class DocenteListSerializer(serializers.ModelSerializer):
     rol = serializers.CharField(source='rol.nombre', read_only=True)
+    colegio = serializers.SerializerMethodField()
 
     class Meta:
         model = Usuario
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'rol', 'is_active', 'date_joined']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'rol', 'is_active', 'date_joined', 'colegio']
         read_only_fields = fields
+
+    def get_colegio(self, obj):
+        asignacion = getattr(obj, 'asignacion_colegio', None)
+        if asignacion is None:
+            return None
+        return {'id': asignacion.colegio.id, 'nombre': asignacion.colegio.nombre}

@@ -11,7 +11,7 @@ class DocenteListCreateView(generics.ListCreateAPIView):
         return (
             Usuario.objects
             .filter(rol__nombre='DOCENTE')
-            .select_related('rol')
+            .select_related('rol', 'asignacion_colegio__colegio')
             .order_by('last_name', 'first_name')
         )
 
