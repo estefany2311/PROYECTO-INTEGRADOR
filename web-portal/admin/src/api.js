@@ -4,11 +4,16 @@ export const sesion = {
   get token() {
     return sessionStorage.getItem("access");
   },
-  guardar(token) {
+  get usuario() {
+    return sessionStorage.getItem("usuario") ?? "";
+  },
+  guardar(token, usuario = "") {
     sessionStorage.setItem("access", token);
+    sessionStorage.setItem("usuario", usuario);
   },
   limpiar() {
     sessionStorage.removeItem("access");
+    sessionStorage.removeItem("usuario");
   },
 };
 
@@ -33,10 +38,25 @@ export async function iniciarSesion(username, password) {
     method: "POST",
     body: JSON.stringify({ username, password }),
   });
-  sesion.guardar(datos.access);
+  sesion.guardar(datos.access, username);
 }
 
 export const crearDocente = (docente) =>
   pedir("/docentes/", { method: "POST", body: JSON.stringify(docente) });
 
 export const listarDocentes = () => pedir("/docentes/");
+
+export const listarColegios = (params = {}) => {
+  const filtros = Object.entries(params).filter(([, valor]) => valor);
+  const query = new URLSearchParams(filtros).toString();
+  return pedir(`/colegios/${query ? `?${query}` : ""}`);
+};
+
+export const crearColegio = (datos) =>
+  pedir("/colegios/", { method: "POST", body: JSON.stringify(datos) });
+
+export const actualizarColegio = (id, datos) =>
+  pedir(`/colegios/${id}/`, { method: "PATCH", body: JSON.stringify(datos) });
+
+export const asignarDocentes = (id, docentes) =>
+  pedir(`/colegios/${id}/docentes/`, { method: "POST", body: JSON.stringify({ docentes }) });
