@@ -29,6 +29,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 @ExtendWith(MockitoExtension.class)
 class EstudianteServiceTest {
 
@@ -143,5 +145,118 @@ class EstudianteServiceTest {
 
         assertEquals(HttpStatus.FORBIDDEN, ex.getEstado());
         verify(estudianteRepository, never()).findByAulaIdOrderByApellidosAscNombresAsc(any());
+    }
+    @Test
+    void actualizaLosDatosDelAlumno() {
+        Estudiante e = alumno("Luis", "Mamani");
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(5L, 10L)).thenReturn(Optional.of(e));
+        when(estudianteRepository.existsByAulaIdAndNombresIgnoreCaseAndApellidosIgnoreCaseAndIdNot(
+                10L, "Ana", "Quispe", 5L)).thenReturn(false);
+        when(estudianteRepository.save(any(Estudiante.class))).thenAnswer(i -> i.getArgument(0));
+
+        EstudianteResponse resp = service.actualizar(1L, 10L, 5L,
+                new EstudianteRequest(" Ana ", "Quispe", (short) 1));
+
+        assertEquals("Ana", resp.nombres());
+        assertEquals("Quispe", resp.apellidos());
+    }
+
+    @Test
+    void rechazaActualizarAlumnoInexistente() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(5L, 10L)).thenReturn(Optional.empty());
+
+        ReglaNegocioException ex = assertThrows(ReglaNegocioException.class,
+                () -> service.actualizar(1L, 10L, 5L, new EstudianteRequest("Ana", "Quispe", (short) 1)));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getEstado());
+        verify(estudianteRepository, never()).save(any());
+    }
+
+    @Test
+    void rechazaActualizarConNombreDuplicado() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(5L, 10L))
+                .thenReturn(Optional.of(alumno("Luis", "Mamani")));
+        when(estudianteRepository.existsByAulaIdAndNombresIgnoreCaseAndApellidosIgnoreCaseAndIdNot(
+                10L, "Ana", "Quispe", 5L)).thenReturn(true);
+
+        ReglaNegocioException ex = assertThrows(ReglaNegocioException.class,
+                () -> service.actualizar(1L, 10L, 5L, new EstudianteRequest("Ana", "Quispe", (short) 1)));
+
+        assertEquals(HttpStatus.CONFLICT, ex.getEstado());
+        verify(estudianteRepository, never()).save(any());
+    }
+
+    @Test
+    void rechazaActualizarConGradoQueElAulaNoAtiende() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(5L, 10L))
+                .thenReturn(Optional.of(alumno("Luis", "Mamani")));
+
+        ReglaNegocioException ex = assertThrows(ReglaNegocioException.class,
+                () -> service.actualizar(1L, 10L, 5L, new EstudianteRequest("Ana", "Quispe", (short) 6)));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getEstado());
+        verify(estudianteRepository, never()).save(any());
+    }
+
+    @Test
+    void rechazaActualizarEnAulaDeOtroDocente() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+
+        ReglaNegocioException ex = assertThrows(ReglaNegocioException.class,
+                () -> service.actualizar(2L, 10L, 5L, new EstudianteRequest("Ana", "Quispe", (short) 1)));
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getEstado());
+        verify(estudianteRepository, never()).save(any());
+    }
+
+    @Test
+    void desactivaAlAlumno() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(5L, 10L))
+                .thenReturn(Optional.of(alumno("Ana", "Quispe")));
+        when(estudianteRepository.save(any(Estudiante.class))).thenAnswer(i -> i.getArgument(0));
+
+        EstudianteResponse resp = service.cambiarEstado(1L, 10L, 5L, false);
+
+        assertFalse(resp.activo());
+    }
+
+    @Test
+    void reactivaAlAlumno() {
+        Estudiante e = alumno("Ana", "Quispe");
+        e.setActivo(false);
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(5L, 10L)).thenReturn(Optional.of(e));
+        when(estudianteRepository.save(any(Estudiante.class))).thenAnswer(i -> i.getArgument(0));
+
+        EstudianteResponse resp = service.cambiarEstado(1L, 10L, 5L, true);
+
+        assertTrue(resp.activo());
+    }
+
+    @Test
+    void rechazaCambiarEstadoDeAlumnoInexistente() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(5L, 10L)).thenReturn(Optional.empty());
+
+        ReglaNegocioException ex = assertThrows(ReglaNegocioException.class,
+                () -> service.cambiarEstado(1L, 10L, 5L, false));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getEstado());
+        verify(estudianteRepository, never()).save(any());
+    }
+
+    // crea un alumno de prueba en el aula del docente 1, en 1.º grado
+    private Estudiante alumno(String nombres, String apellidos) {
+        Estudiante e = new Estudiante();
+        e.setNombres(nombres);
+        e.setApellidos(apellidos);
+        e.setAula(aula);
+        e.setGrado(primero);
+        return e;
     }
 }

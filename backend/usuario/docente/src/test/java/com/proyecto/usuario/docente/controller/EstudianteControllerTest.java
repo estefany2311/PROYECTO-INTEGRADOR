@@ -27,6 +27,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 @ExtendWith(MockitoExtension.class)
 class EstudianteControllerTest {
 
@@ -106,5 +108,68 @@ class EstudianteControllerTest {
                         .header("X-Docente-Id", 1))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].apellidos").value("Quispe"));
+    }
+    @Test
+    void actualizarDevuelve200() throws Exception {
+        when(service.actualizar(eq(1L), eq(10L), eq(5L), any(EstudianteRequest.class)))
+                .thenReturn(new EstudianteResponse(5L, "Ana", "Quispe", (short) 1, "1.º", true));
+
+        mvc.perform(put("/api/docente/aulas/10/estudiantes/5")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombres\":\"Ana\",\"apellidos\":\"Quispe\",\"gradoId\":1}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombres").value("Ana"));
+    }
+
+    @Test
+    void actualizarConNombresVacioDevuelve400() throws Exception {
+        mvc.perform(put("/api/docente/aulas/10/estudiantes/5")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombres\":\"\",\"apellidos\":\"Quispe\",\"gradoId\":1}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("Los nombres son obligatorios"));
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void desactivarDevuelve200() throws Exception {
+        when(service.cambiarEstado(1L, 10L, 5L, false))
+                .thenReturn(new EstudianteResponse(5L, "Ana", "Quispe", (short) 1, "1.º", false));
+
+        mvc.perform(patch("/api/docente/aulas/10/estudiantes/5/estado")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"activo\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activo").value(false));
+    }
+
+    @Test
+    void estadoSinValorDevuelve400() throws Exception {
+        mvc.perform(patch("/api/docente/aulas/10/estudiantes/5/estado")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("Debes indicar el estado del alumno"));
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void alumnoInexistenteDevuelve404() throws Exception {
+        when(service.cambiarEstado(1L, 10L, 99L, false))
+                .thenThrow(new ReglaNegocioException(
+                        "El alumno no existe en esta aula", HttpStatus.NOT_FOUND));
+
+        mvc.perform(patch("/api/docente/aulas/10/estudiantes/99/estado")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"activo\":false}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje").value("El alumno no existe en esta aula"));
     }
 }
