@@ -56,6 +56,15 @@ public class EstudianteService {
                 .map(this::toResponse)
                 .toList();
     }
+    // T-184: igual que listar, pero oculta a los alumnos inactivos
+    @Transactional(readOnly = true)
+    public List<EstudianteResponse> listarActivos(Long docenteId, Long aulaId) {
+        buscarAulaDelDocente(docenteId, aulaId); // mismas validaciones: 404 y 403
+        return estudianteRepository.findByAulaIdAndActivoTrueOrderByApellidosAscNombresAsc(aulaId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
 
     @Transactional
     public EstudianteResponse actualizar(Long docenteId, Long aulaId, Long estudianteId,

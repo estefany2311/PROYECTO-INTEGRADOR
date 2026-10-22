@@ -16,4 +16,6 @@ public interface EstudianteRepository extends JpaRepository<Estudiante, Long> {
     // igual que la anterior, pero ignorando al propio alumno que se edita
     boolean existsByAulaIdAndNombresIgnoreCaseAndApellidosIgnoreCaseAndIdNot(
             Long aulaId, String nombres, String apellidos, Long id);
+    // T-184: solo alumnos activos (los que ve la tablet), mismo orden que el listado normal
+    List<Estudiante> findByAulaIdAndActivoTrueOrderByApellidosAscNombresAsc(Long aulaId);
 }

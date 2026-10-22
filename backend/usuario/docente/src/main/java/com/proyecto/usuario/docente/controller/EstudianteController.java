@@ -31,10 +31,15 @@ public class EstudianteController {
         return service.registrar(docenteId, aulaId, req);
     }
 
+    // T-184: GET .../estudiantes → todos (portal docente)
+    //        GET .../estudiantes?soloActivos=true → solo activos (tablet)
     @GetMapping
     public List<EstudianteResponse> listar(@RequestHeader("X-Docente-Id") Long docenteId,
-                                           @PathVariable Long aulaId) {
-        return service.listar(docenteId, aulaId);
+                                           @PathVariable Long aulaId,
+                                           @RequestParam(defaultValue = "false") boolean soloActivos) {
+        return soloActivos
+                ? service.listarActivos(docenteId, aulaId)
+                : service.listar(docenteId, aulaId);
     }
 
     @PutMapping("/{estudianteId}")
