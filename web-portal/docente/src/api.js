@@ -27,3 +27,14 @@ export const crearEstudiante = (aulaId, datos) =>
     method: "POST",
     body: JSON.stringify(datos),
   });
+// T-183: editar alumno (PUT) y desactivar/reactivar (PATCH)
+export const actualizarEstudiante = (aulaId, id, datos) =>
+  pedir(`/api/docente/aulas/${aulaId}/estudiantes/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(datos),
+  });
+export const cambiarEstadoEstudiante = (aulaId, id, activo) =>
+  pedir(`/api/docente/aulas/${aulaId}/estudiantes/${id}/estado`, {
+    method: "PATCH",
+    body: JSON.stringify({ activo }),
+  });

@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listarAulas, listarEstudiantes, crearEstudiante } from "../api";
+import {
+  listarAulas, listarEstudiantes, crearEstudiante,
+  actualizarEstudiante, cambiarEstadoEstudiante,
+} from "../api";
 
 const COLORES = ["#9B22E1", "#2FC5F6", "#F59E0B", "#F51E38", "#22C55E", "#6366F1"];
 const FORM_VACIO = { nombres: "", apellidos: "", gradoId: "" };
@@ -11,6 +14,8 @@ export default function Alumnos() {
   const [alumnos, setAlumnos] = useState([]);
   const [mensaje, setMensaje] = useState(null); // { tipo: "success" | "danger", texto }
   const [abierto, setAbierto] = useState(false);
+  const [editando, setEditando] = useState(null); // alumno en edición; null = modo "agregar"
+  const [confirmar, setConfirmar] = useState(null); // alumno a desactivar/reactivar
   const [form, setForm] = useState(FORM_VACIO);
   const [errores, setErrores] = useState({});
   const [errorServidor, setErrorServidor] = useState(null);
@@ -33,17 +38,22 @@ export default function Alumnos() {
       .catch((e) => setMensaje({ tipo: "danger", texto: e.message }));
   }, []);
 
+  // cada vez que cambia el aula: cargar sus alumnos (única carga, sin duplicados)
+  useEffect(() => {
+    if (!aulaId) return;
+    listarEstudiantes(aulaId)
+      .then(setAlumnos)
+      .catch((e) => setMensaje({ tipo: "danger", texto: e.message }));
+  }, [aulaId]);
 
-  // cada vez que cambia el aula: cargar sus alumnos
-    useEffect(() => {
-      if (!aulaId) return;
-      listarEstudiantes(aulaId)
-        .then(setAlumnos)
-        .catch((e) => setMensaje({ tipo: "danger", texto: e.message }));
-    }, [aulaId]);
-
-  const abrirFormulario = () => {
-    setForm(FORM_VACIO);
+  // abre el modal vacío (agregar) o con los datos del alumno (editar)
+  const abrirFormulario = (alumno = null) => {
+    // la respuesta puede traer gradoId; si no, lo buscamos por el nombre del grado
+    const gradoId = alumno
+      ? (alumno.gradoId ?? aula?.grados.find((g) => g.nombre === alumno.gradoNombre)?.id ?? "")
+      : "";
+    setForm(alumno ? { nombres: alumno.nombres, apellidos: alumno.apellidos, gradoId: String(gradoId) } : FORM_VACIO);
+    setEditando(alumno);
     setErrores({});
     setErrorServidor(null);
     setAbierto(true);
@@ -65,18 +75,40 @@ export default function Alumnos() {
     setErrores(e);
     if (Object.keys(e).length > 0) return;
 
+    const datos = {
+      nombres: form.nombres,
+      apellidos: form.apellidos,
+      gradoId: Number(form.gradoId),
+    };
     try {
-      await crearEstudiante(aulaId, {
-        nombres: form.nombres,
-        apellidos: form.apellidos,
-        gradoId: Number(form.gradoId),
-      });
+      // PUT si estamos editando, POST si estamos agregando
+      if (editando) await actualizarEstudiante(aulaId, editando.id, datos);
+      else await crearEstudiante(aulaId, datos);
       setAbierto(false);
-      setMensaje({ tipo: "success", texto: "Alumno registrado correctamente" });
+      setMensaje({
+        tipo: "success",
+        texto: editando ? "Alumno actualizado correctamente" : "Alumno registrado correctamente",
+      });
       cargarAlumnos(aulaId);
     } catch (error) {
-      setErrorServidor(error.message);
+      setErrorServidor(error.message); // ej. 409 nombre repetido
     }
+  };
+
+  // se ejecuta solo tras pulsar "Sí" en la confirmación: PATCH con el estado contrario
+  const confirmarCambio = async () => {
+    const alumno = confirmar;
+    try {
+      await cambiarEstadoEstudiante(aulaId, alumno.id, !alumno.activo);
+      setMensaje({
+        tipo: "success",
+        texto: `Alumno ${alumno.activo ? "desactivado" : "reactivado"} correctamente`,
+      });
+      cargarAlumnos(aulaId);
+    } catch (error) {
+      setMensaje({ tipo: "danger", texto: error.message });
+    }
+    setConfirmar(null);
   };
 
   return (
@@ -102,7 +134,7 @@ export default function Alumnos() {
               </select>
             </div>
           )}
-          <button className="btn btn-primary" onClick={abrirFormulario} disabled={!aula}>
+          <button className="btn btn-primary" onClick={() => abrirFormulario()} disabled={!aula}>
             <i className="bi bi-plus-lg me-2" />
             Agregar alumno
           </button>
@@ -167,6 +199,7 @@ export default function Alumnos() {
                     <th>ALUMNO</th>
                     <th>GRADO</th>
                     <th>ESTADO</th>
+                    <th className="text-end">ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -186,6 +219,25 @@ export default function Alumnos() {
                           {a.activo ? "Activo" : "Inactivo"}
                         </span>
                       </td>
+                      <td className="text-end">
+                        {/* aria-label con el nombre: sirve para accesibilidad y para las pruebas */}
+                        <button
+                          className="btn btn-sm btn-outline-primary rounded-pill me-2"
+                          aria-label={`Editar ${a.nombres} ${a.apellidos}`}
+                          title="Editar"
+                          onClick={() => abrirFormulario(a)}
+                        >
+                          <i className="bi bi-pencil" />
+                        </button>
+                        <button
+                          className={`btn btn-sm rounded-pill ${a.activo ? "btn-outline-danger" : "btn-outline-success"}`}
+                          aria-label={`${a.activo ? "Desactivar" : "Reactivar"} ${a.nombres} ${a.apellidos}`}
+                          title={a.activo ? "Desactivar" : "Reactivar"}
+                          onClick={() => setConfirmar(a)}
+                        >
+                          <i className={`bi ${a.activo ? "bi-person-dash" : "bi-person-check"}`} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -195,56 +247,84 @@ export default function Alumnos() {
         </>
       )}
 
+      {/* Modal agregar / editar (mismo formulario) */}
       {abierto && (
-        <>
-          <div className="modal d-block" tabIndex="-1" role="dialog">
-            <div className="modal-dialog modal-dialog-centered">
-              <form className="modal-content border-0 rounded-4" onSubmit={guardar} noValidate>
-                <div className="modal-header border-0">
-                  <h2 className="modal-title h5 fw-bold">Agregar alumno</h2>
-                  <button type="button" className="btn-close" aria-label="Cerrar" onClick={() => setAbierto(false)} />
-                </div>
-                <div className="modal-body">
-                  {errorServidor && <div className="alert alert-danger">{errorServidor}</div>}
+        <div className="modal d-block" tabIndex="-1" role="dialog">
+          <div className="modal-dialog modal-dialog-centered">
+            <form className="modal-content border-0 rounded-4" onSubmit={guardar} noValidate>
+              <div className="modal-header border-0">
+                <h2 className="modal-title h5 fw-bold">{editando ? "Editar alumno" : "Agregar alumno"}</h2>
+                <button type="button" className="btn-close" aria-label="Cerrar" onClick={() => setAbierto(false)} />
+              </div>
+              <div className="modal-body">
+                {errorServidor && <div className="alert alert-danger">{errorServidor}</div>}
 
-                  <div className="mb-3">
-                    <label htmlFor="nombres" className="form-label fw-semibold">Nombres</label>
-                    <input id="nombres" className={`form-control ${errores.nombres ? "is-invalid" : ""}`}
-                      value={form.nombres} onChange={cambiar("nombres")} />
-                    {errores.nombres && <div className="invalid-feedback">{errores.nombres}</div>}
-                  </div>
-
-                  <div className="mb-3">
-                    <label htmlFor="apellidos" className="form-label fw-semibold">Apellidos</label>
-                    <input id="apellidos" className={`form-control ${errores.apellidos ? "is-invalid" : ""}`}
-                      value={form.apellidos} onChange={cambiar("apellidos")} />
-                    {errores.apellidos && <div className="invalid-feedback">{errores.apellidos}</div>}
-                  </div>
-
-                  <div className="mb-2">
-                    <label htmlFor="grado" className="form-label fw-semibold">Grado</label>
-                    <select id="grado" className={`form-select ${errores.gradoId ? "is-invalid" : ""}`}
-                      value={form.gradoId} onChange={cambiar("gradoId")}>
-                      <option value="">Selecciona un grado</option>
-                      {aula?.grados.map((g) => (
-                        <option key={g.id} value={g.id}>{g.nombre}</option>
-                      ))}
-                    </select>
-                    {errores.gradoId && <div className="invalid-feedback">{errores.gradoId}</div>}
-                  </div>
+                <div className="mb-3">
+                  <label htmlFor="nombres" className="form-label fw-semibold">Nombres</label>
+                  <input id="nombres" className={`form-control ${errores.nombres ? "is-invalid" : ""}`}
+                    value={form.nombres} onChange={cambiar("nombres")} />
+                  {errores.nombres && <div className="invalid-feedback">{errores.nombres}</div>}
                 </div>
-                <div className="modal-footer border-0">
-                  <button type="button" className="btn btn-outline-secondary rounded-pill" onClick={() => setAbierto(false)}>
-                    Cancelar
-                  </button>
-                  <button type="submit" className="btn btn-primary">Guardar</button>
+
+                <div className="mb-3">
+                  <label htmlFor="apellidos" className="form-label fw-semibold">Apellidos</label>
+                  <input id="apellidos" className={`form-control ${errores.apellidos ? "is-invalid" : ""}`}
+                    value={form.apellidos} onChange={cambiar("apellidos")} />
+                  {errores.apellidos && <div className="invalid-feedback">{errores.apellidos}</div>}
                 </div>
-              </form>
+
+                <div className="mb-2">
+                  <label htmlFor="grado" className="form-label fw-semibold">Grado</label>
+                  <select id="grado" className={`form-select ${errores.gradoId ? "is-invalid" : ""}`}
+                    value={form.gradoId} onChange={cambiar("gradoId")}>
+                    <option value="">Selecciona un grado</option>
+                    {aula?.grados.map((g) => (
+                      <option key={g.id} value={g.id}>{g.nombre}</option>
+                    ))}
+                  </select>
+                  {errores.gradoId && <div className="invalid-feedback">{errores.gradoId}</div>}
+                </div>
+              </div>
+              <div className="modal-footer border-0">
+                <button type="button" className="btn btn-outline-secondary rounded-pill" onClick={() => setAbierto(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary">Guardar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación: desactivar o reactivar */}
+      {confirmar && (
+        <div className="modal d-block" tabIndex="-1" role="dialog" aria-label="Confirmación">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 rounded-4">
+              <div className="modal-header border-0">
+                <h2 className="modal-title h5 fw-bold">
+                  {confirmar.activo ? "Desactivar alumno" : "Reactivar alumno"}
+                </h2>
+              </div>
+              <div className="modal-body">
+                {confirmar.activo
+                  ? `¿Desactivar a ${confirmar.nombres} ${confirmar.apellidos}? Dejará de aparecer en la tablet.`
+                  : `¿Reactivar a ${confirmar.nombres} ${confirmar.apellidos}? Volverá a aparecer en la tablet.`}
+              </div>
+              <div className="modal-footer border-0">
+                <button type="button" className="btn btn-outline-secondary rounded-pill" onClick={() => setConfirmar(null)}>
+                  Cancelar
+                </button>
+                <button type="button" className="btn btn-primary" onClick={confirmarCambio}>
+                  {confirmar.activo ? "Sí, desactivar" : "Sí, reactivar"}
+                </button>
+              </div>
             </div>
           </div>
-          <div className="modal-backdrop fade show" />
-        </>
+        </div>
       )}
+
+      {(abierto || confirmar) && <div className="modal-backdrop fade show" />}
     </div>
   );
 }
