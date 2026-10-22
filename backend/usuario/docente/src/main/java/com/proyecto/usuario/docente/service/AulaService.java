@@ -17,12 +17,30 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.security.SecureRandom;
 
 @Service
 public class AulaService {
 
     private final AulaRepository aulaRepository;
     private final GradoRepository gradoRepository;
+
+    // Sin O/0 ni I/1 para que los niños no los confundan
+    private static final String LETRAS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private final SecureRandom aleatorio = new SecureRandom();
+
+    // Genera un código de 6 caracteres que no exista todavía
+    private String generarCodigoUnico() {
+        String codigo;
+        do {
+            StringBuilder sb = new StringBuilder(6);
+            for (int i = 0; i < 6; i++) {
+                sb.append(LETRAS.charAt(aleatorio.nextInt(LETRAS.length())));
+            }
+            codigo = sb.toString();
+        } while (aulaRepository.existsByCodigo(codigo)); // repite si ya existe
+        return codigo;
+    }
 
     // Inyección de dependencias de los repositorios
     public AulaService(AulaRepository aulaRepository, GradoRepository gradoRepository) {
@@ -57,6 +75,7 @@ public class AulaService {
         aula.setNombre(nombre);
         aula.setDocenteId(docenteId);
         aula.setGrados(new HashSet<>(grados));
+        aula.setCodigo(generarCodigoUnico());
 
         // Guardar el aula registrada y retornar el DTO de respuesta
         return toResponse(aulaRepository.save(aula));
@@ -88,6 +107,6 @@ public class AulaService {
                 .map(g -> new GradoResponse(g.getId(), g.getNombre()))
                 .toList();
 
-        return new AulaResponse(a.getId(), a.getNombre(), grados);
+        return new AulaResponse(a.getId(), a.getNombre(), a.getCodigo(), grados);
     }
 }

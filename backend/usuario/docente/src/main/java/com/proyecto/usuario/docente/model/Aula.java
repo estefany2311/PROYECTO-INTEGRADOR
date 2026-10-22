@@ -22,6 +22,10 @@ public class Aula {
     @Column(nullable = false)
     private String nombre;
 
+    // Código que el alumno escribe en la tablet (ej. K7M2QX); lo genera el servicio
+    @Column(nullable = false, unique = true, length = 10)
+    private String codigo;
+
     // Columna obligatoria para vincular el aula con un docente específico
     @Column(name = "docente_id", nullable = false)
     private Long docenteId;
@@ -66,5 +70,13 @@ public class Aula {
 
     public void setGrados(Set<Grado> grados) {
         this.grados = grados;
+    }
+
+    public String getCodigo() {
+        return codigo;
+    }
+
+    public void setCodigo(String codigo) {
+        this.codigo = codigo;
     }
 }

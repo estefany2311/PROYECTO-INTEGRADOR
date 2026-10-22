@@ -14,4 +14,6 @@ public interface AulaRepository extends JpaRepository<Aula, Long> {
     // Consulta personalizada generada automáticamente por Spring:
     // Verifica si ya existe un aula con el mismo nombre para dicho docente (ignorando mayúsculas/minúsculas)
     boolean existsByDocenteIdAndNombreIgnoreCase(Long docenteId, String nombre);
+    // Para no repetir códigos de aula
+    boolean existsByCodigo(String codigo);
 }

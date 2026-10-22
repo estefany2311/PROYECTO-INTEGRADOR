@@ -127,6 +127,11 @@ export default function FormularioAula() {
                     {g.nombre}
                   </span>
                 ))}
+                  {/* Código que el alumno escribe en la tablet para encontrar su aula */}
+                  <span className="ms-auto small text-secondary">
+                    Código para tus alumnos:{" "}
+                    <strong style={{ color: "#9B22E1", letterSpacing: "2px" }}>{a.codigo}</strong>
+                  </span>
               </li>
             ))}
           </ul>
