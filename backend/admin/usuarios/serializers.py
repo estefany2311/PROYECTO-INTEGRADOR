@@ -1,5 +1,7 @@
 from rest_framework import serializers
-from .models import Usuario, Rol
+from .models import Permiso, Usuario, Rol
+
+PERMISOS_ROLES_ADMIN = {'roles.ver', 'roles.editar'}
 
 
 class DocenteCreateSerializer(serializers.ModelSerializer):
@@ -40,3 +42,93 @@ class DocenteListSerializer(serializers.ModelSerializer):
         if asignacion is None:
             return None
         return {'id': asignacion.colegio.id, 'nombre': asignacion.colegio.nombre}
+
+
+def nombre_completo(usuario):
+    return usuario.get_full_name() or usuario.username
+
+
+class MiPerfilSerializer(serializers.ModelSerializer):
+    nombre_completo = serializers.SerializerMethodField()
+    rol = serializers.CharField(source='rol.nombre', read_only=True, default=None)
+    permisos = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Usuario
+        fields = ['id', 'username', 'nombre_completo', 'rol', 'permisos']
+        read_only_fields = fields
+
+    def get_nombre_completo(self, obj):
+        return nombre_completo(obj)
+
+    def get_permisos(self, obj):
+        if obj.rol is None:
+            return []
+        return sorted(obj.rol.permisos_asignados.values_list('permiso__codigo', flat=True))
+
+
+class PermisoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Permiso
+        fields = ['id', 'codigo', 'modulo', 'accion', 'descripcion']
+        read_only_fields = fields
+
+
+class RolSerializer(serializers.ModelSerializer):
+    total_usuarios = serializers.IntegerField(read_only=True)
+    permisos = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Rol
+        fields = ['id', 'nombre', 'total_usuarios', 'permisos']
+        read_only_fields = fields
+
+    def get_permisos(self, obj):
+        return sorted(asignado.permiso.codigo for asignado in obj.permisos_asignados.all())
+
+
+class ActualizarPermisosRolSerializer(serializers.Serializer):
+    permisos = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+
+    def validate_permisos(self, codigos):
+        codigos = list(dict.fromkeys(codigo.strip() for codigo in codigos))
+        permisos = list(Permiso.objects.filter(codigo__in=codigos))
+        inexistentes = sorted(set(codigos) - {p.codigo for p in permisos})
+        if inexistentes:
+            raise serializers.ValidationError(
+                f"Estos permisos no existen: {', '.join(inexistentes)}."
+            )
+
+        rol = self.context['rol']
+        if rol.nombre == 'ADMIN' and not PERMISOS_ROLES_ADMIN <= set(codigos):
+            raise serializers.ValidationError(
+                "El rol ADMIN debe conservar los permisos de roles para no perder el acceso."
+            )
+        return permisos
+
+
+class UsuarioListSerializer(serializers.ModelSerializer):
+    nombre_completo = serializers.SerializerMethodField()
+    rol = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Usuario
+        fields = ['id', 'username', 'nombre_completo', 'email', 'rol', 'is_active']
+        read_only_fields = fields
+
+    def get_nombre_completo(self, obj):
+        return nombre_completo(obj)
+
+    def get_rol(self, obj):
+        if obj.rol is None:
+            return None
+        return {'id': obj.rol.id, 'nombre': obj.rol.nombre}
+
+
+class CambiarRolSerializer(serializers.Serializer):
+    rol = serializers.PrimaryKeyRelatedField(queryset=Rol.objects.all())
+
+    def validate(self, attrs):
+        if self.context['usuario'].pk == self.context['request'].user.pk:
+            raise serializers.ValidationError({'rol': "No puedes cambiar tu propio rol."})
+        return attrs

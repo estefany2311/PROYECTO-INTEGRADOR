@@ -170,3 +170,92 @@ class PermisosTests(TestCase):
         permiso = Permiso.objects.get(codigo="colegios.ver")
         with self.assertRaises(IntegrityError), transaction.atomic():
             RolPermiso.objects.create(rol=self.docente, permiso=permiso)
+
+
+class RolesPermisosApiTests(BaseApiTest):
+    URL_ME = "/api/auth/me/"
+    URL_ROLES = "/api/roles/"
+    URL_COLEGIOS = "/api/colegios/"
+
+    def setUp(self):
+        super().setUp()
+        self.rol_docente = Rol.objects.get(nombre="DOCENTE")
+        self.rol_admin = Rol.objects.get(nombre="ADMIN")
+        self.client.force_authenticate(self.admin)
+
+    def url_permisos(self, rol):
+        return f"{self.URL_ROLES}{rol.id}/permisos/"
+
+    def permisos_de(self, rol):
+        return list(rol.permisos_asignados.values_list("permiso__codigo", flat=True))
+
+    def test_me_devuelve_los_permisos_del_rol(self):
+        self.client.force_authenticate(self.docente)
+        resp = self.client.get(self.URL_ME)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["username"], "docente_test")
+        self.assertEqual(resp.data["nombre_completo"], "Doc Prueba")
+        self.assertEqual(resp.data["rol"], "DOCENTE")
+        self.assertIn("alumnos.crear", resp.data["permisos"])
+        self.assertNotIn("colegios.crear", resp.data["permisos"])
+
+    def test_admin_lista_roles_y_docente_recibe_403(self):
+        resp = self.client.get(self.URL_ROLES)
+        self.assertEqual(resp.status_code, 200)
+        admin = next(r for r in resp.data if r["nombre"] == "ADMIN")
+        self.assertEqual(len(admin["permisos"]), Permiso.objects.count())
+        self.assertEqual(admin["total_usuarios"], 1)
+
+        self.client.force_authenticate(self.docente)
+        self.assertEqual(self.client.get(self.URL_ROLES).status_code, 403)
+
+    def test_cambiar_permisos_de_docente_cambia_lo_que_puede_hacer(self):
+        colegio = {"codigo_modular": "0512346", "nombre": "IE N° 50123 Ccollpa", "region": "Cusco"}
+        self.client.force_authenticate(self.docente)
+        self.assertEqual(self.client.post(self.URL_COLEGIOS, colegio, format="json").status_code, 403)
+
+        self.client.force_authenticate(self.admin)
+        nuevos = self.permisos_de(self.rol_docente) + ["colegios.crear"]
+        resp = self.client.put(self.url_permisos(self.rol_docente), {"permisos": nuevos}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("colegios.crear", resp.data["permisos"])
+
+        self.client.force_authenticate(self.docente)
+        self.assertEqual(self.client.post(self.URL_COLEGIOS, colegio, format="json").status_code, 201)
+
+    def test_admin_no_puede_quedarse_sin_roles_editar(self):
+        sin_editar = [c for c in self.permisos_de(self.rol_admin) if c != "roles.editar"]
+        resp = self.client.put(self.url_permisos(self.rol_admin), {"permisos": sin_editar}, format="json")
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn(
+            "El rol ADMIN debe conservar los permisos de roles para no perder el acceso.",
+            resp.data["permisos"],
+        )
+        self.assertTrue(self.rol_admin.tiene_permiso("roles.editar"))
+
+    def test_codigo_de_permiso_inexistente_devuelve_400(self):
+        resp = self.client.put(
+            self.url_permisos(self.rol_docente), {"permisos": ["colegios.ver", "naves.volar"]}, format="json"
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("naves.volar", resp.data["permisos"][0])
+
+    def test_cambiar_rol_de_otro_usuario(self):
+        resp = self.client.patch(f"/api/usuarios/{self.docente.id}/rol/", {"rol": self.rol_admin.id}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["rol"]["nombre"], "ADMIN")
+        self.docente.refresh_from_db()
+        self.assertEqual(self.docente.rol, self.rol_admin)
+
+    def test_no_puede_cambiar_su_propio_rol(self):
+        resp = self.client.patch(f"/api/usuarios/{self.admin.id}/rol/", {"rol": self.rol_docente.id}, format="json")
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("No puedes cambiar tu propio rol.", resp.data["rol"])
+        self.admin.refresh_from_db()
+        self.assertEqual(self.admin.rol, self.rol_admin)
+
+    def test_buscar_usuarios(self):
+        resp = self.client.get("/api/usuarios/", {"search": "docente_test"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual([u["username"] for u in resp.data], ["docente_test"])
+        self.assertEqual(resp.data[0]["rol"]["nombre"], "DOCENTE")

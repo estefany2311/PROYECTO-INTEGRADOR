@@ -63,10 +63,25 @@ class ColegioAPITests(APITestCase):
         self.assertEqual(resp.data['nombre'], 'IE N° 70345 Chucuito')
         self.assertEqual(resp.data['total_docentes'], 0)
 
-    def test_docente_recibe_403_al_listar(self):
+    def test_docente_puede_listar_colegios(self):
+        # DOCENTE tiene el permiso colegios.ver
         self.client.force_authenticate(self.docente1)
         resp = self.client.get(self.URL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_docente_no_puede_crear_colegio(self):
+        self.client.force_authenticate(self.docente1)
+        resp = self.client.post(self.URL, {
+            'codigo_modular': '0734120', 'nombre': 'IE N° 70345 Chucuito', 'region': 'Puno',
+        }, format='json')
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Colegio.objects.filter(codigo_modular='0734120').exists())
+
+    def test_docente_no_puede_asignar_docentes(self):
+        self.client.force_authenticate(self.docente1)
+        resp = self.client.post(self.url_docentes(self.ccollpa), {'docentes': [self.docente2.id]}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(AsignacionDocente.objects.exists())
 
     def test_codigo_modular_de_6_digitos_devuelve_400(self):
         resp = self.client.post(self.URL, {

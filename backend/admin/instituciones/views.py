@@ -4,13 +4,15 @@ from rest_framework import filters, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from usuarios.permissions import EsAdmin
+from usuarios.permissions import TienePermiso
 from .models import AsignacionDocente, Colegio
 from .serializers import AsignarDocentesSerializer, ColegioSerializer
 
 
 class ColegioViewSet(viewsets.ModelViewSet):
-    permission_classes = [EsAdmin]
+    permission_classes = [TienePermiso]
+    modulo = 'colegios'
+    acciones_personalizadas = {'docentes': 'editar'}
     serializer_class = ColegioSerializer
     # Los colegios no se eliminan: se desactivan con activo=False
     http_method_names = ['get', 'post', 'put', 'patch']

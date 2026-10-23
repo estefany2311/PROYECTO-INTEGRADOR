@@ -930,6 +930,255 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Roles y permisos",
+      "description": "US-45: roles, permisos y cambio de rol. Ejecutar después de \"Login admin\", \"2 Crear docente valido\" y \"9a Login Docente\".",
+      "item": [
+        {
+          "name": "1 Mi perfil (auth/me)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "const perfil = pm.response.json();",
+                  "pm.test(\"Rol ADMIN con la lista de permisos\", () => {",
+                  "  pm.expect(perfil.rol).to.eql(\"ADMIN\");",
+                  "  pm.expect(perfil.permisos).to.include(\"roles.editar\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2 Listar permisos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Cada permiso tiene código, módulo y acción\", () => {",
+                  "  const permisos = pm.response.json();",
+                  "  pm.expect(permisos.length).to.be.above(0);",
+                  "  permisos.forEach(p => pm.expect(p).to.include.keys(\"codigo\", \"modulo\", \"accion\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/permisos/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "permisos",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3 Listar roles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "const roles = pm.response.json();",
+                  "const docente = roles.find(r => r.nombre === \"DOCENTE\");",
+                  "const admin = roles.find(r => r.nombre === \"ADMIN\");",
+                  "pm.test(\"Existen los roles ADMIN y DOCENTE\", () => pm.expect(docente && admin).to.be.ok);",
+                  "pm.collectionVariables.set(\"rol_docente_id\", docente.id);",
+                  "pm.collectionVariables.set(\"rol_admin_id\", admin.id);",
+                  "// Se guardan los permisos actuales de DOCENTE para reenviarlos sin cambiarlos",
+                  "pm.collectionVariables.set(\"permisos_docente\", JSON.stringify(docente.permisos));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/roles/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4 Actualizar permisos de DOCENTE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Conserva los permisos enviados\", () => {",
+                  "  const enviados = JSON.parse(pm.collectionVariables.get(\"permisos_docente\"));",
+                  "  pm.expect(pm.response.json().permisos).to.have.members(enviados);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/roles/{{rol_docente_id}}/permisos/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                "{{rol_docente_id}}",
+                "permisos",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permisos\": {{permisos_docente}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5 Cambiar rol de un usuario",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const buscar = pm.collectionVariables.get(\"docente_user\") || \"\";",
+                  "pm.sendRequest({ url: pm.collectionVariables.get(\"base_url\") + \"/usuarios/?search=\" + encodeURIComponent(buscar), header: [{ key: \"Authorization\", value: \"Bearer \" + pm.collectionVariables.get(\"token\") }] }, (err, res) => {",
+                  "  const usuario = res.json().find(u => u.rol && u.rol.nombre === \"DOCENTE\");",
+                  "  pm.collectionVariables.set(\"usuario_id\", usuario ? usuario.id : 0);",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"El usuario queda con rol DOCENTE\", () => pm.expect(pm.response.json().rol.nombre).to.eql(\"DOCENTE\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/usuarios/{{usuario_id}}/rol/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{usuario_id}}",
+                "rol",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rol\": {{rol_docente_id}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6 Docente no puede ver roles (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"403 Forbidden\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/roles/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                ""
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "auth": {
@@ -990,6 +1239,22 @@
     },
     {
       "key": "docente_id",
+      "value": ""
+    },
+    {
+      "key": "rol_docente_id",
+      "value": ""
+    },
+    {
+      "key": "rol_admin_id",
+      "value": ""
+    },
+    {
+      "key": "permisos_docente",
+      "value": ""
+    },
+    {
+      "key": "usuario_id",
       "value": ""
     }
   ]
