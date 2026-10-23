@@ -24,6 +24,10 @@ public class Estudiante {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "grado_id")
     private Grado grado;
+    // T-185: avatar elegido por el docente (puede ser null al inicio)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "avatar_id")
+    private Avatar avatar;
 
     @Column(nullable = false)
     private boolean activo = true;
@@ -42,4 +46,6 @@ public class Estudiante {
     public void setGrado(Grado grado) { this.grado = grado; }
     public boolean isActivo() { return activo; }
     public void setActivo(boolean activo) { this.activo = activo; }
+    public Avatar getAvatar() { return avatar; }
+    public void setAvatar(Avatar avatar) { this.avatar = avatar; }
 }
