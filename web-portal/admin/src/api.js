@@ -60,3 +60,18 @@ export const actualizarColegio = (id, datos) =>
 
 export const asignarDocentes = (id, docentes) =>
   pedir(`/colegios/${id}/docentes/`, { method: "POST", body: JSON.stringify({ docentes }) });
+
+export const obtenerMiPerfil = () => pedir("/auth/me/");
+
+export const listarPermisos = () => pedir("/permisos/");
+
+export const listarRoles = () => pedir("/roles/");
+
+export const actualizarPermisosRol = (id, permisos) =>
+  pedir(`/roles/${id}/permisos/`, { method: "PUT", body: JSON.stringify({ permisos }) });
+
+export const listarUsuarios = (search = "") =>
+  pedir(`/usuarios/${search ? `?${new URLSearchParams({ search })}` : ""}`);
+
+export const cambiarRolUsuario = (id, rol) =>
+  pedir(`/usuarios/${id}/rol/`, { method: "PATCH", body: JSON.stringify({ rol }) });

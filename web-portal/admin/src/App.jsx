@@ -4,6 +4,7 @@ import CrearDocente from "./CrearDocente";
 import ListaDocentes from "./ListaDocentes";
 import Layout from "./components/Layout";
 import Colegios from "./pages/Colegios";
+import RolesPermisos from "./pages/RolesPermisos";
 import { sesion } from "./api";
 import "./App.css";
 
@@ -69,6 +70,8 @@ export default function App() {
           onNoAutorizado={sesionExpirada}
         />
       )}
+
+      {pagina === "roles" && <RolesPermisos onNoAutorizado={sesionExpirada} />}
 
       {pagina === "docentes" && (
         <section>

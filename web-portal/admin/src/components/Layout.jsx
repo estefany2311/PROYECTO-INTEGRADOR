@@ -16,7 +16,7 @@ const SECCIONES = [
     titulo: "Seguridad",
     enlaces: [
       { id: "usuarios", icono: "bi-people", texto: "Usuarios" },
-      { id: "roles", icono: "bi-shield-check", texto: "Roles y permisos" },
+      { id: "roles", icono: "bi-shield-check", texto: "Roles y permisos", disponible: true, etiqueta: "US-45" },
     ],
   },
   {
