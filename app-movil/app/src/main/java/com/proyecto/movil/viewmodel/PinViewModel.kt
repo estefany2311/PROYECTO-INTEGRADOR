@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.proyecto.movil.Dependencias
+import com.proyecto.movil.model.local.IAlmacenSesion
+import com.proyecto.movil.model.local.SesionGuardada
 
 data class PinUiState(
     val pin: String = "",               // nunca se muestra, solo se cuentan los círculos rellenos
@@ -19,7 +22,8 @@ data class PinUiState(
 )
 
 class PinViewModel(
-    private val repository: ISesionRepository = SesionRepository()
+    private val repository: ISesionRepository = SesionRepository(),
+    private val almacen: IAlmacenSesion = Dependencias.almacenSesion
 ) : ViewModel() {
 
     companion object {
@@ -59,8 +63,14 @@ class PinViewModel(
         _uiState.update { it.copy(verificando = true, mensajeError = null) }
         viewModelScope.launch {
             when (val resultado = repository.iniciarSesion(estudianteId, pin)) {
-                is ResultadoLogin.Exito ->
-                    _uiState.update { it.copy(verificando = false, sesion = resultado.sesion) }
+                is ResultadoLogin.Exito -> {
+                    val sesion = resultado.sesion
+                    // T-205: primero se guarda el token cifrado y después se avisa a la pantalla
+                    almacen.guardar(
+                        SesionGuardada(sesion.token, sesion.estudianteId, sesion.nombre, sesion.avatarUrl)
+                    )
+                    _uiState.update { it.copy(verificando = false, sesion = sesion) }
+                }
                 is ResultadoLogin.PinIncorrecto -> fallar(MENSAJE_PIN_INCORRECTO)
                 is ResultadoLogin.Bloqueado -> fallar(MENSAJE_BLOQUEADO)
                 is ResultadoLogin.ErrorConexion -> fallar(MENSAJE_SIN_CONEXION)
