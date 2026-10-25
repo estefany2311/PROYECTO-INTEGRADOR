@@ -36,13 +36,10 @@ def codigos_permiso(request):
 
 
 def es_desactivacion(request):
-    datos = request.data if hasattr(request.data, 'get') else {}
-    return any(
-        datos.get(campo) is False or str(datos.get(campo)).lower() == 'false'
-        for campo in ('activo', 'is_active')
-        if campo in datos
-    )
-
+    """Un PATCH que solo cambia el estado (activar o desactivar) usa el permiso 'desactivar'."""
+    datos = request.data if hasattr(request.data, 'keys') else {}
+    campos = set(datos.keys())
+    return bool(campos) and campos <= {'activo', 'is_active'}
 
 class TienePermiso(BasePermission):
     """

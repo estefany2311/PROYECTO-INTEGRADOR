@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Login from "./Login";
 import CrearDocente from "./CrearDocente";
 import ListaDocentes from "./ListaDocentes";
 import Layout from "./components/Layout";
 import Colegios from "./pages/Colegios";
 import RolesPermisos from "./pages/RolesPermisos";
-import { sesion } from "./api";
+import { obtenerMiPerfil, sesion } from "./api";
 import "./App.css";
 
 export default function App() {
@@ -15,14 +15,34 @@ export default function App() {
   const [pagina, setPagina] = useState("colegios");
   // La búsqueda de la topbar abre Colegios con ese texto; el id fuerza a reiniciar la página
   const [busquedaGlobal, setBusquedaGlobal] = useState({ id: 0, texto: "" });
+    const [perfil, setPerfil] = useState(null);
+
+  // Al iniciar sesión, trae el rol y los permisos del usuario
+  useEffect(() => {
+    if (!autenticado) return;
+    obtenerMiPerfil()
+      .then(setPerfil)
+      .catch((err) => {
+        if (err.estado === 401) {
+          sesion.limpiar();
+          setAutenticado(false);
+          setAviso("Tu sesión expiró. Inicia sesión nuevamente.");
+        }
+      });
+  }, [autenticado]);
+
+  const permisos = perfil?.permisos ?? [];
+  const puede = (codigo) => permisos.includes(codigo);
 
   const cerrarSesion = () => {
+    setPerfil(null);
     sesion.limpiar();
     setAutenticado(false);
     setAviso("");
   };
 
   const sesionExpirada = () => {
+    setPerfil(null);
     sesion.limpiar();
     setAutenticado(false);
     setAviso("Tu sesión expiró. Inicia sesión nuevamente.");
@@ -54,26 +74,38 @@ export default function App() {
       </div>
     );
   }
+  ''
+    if (!perfil) {
+    return <div className="p-5 text-center text-secondary">Cargando permisos…</div>;
+  }
+
+  const modulos = ["colegios", "docentes", "roles"];
+  const paginaActual = puede(`${pagina}.ver`) ? pagina : modulos.find((m) => puede(`${m}.ver`));
 
   return (
-    <Layout
-      pagina={pagina}
+      <Layout
+      pagina={paginaActual}
       onNavegar={setPagina}
       onBuscar={buscarDesdeTopbar}
       onCerrarSesion={cerrarSesion}
-      usuario={sesion.usuario}
+      usuario={perfil.nombre_completo || sesion.usuario}
+      rol={perfil.rol}
+      permisos={permisos}
     >
-      {pagina === "colegios" && (
+      {!paginaActual && (
+        <div className="alert alert-warning">No tienes acceso a ningún módulo. Contacta al administrador.</div>
+    )}
+        {paginaActual === "colegios" && (
         <Colegios
           key={busquedaGlobal.id}
           busquedaInicial={busquedaGlobal.texto}
           onNoAutorizado={sesionExpirada}
+          puede={puede}
         />
       )}
+      {paginaActual === "roles" && <RolesPermisos onNoAutorizado={sesionExpirada} />}
 
-      {pagina === "roles" && <RolesPermisos onNoAutorizado={sesionExpirada} />}
-
-      {pagina === "docentes" && (
+      {paginaActual === "docentes" && (
         <section>
           <div className="page-title mb-4">
             <h1>

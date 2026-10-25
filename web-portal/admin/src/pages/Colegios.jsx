@@ -224,7 +224,7 @@ function ModalAsignar({ colegio, onCerrar, onGuardado, onNoAutorizado }) {
   );
 }
 
-export default function Colegios({ busquedaInicial = "", onNoAutorizado }) {
+  export default function Colegios({ busquedaInicial = "", onNoAutorizado, puede = () => true }) {
   const [colegios, setColegios] = useState([]);
   const [busqueda, setBusqueda] = useState(busquedaInicial);
   const [region, setRegion] = useState("");
@@ -293,9 +293,11 @@ export default function Colegios({ busquedaInicial = "", onNoAutorizado }) {
           <h1>Colegios <span className="story">US-44</span></h1>
           <div className="breadcrumb text-secondary">Instituciones / Colegios</div>
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => setModalColegio({ colegio: null })}>
-          <i className="bi bi-plus-lg me-1"></i>Registrar colegio
-        </button>
+                {puede("colegios.crear") && (
+          <button type="button" className="btn btn-primary" onClick={() => setModalColegio({ colegio: null })}>
+            <i className="bi bi-plus-lg me-1"></i>Registrar colegio
+          </button>
+        )}
       </div>
 
       {exito && (
@@ -365,16 +367,22 @@ export default function Colegios({ busquedaInicial = "", onNoAutorizado }) {
                       <span className={`badge-soft ${c.activo ? "bs-ok" : "bs-off"}`}>{c.activo ? "Activo" : "Inactivo"}</span>
                     </td>
                     <td className="text-end text-nowrap">
-                      <button type="button" className="icon-btn" title="Asignar docentes" onClick={() => setModalAsignar(c)}>
-                        <i className="bi bi-person-plus"></i>
-                      </button>{" "}
-                      <button type="button" className="icon-btn" title="Editar" onClick={() => setModalColegio({ colegio: c })}>
-                        <i className="bi bi-pencil"></i>
-                      </button>{" "}
-                      <button type="button" className="icon-btn" title={c.activo ? "Desactivar" : "Activar"}
-                        onClick={() => alternarActivo(c)}>
-                        <i className={`bi ${c.activo ? "bi-slash-circle" : "bi-check-circle"}`}></i>
-                      </button>
+                                            {puede("colegios.editar") && (
+                        <button type="button" className="icon-btn" title="Asignar docentes" onClick={() => setModalAsignar(c)}>
+                          <i className="bi bi-person-plus"></i>
+                        </button>
+                      )}
+                      {puede("colegios.editar") && (
+                        <button type="button" className="icon-btn" title="Editar" onClick={() => setModalColegio({ colegio: c })}>
+                          <i className="bi bi-pencil"></i>
+                        </button>
+                      )}
+                      {puede("colegios.desactivar") && (
+                        <button type="button" className="icon-btn" title={c.activo ? "Desactivar" : "Activar"}
+                          onClick={() => alternarActivo(c)}>
+                          <i className={`bi ${c.activo ? "bi-slash-circle" : "bi-check-circle"}`}></i>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -33,9 +33,11 @@ const iniciales = (texto) =>
     .map((parte) => parte[0].toUpperCase())
     .join("") || "AD";
 
-export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, usuario, children }) {
+export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, usuario, permisos = [], rol, children }) {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+    // Un enlace disponible solo se muestra si el rol tiene el permiso "<modulo>.ver"
+  const puedeVer = (enlace) => !enlace.disponible || permisos.includes(`${enlace.id}.ver`);
 
   const navegar = (id) => {
     onNavegar(id);
@@ -61,7 +63,7 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
           {SECCIONES.map((seccion) => (
             <div key={seccion.titulo}>
               <div className="nav-section">{seccion.titulo}</div>
-              {seccion.enlaces.map((enlace) =>
+              {seccion.enlaces.filter(puedeVer).map((enlace) =>
                 enlace.disponible ? (
                   <button
                     key={enlace.id}
@@ -114,7 +116,7 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
               <div className="avatar">{iniciales(usuario)}</div>
               <div className="lh-sm d-none d-sm-block">
                 <div className="fw-semibold">{usuario || "Administrador"}</div>
-                <div className="note">Administrador</div>
+                  <div className="note">{rol || "Sin rol"}</div>
               </div>
             </div>
             <button type="button" className="btn btn-sm btn-outline-danger" onClick={onCerrarSesion}>
