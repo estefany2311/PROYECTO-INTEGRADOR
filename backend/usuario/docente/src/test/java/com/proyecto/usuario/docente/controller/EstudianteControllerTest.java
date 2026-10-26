@@ -99,6 +99,37 @@ class EstudianteControllerTest {
                 .andExpect(jsonPath("$.mensaje").value("El aula no pertenece al docente"));
     }
 
+    // T-227: el alumno ya existe en el aula -> 409
+    @Test
+    void alumnoDuplicadoDevuelve409() throws Exception {
+        when(service.registrar(eq(1L), eq(10L), any(EstudianteRequest.class)))
+                .thenThrow(new ReglaNegocioException(
+                        "Ya existe un alumno con ese nombre en esta aula", HttpStatus.CONFLICT));
+
+        mvc.perform(post("/api/docente/aulas/10/estudiantes")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombres\":\"Ana\",\"apellidos\":\"Quispe\",\"gradoId\":1}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.mensaje")
+                        .value("Ya existe un alumno con ese nombre en esta aula"));
+    }
+
+    // T-227: el grado no es uno de los que atiende el aula -> 400
+    @Test
+    void gradoQueElAulaNoAtiendeDevuelve400() throws Exception {
+        when(service.registrar(eq(1L), eq(10L), any(EstudianteRequest.class)))
+                .thenThrow(new ReglaNegocioException(
+                        "El grado no corresponde a esta aula", HttpStatus.BAD_REQUEST));
+
+        mvc.perform(post("/api/docente/aulas/10/estudiantes")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombres\":\"Ana\",\"apellidos\":\"Quispe\",\"gradoId\":6}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("El grado no corresponde a esta aula"));
+    }
+
     @Test
     void listarDevuelve200ConLosAlumnos() throws Exception {
         when(service.listar(1L, 10L)).thenReturn(List.of(
