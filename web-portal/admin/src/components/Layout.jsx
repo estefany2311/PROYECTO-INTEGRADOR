@@ -21,7 +21,7 @@ const SECCIONES = [
   },
   {
     titulo: "Contenido",
-    enlaces: [{ id: "catalogo", icono: "bi-journal-richtext", texto: "Catálogo" }],
+        enlaces: [{ id: "catalogo", icono: "bi-journal-richtext", texto: "Catálogo", disponible: true }],
   },
 ];
 

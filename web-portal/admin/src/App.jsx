@@ -5,6 +5,7 @@ import ListaDocentes from "./ListaDocentes";
 import Layout from "./components/Layout";
 import Colegios from "./pages/Colegios";
 import RolesPermisos from "./pages/RolesPermisos";
+import Catalogo from "./pages/Catalogo";
 import { obtenerMiPerfil, sesion } from "./api";
 import "./App.css";
 
@@ -15,7 +16,7 @@ export default function App() {
   const [pagina, setPagina] = useState("colegios");
   // La búsqueda de la topbar abre Colegios con ese texto; el id fuerza a reiniciar la página
   const [busquedaGlobal, setBusquedaGlobal] = useState({ id: 0, texto: "" });
-    const [perfil, setPerfil] = useState(null);
+  const [perfil, setPerfil] = useState(null);
 
   // Al iniciar sesión, trae el rol y los permisos del usuario
   useEffect(() => {
@@ -74,16 +75,16 @@ export default function App() {
       </div>
     );
   }
-  ''
-    if (!perfil) {
+
+  if (!perfil) {
     return <div className="p-5 text-center text-secondary">Cargando permisos…</div>;
   }
 
-  const modulos = ["colegios", "docentes", "roles"];
+  const modulos = ["colegios", "docentes", "roles", "catalogo"];
   const paginaActual = puede(`${pagina}.ver`) ? pagina : modulos.find((m) => puede(`${m}.ver`));
 
   return (
-      <Layout
+    <Layout
       pagina={paginaActual}
       onNavegar={setPagina}
       onBuscar={buscarDesdeTopbar}
@@ -94,8 +95,9 @@ export default function App() {
     >
       {!paginaActual && (
         <div className="alert alert-warning">No tienes acceso a ningún módulo. Contacta al administrador.</div>
-    )}
-        {paginaActual === "colegios" && (
+      )}
+
+      {paginaActual === "colegios" && (
         <Colegios
           key={busquedaGlobal.id}
           busquedaInicial={busquedaGlobal.texto}
@@ -103,7 +105,10 @@ export default function App() {
           puede={puede}
         />
       )}
+
       {paginaActual === "roles" && <RolesPermisos onNoAutorizado={sesionExpirada} />}
+
+      {paginaActual === "catalogo" && <Catalogo onNoAutorizado={sesionExpirada} puede={puede} />}
 
       {paginaActual === "docentes" && (
         <section>

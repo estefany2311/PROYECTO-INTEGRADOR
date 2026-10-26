@@ -75,3 +75,12 @@ export const listarUsuarios = (search = "") =>
 
 export const cambiarRolUsuario = (id, rol) =>
   pedir(`/usuarios/${id}/rol/`, { method: "PATCH", body: JSON.stringify({ rol }) });
+
+export const listarLecturas = (params = {}) => {
+  const filtros = Object.entries(params).filter(([, valor]) => valor);
+  const query = new URLSearchParams(filtros).toString();
+  return pedir(`/lecturas/${query ? `?${query}` : ""}`);
+};
+
+export const crearLectura = (datos) =>
+  pedir("/lecturas/", { method: "POST", body: JSON.stringify(datos) });
