@@ -75,7 +75,19 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("mapa") {
-                            PantallaMapa()
+                            PantallaMapa(onSalir = { codigoAula ->
+                                // T-208: vuelve a "¿Quién eres?" del mismo salón para que entre otro niño.
+                                // Si no hay código guardado, vuelve a pedir el código del aula.
+                                val destino = if (codigoAula.isNullOrBlank()) "codigoAula"
+                                else "perfiles/${Uri.encode(codigoAula)}"
+                                // Se borra el historial: con "atrás" no se regresa al mapa del niño anterior
+                                navController.navigate("codigoAula") {
+                                    popUpTo(navController.graph.id) { inclusive = true }
+                                }
+                                if (!codigoAula.isNullOrBlank()) {
+                                    navController.navigate("perfiles/${Uri.encode(codigoAula)}")
+                                }
+                            })
                         }
                     }
                 }
