@@ -203,4 +203,34 @@ class EstudianteControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.mensaje").value("El alumno no existe en esta aula"));
     }
+
+    // T-228: el alumno pertenece a otro aula -> 404 al intentar editarlo
+    @Test
+    void actualizarAlumnoDeOtraAulaDevuelve404() throws Exception {
+        when(service.actualizar(eq(1L), eq(10L), eq(99L), any(EstudianteRequest.class)))
+                .thenThrow(new ReglaNegocioException(
+                        "El alumno no existe en esta aula", HttpStatus.NOT_FOUND));
+
+        mvc.perform(put("/api/docente/aulas/10/estudiantes/99")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombres\":\"Ana\",\"apellidos\":\"Quispe\",\"gradoId\":1}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje").value("El alumno no existe en esta aula"));
+    }
+
+    // T-228: desactivar en un aula de otro docente no se permite
+    @Test
+    void desactivarEnAulaAjenaDevuelve403() throws Exception {
+        when(service.cambiarEstado(2L, 10L, 5L, false))
+                .thenThrow(new ReglaNegocioException(
+                        "El aula no pertenece al docente", HttpStatus.FORBIDDEN));
+
+        mvc.perform(patch("/api/docente/aulas/10/estudiantes/5/estado")
+                        .header("X-Docente-Id", 2)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"activo\":false}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.mensaje").value("El aula no pertenece al docente"));
+    }
 }

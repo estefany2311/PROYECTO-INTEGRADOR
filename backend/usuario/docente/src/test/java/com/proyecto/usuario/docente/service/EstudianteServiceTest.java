@@ -250,6 +250,43 @@ class EstudianteServiceTest {
         verify(estudianteRepository, never()).save(any());
     }
 
+    // T-228: editar los datos no debe reactivar a un alumno dado de baja
+    @Test
+    void editarNoReactivaAUnAlumnoInactivo() {
+        Estudiante e = alumno("Luis", "Mamani");
+        e.setActivo(false);
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(5L, 10L)).thenReturn(Optional.of(e));
+        when(estudianteRepository.existsByAulaIdAndNombresIgnoreCaseAndApellidosIgnoreCaseAndIdNot(
+                10L, "Luis", "Mamani", 5L)).thenReturn(false);
+        when(estudianteRepository.save(any(Estudiante.class))).thenAnswer(i -> i.getArgument(0));
+
+        EstudianteResponse resp = service.actualizar(1L, 10L, 5L,
+                new EstudianteRequest("Luis", "Mamani", (short) 1));
+
+        assertFalse(resp.activo());
+    }
+
+    // T-228: la tablet pide solo activos; el inactivo sigue en el portal docente pero no ahí
+    @Test
+    void laTabletNoVeAlAlumnoInactivo() {
+        Estudiante ana = alumno("Ana", "Quispe");
+        Estudiante luis = alumno("Luis", "Mamani");
+        luis.setActivo(false);
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByAulaIdOrderByApellidosAscNombresAsc(10L))
+                .thenReturn(List.of(ana, luis));
+        when(estudianteRepository.findByAulaIdAndActivoTrueOrderByApellidosAscNombresAsc(10L))
+                .thenReturn(List.of(ana));
+
+        List<EstudianteResponse> portal = service.listar(1L, 10L);
+        List<EstudianteResponse> tablet = service.listarActivos(1L, 10L);
+
+        assertEquals(2, portal.size()); // el docente sí lo sigue viendo
+        assertEquals(1, tablet.size()); // la tablet no
+        assertEquals("Ana", tablet.get(0).nombres());
+    }
+
     // crea un alumno de prueba en el aula del docente 1, en 1.º grado
     private Estudiante alumno(String nombres, String apellidos) {
         Estudiante e = new Estudiante();
