@@ -127,7 +127,10 @@ public class EstudianteService {
     }
 
     private EstudianteResponse toResponse(Estudiante e) {
+        Short avatarId = e.getAvatar() != null ? e.getAvatar().getId() : null;
+        String avatarUrl = e.getAvatar() != null ? e.getAvatar().getUrl() : null;
         return new EstudianteResponse(e.getId(), e.getNombres(), e.getApellidos(),
-                e.getGrado().getId(), e.getGrado().getNombre(), e.isActivo());
+                e.getGrado().getId(), e.getGrado().getNombre(), e.isActivo(),
+                avatarId, avatarUrl, e.tienePin());
     }
 }

@@ -24,16 +24,21 @@ public class Estudiante {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "grado_id")
     private Grado grado;
-    // T-185: avatar elegido por el docente (puede ser null al inicio)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "avatar_id")
-    private Avatar avatar;
 
     @Column(nullable = false)
     private boolean activo = true;
 
     @Column(name = "creado_en", insertable = false, updatable = false)
     private LocalDateTime creadoEn;
+
+    // T-185: avatar elegido por el docente (null al inicio)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "avatar_id")
+    private Avatar avatar;
+
+    // T-186: PIN cifrado con BCrypt. A propósito NO tiene getter: nunca sale en una respuesta
+    @Column(name = "pin_hash")
+    private String pinHash;
 
     public Long getId() { return id; }
     public String getNombres() { return nombres; }
@@ -48,4 +53,7 @@ public class Estudiante {
     public void setActivo(boolean activo) { this.activo = activo; }
     public Avatar getAvatar() { return avatar; }
     public void setAvatar(Avatar avatar) { this.avatar = avatar; }
+    public void setPinHash(String pinHash) { this.pinHash = pinHash; }
+    // solo dice si ya tiene PIN, sin revelar nada
+    public boolean tienePin() { return pinHash != null; }
 }
