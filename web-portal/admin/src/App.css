@@ -1,18 +1,28 @@
-/* Paleta del proyecto (morado #9B22E1) — basada en docs/mockups/mockup-admin.html */
+/* Paleta del proyecto: azul noche, turquesa y naranja (marca compartida con la app) */
 :root {
-  --primary: #9B22E1;
-  --primary-soft: #f3e8fd;
-  --primary-dark: #7a16b5;
-  --sidebar: #1e1b2e;
-  --sidebar-text: #b9b4cc;
-  --body: #f5f6fa;
-  --border: #e7e8ef;
-  --text: #1f2333;
-  --muted: #6b7085;
-  --danger: #ef4444;
-  --bs-primary: #9B22E1;
-  --bs-primary-rgb: 155, 34, 225;
-  --bs-link-color: #9B22E1;
+  /* Marca compartida con la app del estudiante (ColoresAventura.kt) */
+  --brand-turquesa: #0E9F92;   /* turquesa de la marca: detalles, foco, selección */
+  --accent: #FF9F1C;           /* naranja de la app: logo, insignias, menú activo */
+  --accent-soft: #FFF3DD;
+  --accent-text: #8A5300;      /* naranja oscuro para textos sobre fondo claro */
+
+  /* Botones y enlaces: turquesa un poco más oscuro para que el texto blanco se lea bien */
+  --primary: #0A8378;
+  --primary-soft: #E0F5F3;
+  --primary-dark: #08665E;
+
+  --sidebar: #1D3557;          /* azul noche */
+  --sidebar-text: #B8C4D6;
+  --body: #F4FAFF;             /* cielo muy claro */
+  --border: #E1E8F0;
+  --text: #1D3557;
+  --muted: #5F6F86;
+  --success: #2EC4B6;
+  --danger: #E63946;
+
+  --bs-primary: #0A8378;
+  --bs-primary-rgb: 10, 131, 120;
+  --bs-link-color: #0A8378;
 }
 
 body {
@@ -48,8 +58,8 @@ a { color: var(--primary); }
 }
 .form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
 .form-control:focus, .form-select:focus, .form-check-input:focus {
-  border-color: #c98af0;
-  box-shadow: 0 0 0 .2rem rgba(155, 34, 225, .15);
+  border-color: #7FD3CB;
+  box-shadow: 0 0 0 .2rem rgba(14, 159, 146, .18);
 }
 
 /* LAYOUT: SIDEBAR + TOPBAR */
@@ -65,8 +75,8 @@ a { color: var(--primary); }
   transition: transform .2s;
 }
 .brand { display: flex; align-items: center; gap: 10px; padding: 20px 22px; color: #fff; font-weight: 700; font-size: 16px; }
-.brand-logo { width: 34px; height: 34px; border-radius: 10px; background: var(--primary); display: grid; place-items: center; font-size: 18px; }
-.nav-section { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #7d7891; padding: 18px 22px 6px; }
+.brand-logo { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: var(--sidebar); display: grid; place-items: center; font-size: 18px; }
+.nav-section { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #8EA0BC; padding: 18px 22px 6px; }
 .side-link {
   display: flex;
   align-items: center;
@@ -82,12 +92,12 @@ a { color: var(--primary); }
   cursor: pointer;
 }
 .side-link:hover { color: #fff; background: rgba(255, 255, 255, .04); }
-.side-link.active { color: #fff; background: rgba(155, 34, 225, .18); border-left-color: var(--primary); }
+.side-link.active { color: #fff; background: rgba(255, 159, 28, .14); border-left-color: var(--accent); }
 .side-link.disabled { opacity: .5; cursor: default; }
 .side-link.disabled:hover { color: var(--sidebar-text); background: none; }
 .side-link i { font-size: 17px; }
 .side-link .tag { margin-left: auto; font-size: 10px; background: rgba(255, 255, 255, .08); padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
-.sidebar-backdrop { position: fixed; inset: 0; background: rgba(15, 12, 30, .45); z-index: 1035; }
+.sidebar-backdrop { position: fixed; inset: 0; background: rgba(13, 27, 46, .45); z-index: 1035; }
 
 .main { margin-left: 250px; min-height: 100vh; }
 .topbar {
@@ -109,13 +119,13 @@ a { color: var(--primary); }
 .content { padding: 28px; }
 .page-title h1 { font-size: 22px; font-weight: 700; margin: 0; }
 .breadcrumb { font-size: 12.5px; margin: 4px 0 0; }
-.story { font-size: 11px; font-weight: 600; color: var(--primary); background: var(--primary-soft); padding: 3px 8px; border-radius: 6px; margin-left: 8px; vertical-align: middle; }
+.story { font-size: 11px; font-weight: 600; color: var(--accent-text); background: var(--accent-soft); padding: 3px 8px; border-radius: 6px; margin-left: 8px; vertical-align: middle; }
 
 /* CARDS, TABLAS Y BADGES */
 .card { border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
 .card-header { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 20px; border-radius: 14px 14px 0 0 !important; }
 .card-header h2 { font-size: 15px; font-weight: 600; margin: 0; }
-.table { margin: 0; --bs-table-hover-bg: #faf7fe; }
+.table { margin: 0; --bs-table-hover-bg: #EEF7FD; }
 .table thead th {
   font-size: 11.5px;
   text-transform: uppercase;
@@ -144,7 +154,7 @@ a { color: var(--primary); }
   background: #fff;
   color: var(--muted);
 }
-.icon-btn:hover { color: var(--primary); border-color: #d9b6f3; }
+.icon-btn:hover { color: var(--primary); border-color: #9FD9D3; }
 .icon-btn:disabled { opacity: .5; }
 .mini-avatar { width: 32px; height: 32px; border-radius: 50%; display: inline-grid; place-items: center; font-weight: 600; font-size: 12px; background: var(--primary-soft); color: var(--primary); }
 .avatar-group .mini-avatar { border: 2px solid #fff; margin-left: -8px; }
@@ -162,8 +172,8 @@ tr.inactivo td { color: var(--muted); }
   cursor: pointer;
   color: var(--text);
 }
-.role-item:hover { border-color: #d9b6f3; }
-.role-item.active { border-color: var(--primary); background: #fcf8ff; }
+.role-item:hover { border-color: #9FD9D3; }
+.role-item.active { border-color: var(--primary); background: #F0FAF9; }
 .perm-table td:not(:first-child), .perm-table th:not(:first-child) { text-align: center; }
 
 /* MODALES CONTROLADOS CON REACT (sin el JS de Bootstrap) */
@@ -176,14 +186,14 @@ tr.inactivo td { color: var(--muted); }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, #F4FAFF 0%, #DCEFFA 100%);
   padding: 20px;
 }
 .login-container { width: 100%; max-width: 420px; }
 .login-header { text-align: center; margin-bottom: 24px; }
 .brand-badge {
   display: inline-block;
-  background-color: #ede9fe;
+  background-color: var(--accent-soft);
   color: var(--primary);
   font-size: 0.75rem;
   font-weight: 700;
@@ -223,7 +233,7 @@ tr.inactivo td { color: var(--muted); }
 }
 .formulario-card .campo input:focus, .formulario .campo input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(155, 34, 225, 0.15);
+  box-shadow: 0 0 0 3px rgba(14, 159, 146, .18);
 }
 .formulario-card button[type="submit"], .formulario button[type="submit"] {
   width: 100%;
