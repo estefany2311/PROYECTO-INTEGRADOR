@@ -37,6 +37,7 @@ public class Estudiante {
     private Avatar avatar;
 
     // T-186: PIN cifrado con BCrypt. A propósito NO tiene getter: nunca sale en una respuesta
+    // (T-188 lo verifica: sin getter, Jackson no puede serializarlo y los logs no lo imprimen)
     @Column(name = "pin_hash")
     private String pinHash;
 
