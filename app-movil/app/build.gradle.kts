@@ -1,7 +1,16 @@
+import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
+// La IP del backend sale de app-movil/local.properties (no se sube a git):
+//   api.base.url=http://192.168.1.50:8082/
+// Si no está, se usa 10.0.2.2, que es tu PC vista desde el emulador.
+val propiedadesLocales = Properties().apply {
+    val archivo = rootProject.file("local.properties")
+    if (archivo.exists()) archivo.inputStream().use { load(it) }
+}
+val apiBaseUrl: String = propiedadesLocales.getProperty("api.base.url", "http://10.0.2.2:8082/")
 
 android {
     namespace = "com.proyecto.movil"
@@ -17,6 +26,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
     }
 
     buildTypes {
