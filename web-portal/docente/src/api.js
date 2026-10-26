@@ -51,3 +51,13 @@ export const asignarAvatar = (aulaId, id, avatarId) =>
 // genera o restablece el PIN: la respuesta trae el PIN en claro UNA sola vez
 export const generarPin = (aulaId, id) =>
   pedir(`/api/docente/aulas/${aulaId}/estudiantes/${id}/pin`, { method: "POST" });
+
+// T-190: catálogo de lecturas del aula. Los filtros son opcionales y los aplica el backend (T-189)
+export const listarLecturas = (aulaId, filtros = {}) => {
+  const params = new URLSearchParams();
+  if (filtros.gradoId) params.set("gradoId", filtros.gradoId);
+  if (filtros.dificultad) params.set("dificultad", filtros.dificultad);
+  if (filtros.tipoReto) params.set("tipoReto", filtros.tipoReto);
+  const query = params.toString();
+  return pedir(`/api/docente/aulas/${aulaId}/lecturas${query ? `?${query}` : ""}`);
+};

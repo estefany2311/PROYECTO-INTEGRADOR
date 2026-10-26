@@ -182,3 +182,29 @@
     border-right-color: var(--border);
   }
 }
+
+/* T-190: dificultad de las lecturas del catálogo */
+.tag-basica {
+  background: rgba(34, 197, 94, 0.16);
+  color: #15803D;
+}
+.tag-intermedia {
+  background: rgba(245, 158, 11, 0.18);
+  color: #B45309;
+}
+.tag-avanzada {
+  background: rgba(155, 34, 225, 0.14);
+  color: #7A18B4;
+}
+
+/* en la tarjeta el texto se recorta a 3 líneas; completo se ve en el modal */
+.lectura-texto {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.lectura-completa {
+  white-space: pre-wrap;
+}
