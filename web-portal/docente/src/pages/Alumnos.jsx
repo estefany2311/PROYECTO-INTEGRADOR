@@ -4,6 +4,7 @@ import {
   listarAulas, listarEstudiantes, crearEstudiante,
   actualizarEstudiante, cambiarEstadoEstudiante,
 } from "../api";
+import AccesoAlumno from "../components/AccesoAlumno";
 
 const COLORES = ["#9B22E1", "#2FC5F6", "#F59E0B", "#F51E38", "#22C55E", "#6366F1"];
 const FORM_VACIO = { nombres: "", apellidos: "", gradoId: "" };
@@ -16,6 +17,7 @@ export default function Alumnos() {
   const [abierto, setAbierto] = useState(false);
   const [editando, setEditando] = useState(null); // alumno en edición; null = modo "agregar"
   const [confirmar, setConfirmar] = useState(null); // alumno a desactivar/reactivar
+  const [acceso, setAcceso] = useState(null); // T-187: alumno al que le configuramos avatar/PIN
   const [form, setForm] = useState(FORM_VACIO);
   const [errores, setErrores] = useState({});
   const [errorServidor, setErrorServidor] = useState(null);
@@ -198,6 +200,7 @@ export default function Alumnos() {
                   <tr>
                     <th>ALUMNO</th>
                     <th>GRADO</th>
+                    <th>ACCESO</th>
                     <th>ESTADO</th>
                     <th className="text-end">ACCIONES</th>
                   </tr>
@@ -214,6 +217,21 @@ export default function Alumnos() {
                         </div>
                       </td>
                       <td>{a.gradoNombre}</td>
+                      {/* T-187: avatar y si ya tiene PIN (el PIN nunca se muestra aquí) */}
+                      <td>
+                        <div className="d-flex align-items-center gap-2">
+                          {a.avatarUrl ? (
+                            <img className="avatar-mini" src={a.avatarUrl} alt={`Avatar de ${a.nombres}`} />
+                          ) : (
+                            <span className="avatar-mini d-inline-flex align-items-center justify-content-center text-secondary">
+                              <i className="bi bi-person" />
+                            </span>
+                          )}
+                          <span className={`tag ${a.tienePin ? "tag-activo" : "tag-neutro"}`}>
+                            {a.tienePin ? "Con PIN" : "Sin PIN"}
+                          </span>
+                        </div>
+                      </td>
                       <td>
                         <span className={`tag ${a.activo ? "tag-activo" : "tag-inactivo"}`}>
                           {a.activo ? "Activo" : "Inactivo"}
@@ -221,6 +239,14 @@ export default function Alumnos() {
                       </td>
                       <td className="text-end">
                         {/* aria-label con el nombre: sirve para accesibilidad y para las pruebas */}
+                        <button
+                          className="btn btn-sm btn-outline-secondary rounded-pill me-2"
+                          aria-label={`Avatar y PIN de ${a.nombres} ${a.apellidos}`}
+                          title="Avatar y PIN"
+                          onClick={() => setAcceso(a)}
+                        >
+                          <i className="bi bi-person-badge" />
+                        </button>
                         <button
                           className="btn btn-sm btn-outline-primary rounded-pill me-2"
                           aria-label={`Editar ${a.nombres} ${a.apellidos}`}
@@ -324,7 +350,20 @@ export default function Alumnos() {
         </div>
       )}
 
-      {(abierto || confirmar) && <div className="modal-backdrop fade show" />}
+      {/* Modal Avatar y PIN (T-187) */}
+      {acceso && (
+        <AccesoAlumno
+          aulaId={aulaId}
+          alumno={acceso}
+          onCerrar={() => setAcceso(null)}
+          onActualizado={(texto) => {
+            setMensaje({ tipo: "success", texto });
+            cargarAlumnos(aulaId); // refresca avatar y "Con PIN" en la tabla
+          }}
+        />
+      )}
+
+      {(abierto || confirmar || acceso) && <div className="modal-backdrop fade show" />}
     </div>
   );
 }

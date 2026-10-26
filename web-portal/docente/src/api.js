@@ -38,3 +38,16 @@ export const cambiarEstadoEstudiante = (aulaId, id, activo) =>
     method: "PATCH",
     body: JSON.stringify({ activo }),
   });
+
+// T-187: catálogo de avatares y PIN de acceso del alumno
+export const listarAvatares = () => pedir("/api/docente/avatares");
+
+export const asignarAvatar = (aulaId, id, avatarId) =>
+  pedir(`/api/docente/aulas/${aulaId}/estudiantes/${id}/avatar`, {
+    method: "PUT",
+    body: JSON.stringify({ avatarId }),
+  });
+
+// genera o restablece el PIN: la respuesta trae el PIN en claro UNA sola vez
+export const generarPin = (aulaId, id) =>
+  pedir(`/api/docente/aulas/${aulaId}/estudiantes/${id}/pin`, { method: "POST" });
