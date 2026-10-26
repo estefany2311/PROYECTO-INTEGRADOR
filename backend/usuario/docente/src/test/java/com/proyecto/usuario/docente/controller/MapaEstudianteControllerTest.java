@@ -34,15 +34,14 @@ class MapaEstudianteControllerTest {
     }
 
     @Test
-    void devuelveElMapaConElEstadoDeCadaNivel() throws Exception {
-        MapaResponse mapa = new MapaResponse(1L, "Ana", "Quispe", 2, 1, 10, List.of(
+    void devuelveElMapaConElEstadoDeCadaNivel() throws Exception {        MapaResponse mapa = new MapaResponse(1L, "Ana", "Quispe", 2, 1, 10, List.of(
                 new NivelMapaResponse((short) 1, (short) 1, "Primeros pasos", "lectura",
                         "Lee palabras", "completado", 10),
                 new NivelMapaResponse((short) 2, (short) 2, "Palabras nuevas", "escritura",
                         "Escribe frases", "desbloqueado", 0)));
         when(service.obtenerMapa(1L)).thenReturn(mapa);
 
-        mvc.perform(get("/api/estudiante/1/mapa"))
+        mvc.perform(get("/api/estudiante/mapa").requestAttr("estudianteId", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estudianteId").value(1))
                 .andExpect(jsonPath("$.totalNiveles").value(2))
@@ -58,7 +57,7 @@ class MapaEstudianteControllerTest {
         when(service.obtenerMapa(99L))
                 .thenThrow(new ReglaNegocioException("El alumno no existe", HttpStatus.NOT_FOUND));
 
-        mvc.perform(get("/api/estudiante/99/mapa"))
+        mvc.perform(get("/api/estudiante/mapa").requestAttr("estudianteId", 99L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.mensaje").value("El alumno no existe"));
     }
