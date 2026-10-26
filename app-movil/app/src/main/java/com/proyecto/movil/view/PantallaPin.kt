@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -30,6 +31,7 @@ import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.viewmodel.PinUiState
 import com.proyecto.movil.viewmodel.PinViewModel
+import com.proyecto.movil.viewmodel.TipoError
 
 private const val TECLA_BORRAR = -1
 private const val TECLA_VACIA = -2
@@ -92,7 +94,7 @@ fun ContenidoPin(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         TextButton(onClick = onVolver, modifier = Modifier.align(Alignment.Start)) {
-            Text("← No soy yo", fontSize = 20.sp, color = ColoresAventura.TextoOscuro)
+            Text("←  No soy yo", fontSize = 20.sp, color = ColoresAventura.TextoOscuro)
         }
 
         AsyncImage(
@@ -127,12 +129,10 @@ fun ContenidoPin(
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
                 )
-                estado.mensajeError != null -> Text(
-                    estado.mensajeError,
-                    color = ColoresAventura.Rojo,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                estado.mensajeError != null -> TarjetaError(
+                    titulo = estado.mensajeError,
+                    detalle = estado.detalleError,
+                    tipo = estado.tipoError
                 )
             }
         }
@@ -149,6 +149,40 @@ fun ContenidoPin(
                 }
             }
             Spacer(Modifier.height(20.dp))
+        }
+    }
+}
+
+// T-207: aviso grande con ícono y color según el error, para que el niño entienda sin frustrarse
+@Composable
+private fun TarjetaError(titulo: String, detalle: String?, tipo: TipoError?) {
+    val (color, icono) = when (tipo) {
+        TipoError.BLOQUEADO -> ColoresAventura.Naranja to ""
+        TipoError.SIN_CONEXION -> ColoresAventura.Gris to ""
+        else -> ColoresAventura.Rojo to ""          // PIN incorrecto
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(color.copy(alpha = 0.12f))
+            .border(3.dp, color, RoundedCornerShape(20.dp))
+            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .testTag("aviso_pin")
+    ) {
+        Text(icono, fontSize = 40.sp)
+        Spacer(Modifier.width(12.dp))
+        Column {
+            Text(
+                titulo,
+                color = color,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Start
+            )
+            if (detalle != null) {
+                Text(detalle, color = ColoresAventura.TextoOscuro, fontSize = 20.sp)
+            }
         }
     }
 }
@@ -224,7 +258,11 @@ fun ContenidoPinErrorPreview() {
         ContenidoPin(
             nombre = "Ana",
             avatarUrl = "",
-            estado = PinUiState(mensajeError = PinViewModel.MENSAJE_PIN_INCORRECTO),
+            estado = PinUiState(
+                mensajeError = PinViewModel.MENSAJE_PIN_INCORRECTO,
+                detalleError = PinViewModel.textoIntentos(3),
+                tipoError = TipoError.PIN_INCORRECTO
+            ),
             onDigito = {},
             onBorrar = {},
             onVolver = {}

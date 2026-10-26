@@ -2,23 +2,28 @@ package com.proyecto.movil.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.proyecto.movil.Dependencias
 import com.proyecto.movil.model.ResultadoLogin
 import com.proyecto.movil.model.SesionRespuesta
+import com.proyecto.movil.model.local.IAlmacenSesion
+import com.proyecto.movil.model.local.SesionGuardada
 import com.proyecto.movil.model.repository.ISesionRepository
 import com.proyecto.movil.model.repository.SesionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.proyecto.movil.Dependencias
-import com.proyecto.movil.model.local.IAlmacenSesion
-import com.proyecto.movil.model.local.SesionGuardada
+
+// T-207: el tipo de error decide el ícono y el color del aviso
+enum class TipoError { PIN_INCORRECTO, BLOQUEADO, SIN_CONEXION }
 
 data class PinUiState(
     val pin: String = "",               // nunca se muestra, solo se cuentan los círculos rellenos
     val verificando: Boolean = false,
     val mensajeError: String? = null,
-    val sesion: SesionRespuesta? = null
+    val sesion: SesionRespuesta? = null,
+    val detalleError: String? = null,   // T-207: "Te quedan 3 intentos." o el tiempo de espera
+    val tipoError: TipoError? = null    // T-207: para el ícono y el color
 )
 
 class PinViewModel(
@@ -31,6 +36,20 @@ class PinViewModel(
         const val MENSAJE_PIN_INCORRECTO = "Esa no es tu clave. Inténtalo otra vez."
         const val MENSAJE_BLOQUEADO = "Espera un momento y vuelve a intentarlo."
         const val MENSAJE_SIN_CONEXION = "No pudimos entrar. Pídele ayuda a tu profesor."
+
+        // T-207: textos con los datos que manda el backend
+        fun textoIntentos(intentosRestantes: Int?): String? = when (intentosRestantes) {
+            null -> null
+            1 -> "Te queda 1 intento."
+            else -> "Te quedan $intentosRestantes intentos."
+        }
+
+        fun textoBloqueo(segundosRestantes: Long?): String {
+            if (segundosRestantes == null) return "Podrás intentar otra vez en un momento."
+            val minutos = (segundosRestantes + 59) / 60     // redondea hacia arriba: 61 s = 2 minutos
+            return if (minutos <= 1) "Podrás intentar otra vez en 1 minuto."
+            else "Podrás intentar otra vez en $minutos minutos."
+        }
     }
 
     private val _uiState = MutableStateFlow(PinUiState())
@@ -60,7 +79,8 @@ class PinViewModel(
     }
 
     private fun verificar(pin: String) {
-        _uiState.update { it.copy(verificando = true, mensajeError = null) }
+        // Al verificar se quita el aviso del intento anterior
+        _uiState.update { it.copy(verificando = true, mensajeError = null, detalleError = null, tipoError = null) }
         viewModelScope.launch {
             when (val resultado = repository.iniciarSesion(estudianteId, pin)) {
                 is ResultadoLogin.Exito -> {
@@ -71,15 +91,23 @@ class PinViewModel(
                     )
                     _uiState.update { it.copy(verificando = false, sesion = sesion) }
                 }
-                is ResultadoLogin.PinIncorrecto -> fallar(MENSAJE_PIN_INCORRECTO)
-                is ResultadoLogin.Bloqueado -> fallar(MENSAJE_BLOQUEADO)
-                is ResultadoLogin.ErrorConexion -> fallar(MENSAJE_SIN_CONEXION)
+                is ResultadoLogin.PinIncorrecto -> fallar(
+                    MENSAJE_PIN_INCORRECTO, textoIntentos(resultado.intentosRestantes), TipoError.PIN_INCORRECTO
+                )
+                is ResultadoLogin.Bloqueado -> fallar(
+                    MENSAJE_BLOQUEADO, textoBloqueo(resultado.segundosRestantes), TipoError.BLOQUEADO
+                )
+                is ResultadoLogin.ErrorConexion -> fallar(
+                    MENSAJE_SIN_CONEXION, null, TipoError.SIN_CONEXION
+                )
             }
         }
     }
 
     // Se limpia el PIN para que el estudiante lo escriba de nuevo desde cero
-    private fun fallar(mensaje: String) {
-        _uiState.update { it.copy(pin = "", verificando = false, mensajeError = mensaje) }
+    private fun fallar(mensaje: String, detalle: String?, tipo: TipoError) {
+        _uiState.update {
+            it.copy(pin = "", verificando = false, mensajeError = mensaje, detalleError = detalle, tipoError = tipo)
+        }
     }
 }
