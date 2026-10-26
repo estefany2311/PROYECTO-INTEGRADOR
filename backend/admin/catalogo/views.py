@@ -1,4 +1,5 @@
 from rest_framework import filters, viewsets
+from rest_framework.exceptions import ValidationError
 
 from usuarios.permissions import TienePermiso
 from .models import Lectura
@@ -23,11 +24,15 @@ class LecturaViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(tipo_reto=tipo_reto)
 
         grado = params.get('grado', '').strip()
-        if grado.isdigit():
+        if grado:
+            if not grado.isdigit() or not 1 <= int(grado) <= 6:
+                raise ValidationError({'grado': 'El filtro de grado debe ser un número entre 1 y 6.'})
             queryset = queryset.filter(grado=int(grado))
 
         dificultad = params.get('dificultad', '').strip()
         if dificultad:
+            if dificultad not in dict(Lectura.DIFICULTADES):
+                raise ValidationError({'dificultad': 'El filtro de dificultad debe ser basica, intermedia o avanzada.'})
             queryset = queryset.filter(dificultad=dificultad)
 
         return queryset

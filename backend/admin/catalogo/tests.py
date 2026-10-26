@@ -114,4 +114,41 @@ class LecturaAPITests(APITestCase):
         resp = self.client.get(self.URL, {'tipo_reto': 'escritura'})
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual([l['titulo'] for l in resp.data], ['Mi chacra en la mañana'])
+
+    
+        # --- Grado y dificultad (T-223) ---
+    def test_grado_fuera_de_rango_devuelve_400(self):
+        for grado in (0, 7):
+            resp = self.client.post(self.URL, self.datos(grado=grado), format='json')
+            self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertIn('El grado debe estar entre 1.º y 6.º.', resp.data['grado'])
+
+    def test_dificultad_invalida_devuelve_400(self):
+        resp = self.client.post(self.URL, self.datos(dificultad='facil'), format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('La dificultad debe ser básica, intermedia o avanzada.', resp.data['dificultad'])
+
+    def test_crea_lectura_con_grado_y_dificultad(self):
+        resp = self.client.post(self.URL, self.datos(grado=3, dificultad='avanzada'), format='json')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.data['grado'], 3)
+        self.assertEqual(resp.data['dificultad'], 'avanzada')
+
+    def test_filtro_de_grado_invalido_devuelve_400(self):
+        for valor in ('abc', '0', '9'):
+            resp = self.client.get(self.URL, {'grado': valor})
+            self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_filtro_de_dificultad_invalido_devuelve_400(self):
+        resp = self.client.get(self.URL, {'dificultad': 'dificil'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_combinar_grado_y_dificultad(self):
+        Lectura.objects.create(titulo='La llama viajera', texto=self.TEXTO, tipo_reto='oralidad',
+                               grado=2, dificultad='basica')
+        Lectura.objects.create(titulo='La fiesta del pueblo', texto=self.TEXTO, tipo_reto='lectura',
+                               grado=2, dificultad='intermedia')
+        resp = self.client.get(self.URL, {'grado': 2, 'dificultad': 'basica'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual([l['titulo'] for l in resp.data], ['La llama viajera'])
  
