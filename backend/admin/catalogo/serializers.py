@@ -8,7 +8,7 @@ class LecturaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Lectura
-        fields = ['id', 'titulo', 'texto', 'tipo_reto', 'activo', 'creado_por', 'creado_en']
+        fields = ['id', 'titulo', 'texto', 'tipo_reto', 'grado', 'dificultad', 'activo', 'creado_por', 'creado_en']
         read_only_fields = ['id', 'activo', 'creado_por', 'creado_en']
 
     def validate_titulo(self, value):

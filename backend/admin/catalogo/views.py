@@ -16,9 +16,20 @@ class LecturaViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Lectura.objects.select_related('creado_por')
-        tipo_reto = self.request.query_params.get('tipo_reto', '').strip()
+        params = self.request.query_params
+
+        tipo_reto = params.get('tipo_reto', '').strip()
         if tipo_reto:
             queryset = queryset.filter(tipo_reto=tipo_reto)
+
+        grado = params.get('grado', '').strip()
+        if grado.isdigit():
+            queryset = queryset.filter(grado=int(grado))
+
+        dificultad = params.get('dificultad', '').strip()
+        if dificultad:
+            queryset = queryset.filter(dificultad=dificultad)
+
         return queryset
 
     def perform_create(self, serializer):
