@@ -8,8 +8,9 @@ import retrofit2.converter.gson.GsonConverterFactory
 object RetrofitClient {
 
     // IP local de mi PC, para probar en el teléfono físico por USB/WiFi
-    // Sale de app-movil/local.properties (api.base.url): cada integrante pone la IP de su PC
-    private val BASE_URL = BuildConfig.API_BASE_URL
+    // Salen de app-movil/local.properties: cada integrante pone la IP de su PC
+    private val BASE_URL = BuildConfig.API_BASE_URL            // backend estudiante (8082)
+    private val DOCENTE_URL = BuildConfig.API_DOCENTE_URL      // backend docente (8081), T-210
 
     // Lo asigna Dependencias.iniciar(): devuelve el token de la sesión actual o null
     @Volatile
@@ -35,9 +36,19 @@ object RetrofitClient {
         .addInterceptor(loggingInterceptor)
         .build()
 
+    // Perfiles y PIN (backend estudiante)
     val instance: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    // T-210: mapa de niveles (backend docente). Usa el mismo cliente, así también lleva el token
+    val docente: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(DOCENTE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

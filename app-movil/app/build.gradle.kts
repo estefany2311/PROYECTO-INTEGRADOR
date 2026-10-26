@@ -11,6 +11,8 @@ val propiedadesLocales = Properties().apply {
     if (archivo.exists()) archivo.inputStream().use { load(it) }
 }
 val apiBaseUrl: String = propiedadesLocales.getProperty("api.base.url", "http://10.0.2.2:8082/")
+// T-210: el mapa viene del backend docente (Noemí, puerto 8081): api.docente.url=http://TU_IP:8081/
+val apiDocenteUrl: String = propiedadesLocales.getProperty("api.docente.url", "http://10.0.2.2:8081/")
 
 android {
     namespace = "com.proyecto.movil"
@@ -27,6 +29,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        buildConfigField("String", "API_DOCENTE_URL", "\"$apiDocenteUrl\"")
     }
 
     buildTypes {
