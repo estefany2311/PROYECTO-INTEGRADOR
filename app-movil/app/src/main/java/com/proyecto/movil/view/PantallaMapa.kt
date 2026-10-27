@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -17,6 +18,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +53,11 @@ fun PantallaMapa(
     val sesion = viewModel.sesion
     val estado by viewModel.uiState.collectAsState()
 
+    // T-237: "Salir" primero pregunta; rememberSaveable lo mantiene abierto si se gira la tablet
+    var preguntandoSalir by rememberSaveable { mutableStateOf(false) }
+    // Evita tocar "Sí, salir" dos veces mientras se avisa al backend (hasta 3 s sin conexión)
+    var saliendo by remember { mutableStateOf(false) }
+
     // Se pide el mapa una vez al abrir la pantalla
     LaunchedEffect(Unit) { viewModel.cargarMapa() }
 
@@ -55,10 +65,87 @@ fun PantallaMapa(
         BarraEstudiante(
             nombre = sesion?.nombre ?: "",
             avatarUrl = sesion?.avatarUrl ?: "",
-            onSalir = { viewModel.salir(onSalir) }
+            onSalir = { if (!saliendo) preguntandoSalir = true }
         )
         ContenidoMapa(estado = estado, onReintentar = { viewModel.cargarMapa() })
     }
+
+    if (preguntandoSalir) {
+        DialogoSalir(
+            nombre = sesion?.nombre ?: "",
+            avatarUrl = sesion?.avatarUrl ?: "",
+            onConfirmar = {
+                preguntandoSalir = false
+                saliendo = true
+                viewModel.salir(onSalir)
+            },
+            onCancelar = { preguntandoSalir = false }
+        )
+    }
+}
+
+/**
+ * T-237 (US-04): confirmación antes de cerrar la sesión, con la cara del alumno
+ * para que vea que es SU sesión la que se cierra. Así un toque sin querer no lo saca.
+ * Botones grandes y con palabras completas: "Sí, salir" / "No, quedarme".
+ */
+@Composable
+fun DialogoSalir(
+    nombre: String,
+    avatarUrl: String,
+    onConfirmar: () -> Unit,
+    onCancelar: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onCancelar,       // tocar fuera o "atrás" = quedarse
+        containerColor = Color.White,
+        modifier = Modifier.testTag("dialogo_salir"),
+        icon = {
+            AsyncImage(
+                model = avatarUrl,
+                contentDescription = "Avatar de $nombre",
+                modifier = Modifier
+                    .size(96.dp)
+                    .clip(CircleShape)
+                    .background(ColoresAventura.Cielo)
+            )
+        },
+        title = {
+            Text(
+                "¿Salir, $nombre?",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                color = ColoresAventura.TextoOscuro
+            )
+        },
+        text = {
+            Text(
+                "Así otro compañero puede usar la tablet.",
+                fontSize = 20.sp,
+                textAlign = TextAlign.Center,
+                color = ColoresAventura.TextoOscuro,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirmar,
+                colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Naranja),
+                modifier = Modifier.height(56.dp).testTag("boton_confirmar_salir")
+            ) {
+                Text("Sí, salir", fontSize = 20.sp, color = Color.White)
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onCancelar,
+                modifier = Modifier.height(56.dp).testTag("boton_cancelar_salir")
+            ) {
+                Text("No, quedarme", fontSize = 20.sp, color = ColoresAventura.TextoOscuro)
+            }
+        }
+    )
 }
 
 // Separado de PantallaMapa para poder verlo en Preview y probarlo sin ViewModel (T-212)
@@ -246,6 +333,14 @@ fun BarraEstudiante(nombre: String, avatarUrl: String, onSalir: () -> Unit) {
 fun BarraEstudiantePreview() {
     AppMovilTheme(dynamicColor = false) {
         BarraEstudiante(nombre = "Ana", avatarUrl = "", onSalir = {})
+    }
+}
+
+@Preview(widthDp = 800, heightDp = 600, showBackground = true)
+@Composable
+fun DialogoSalirPreview() {
+    AppMovilTheme(dynamicColor = false) {
+        DialogoSalir(nombre = "Ana", avatarUrl = "", onConfirmar = {}, onCancelar = {})
     }
 }
 
