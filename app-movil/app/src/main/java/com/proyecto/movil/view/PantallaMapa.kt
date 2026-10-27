@@ -1,5 +1,7 @@
 package com.proyecto.movil.view
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -11,6 +13,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -26,16 +29,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.proyecto.movil.R
 import com.proyecto.movil.model.MapaRespuesta
 import com.proyecto.movil.model.NivelMapa
 import com.proyecto.movil.model.TipoReto
@@ -186,30 +198,98 @@ private fun ErrorMapa(mensaje: String, onReintentar: () -> Unit) {
     }
 }
 
-// T-210: resumen de avance arriba y los niveles en un camino en zigzag
+// T-211: tamaños según la pantalla. Desde 600 dp de ancho se considera tablet
+private data class MedidasMapa(
+    val nodo: Dp,           // diámetro del círculo de cada nivel
+    val alturaFila: Dp,     // espacio vertical de cada nivel (círculo + nombre)
+    val anchoEtiqueta: Dp,  // ancho del nombre debajo del círculo
+    val texto: TextUnit,
+    val numero: TextUnit
+) {
+    companion object {
+        val TELEFONO = MedidasMapa(96.dp, 172.dp, 150.dp, 18.sp, 18.sp)
+        val TABLET = MedidasMapa(128.dp, 214.dp, 220.dp, 22.sp, 22.sp)
+    }
+}
+
+private val ANCHO_TABLET = 600.dp
+private val ANCHO_MAXIMO_MAPA = 720.dp   // en tablets grandes el mapa no se estira de borde a borde
+
+// Posición horizontal de cada nivel (fracción del ancho): izquierda, centro, derecha, centro...
+private val POSICIONES_X = listOf(0.25f, 0.5f, 0.75f, 0.5f)
+
+// T-210/T-211: resumen de avance arriba y los niveles unidos por un camino que serpentea
 @Composable
 fun RecorridoNiveles(mapa: MapaRespuesta) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp)
-    ) {
-        ResumenAvance(mapa.completados, mapa.totalNiveles, mapa.puntos)
-        Spacer(Modifier.height(24.dp))
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val medidas = if (maxWidth >= ANCHO_TABLET) MedidasMapa.TABLET else MedidasMapa.TELEFONO
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Column(Modifier.widthIn(max = ANCHO_MAXIMO_MAPA).fillMaxWidth()) {
+                ResumenAvance(mapa.completados, mapa.totalNiveles, mapa.puntos)
+                Spacer(Modifier.height(24.dp))
+                CaminoDeNiveles(mapa.niveles.sortedBy { it.orden }, medidas)
+            }
+        }
+    }
+}
 
-        val niveles = mapa.niveles.sortedBy { it.orden }
-        niveles.forEachIndexed { indice, nivel ->
-            // Izquierda, centro, derecha, centro...: el camino serpentea como en un juego
-            val alineacion = when (indice % 4) {
-                0 -> Alignment.Start
-                2 -> Alignment.End
-                else -> Alignment.CenterHorizontally
+/**
+ * T-211: el camino se dibuja con Canvas (una línea de puntos blancos con curvas)
+ * en vez de imágenes: no pesa nada y se ve nítido en cualquier tamaño de tablet.
+ * Cada círculo se coloca justo sobre su punto del camino.
+ */
+@Composable
+private fun CaminoDeNiveles(niveles: List<NivelMapa>, medidas: MedidasMapa) {
+    BoxWithConstraints(
+        Modifier
+            .fillMaxWidth()
+            .height(medidas.alturaFila * niveles.size)
+    ) {
+        val ancho = maxWidth
+        fun centroX(i: Int): Dp = ancho * POSICIONES_X[i % POSICIONES_X.size]
+        fun centroY(i: Int): Dp = medidas.alturaFila * i + medidas.nodo / 2
+
+        Canvas(Modifier.matchParentSize()) {
+            if (niveles.size < 2) return@Canvas
+            val camino = Path()
+            niveles.indices.forEach { i ->
+                val x = centroX(i).toPx()
+                val y = centroY(i).toPx()
+                if (i == 0) {
+                    camino.moveTo(x, y)
+                } else {
+                    // Curva suave: sale hacia abajo del nivel anterior y llega desde arriba al siguiente
+                    val xAnterior = centroX(i - 1).toPx()
+                    val yMedio = (centroY(i - 1).toPx() + y) / 2
+                    camino.cubicTo(xAnterior, yMedio, x, yMedio, x, y)
+                }
             }
-            NodoNivel(nivel, Modifier.align(alineacion))
-            if (indice < niveles.lastIndex) {
-                Camino(Modifier.align(Alignment.CenterHorizontally))
-            }
+            drawPath(
+                camino,
+                color = Color.White,
+                style = Stroke(
+                    width = 10.dp.toPx(),
+                    cap = StrokeCap.Round,
+                    // trazo casi nulo + punta redonda = puntitos
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(1f, 22.dp.toPx()))
+                )
+            )
+        }
+
+        niveles.forEachIndexed { i, nivel ->
+            NodoNivel(
+                nivel = nivel,
+                medidas = medidas,
+                modifier = Modifier
+                    .offset(x = centroX(i) - medidas.anchoEtiqueta / 2, y = medidas.alturaFila * i)
+                    .width(medidas.anchoEtiqueta)
+            )
         }
     }
 }
@@ -238,50 +318,91 @@ private fun ResumenAvance(completados: Int, total: Int, puntos: Int) {
             modifier = Modifier.fillMaxWidth().height(14.dp).clip(RoundedCornerShape(7.dp))
         )
         Spacer(Modifier.height(8.dp))
-        Text("⭐ $puntos puntos", fontSize = 20.sp, color = ColoresAventura.TextoOscuro)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // T-211: estrella en vector (Color.Unspecified conserva su naranja)
+            Icon(
+                painterResource(R.drawable.ic_estrella),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(26.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text("$puntos puntos", fontSize = 20.sp, color = ColoresAventura.TextoOscuro)
+        }
     }
 }
 
-// Un nivel: círculo grande con su número y el nombre debajo.
-// Los estilos por estado (candado y gris) se agregan en T-239.
+/**
+ * Un nivel: círculo del color de su reto con el ícono del reto,
+ * el número en una insignia arriba a la izquierda y el nombre debajo.
+ * Los estilos por estado (candado y gris) se agregan en T-239.
+ */
 @Composable
-private fun NodoNivel(nivel: NivelMapa, modifier: Modifier = Modifier) {
+private fun NodoNivel(nivel: NivelMapa, medidas: MedidasMapa, modifier: Modifier = Modifier) {
+    val color = colorDelReto(nivel.reto)
     Column(
         modifier
-            .width(180.dp)
             .testTag("nivel_${nivel.orden}")
             .semantics { contentDescription = "Nivel ${nivel.orden}: ${nivel.nombre}" },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
-            Modifier
-                .size(96.dp)
-                .clip(CircleShape)
-                .background(colorDelReto(nivel.reto))
-                .border(5.dp, Color.White, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("${nivel.orden}", fontSize = 40.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Box(Modifier.size(medidas.nodo)) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .background(color)
+                    .border(5.dp, Color.White, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                val icono = iconoDelReto(nivel.reto)
+                if (icono != null) {
+                    Icon(
+                        painterResource(icono),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(medidas.nodo * 0.45f)
+                    )
+                }
+            }
+            // Insignia con el número del nivel
+            Box(
+                Modifier
+                    .align(Alignment.TopStart)
+                    .size(medidas.nodo * 0.38f)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .border(3.dp, color, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "${nivel.orden}",
+                    fontSize = medidas.numero,
+                    fontWeight = FontWeight.Bold,
+                    color = ColoresAventura.TextoOscuro
+                )
+            }
         }
         Spacer(Modifier.height(6.dp))
         Text(
             nivel.nombre,
-            fontSize = 18.sp,
+            fontSize = medidas.texto,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
             color = ColoresAventura.TextoOscuro
         )
     }
 }
 
-// Puntitos entre un nivel y el siguiente
-@Composable
-private fun Camino(modifier: Modifier = Modifier) {
-    Column(modifier.padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        repeat(3) {
-            Box(Modifier.padding(3.dp).size(10.dp).clip(CircleShape).background(Color.White))
-        }
-    }
+// T-211: ícono de cada reto (vectores en res/drawable). Si el reto es desconocido no se pone ícono
+@DrawableRes
+private fun iconoDelReto(reto: TipoReto): Int? = when (reto) {
+    TipoReto.LECTURA -> R.drawable.ic_reto_lectura
+    TipoReto.ESCRITURA -> R.drawable.ic_reto_escritura
+    TipoReto.ORALIDAD -> R.drawable.ic_reto_oralidad
+    TipoReto.DESCONOCIDO -> null
 }
 
 // Cada tipo de reto tiene su color, para que el niño los reconozca
@@ -344,7 +465,8 @@ fun DialogoSalirPreview() {
     }
 }
 
-@Preview(widthDp = 800, heightDp = 1200, showBackground = true)
+@Preview(name = "Mapa · teléfono", widthDp = 360, heightDp = 1200, showBackground = true)
+@Preview(name = "Mapa · tablet", widthDp = 1280, heightDp = 1500, showBackground = true)
 @Composable
 fun RecorridoNivelesPreview() {
     val tipos = listOf("lectura", "escritura", "oralidad")
