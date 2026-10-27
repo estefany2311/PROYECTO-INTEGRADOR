@@ -11,6 +11,7 @@ import com.proyecto.usuario.estudiante.repository.SesionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -118,6 +119,30 @@ class SesionServiceTest {
         assertEquals(45, e.getSegundosRestantes());
         verifyNoInteractions(estudiantes, sesiones);
         verify(intentos, never()).registrarFallo(anyLong());
+    }
+
+    // ---------- T-238: cierre de sesión ----------
+
+    // En la base solo hay hashes: para cerrar se borra el hash del token, nunca el token en texto
+    @Test
+    void cerrarSesionBorraElHashDelToken() {
+        service.cerrarSesion("token-de-ana");
+
+        verify(sesiones).eliminar(new GeneradorToken().hash("token-de-ana"));
+        verify(sesiones, never()).eliminar("token-de-ana");
+    }
+
+    // El token que recibe la tablet al entrar es justo el que queda inválido al salir
+    @Test
+    void alSalirSeBorraLaMismaSesionQueSeCreoAlEntrar() {
+        when(estudiantes.buscarPorId(1)).thenReturn(Optional.of(ana(true)));
+        SesionResponse resp = service.iniciarSesion(1, "1234");
+        ArgumentCaptor<String> hashGuardado = ArgumentCaptor.forClass(String.class);
+        verify(sesiones).guardar(hashGuardado.capture(), eq(1L), any(), any());
+
+        service.cerrarSesion(resp.token());
+
+        verify(sesiones).eliminar(hashGuardado.getValue());
     }
 
     @Test

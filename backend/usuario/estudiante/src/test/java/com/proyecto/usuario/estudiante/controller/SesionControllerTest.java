@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -84,6 +85,42 @@ class SesionControllerTest {
                 .andExpect(jsonPath("$.mensaje").value("El PIN debe tener 4 números"));
 
         verify(service, never()).iniciarSesion(anyLong(), anyString());
+    }
+
+    // ---------- T-238: DELETE /api/estudiante/sesion (botón Salir de la tablet) ----------
+
+    @Test
+    void salirConTokenResponde204YCierraEsaSesion() throws Exception {
+        mvc.perform(delete(URL).header("Authorization", "Bearer token-abc"))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        verify(service).cerrarSesion("token-abc");
+    }
+
+    @Test
+    void salirSinTokenResponde401() throws Exception {
+        mvc.perform(delete(URL))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.mensaje").value("Falta el token de la sesión"));
+
+        verify(service, never()).cerrarSesion(anyString());
+    }
+
+    @Test
+    void cabeceraQueNoEsBearerResponde401() throws Exception {
+        mvc.perform(delete(URL).header("Authorization", "Basic YW5hOjEyMzQ="))
+                .andExpect(status().isUnauthorized());
+
+        verify(service, never()).cerrarSesion(anyString());
+    }
+
+    @Test
+    void bearerSinTokenResponde401() throws Exception {
+        mvc.perform(delete(URL).header("Authorization", "Bearer    "))
+                .andExpect(status().isUnauthorized());
+
+        verify(service, never()).cerrarSesion(anyString());
     }
 
     @Test
