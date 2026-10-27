@@ -15,6 +15,7 @@ import com.proyecto.movil.model.local.SesionGuardada
 import com.proyecto.movil.model.repository.ISesionRepository
 import com.proyecto.movil.viewmodel.PinViewModel
 import org.junit.Assert.assertEquals
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -100,6 +101,9 @@ class PantallaPinTest {
             composeRule.onAllNodesWithText(PinViewModel.MENSAJE_PIN_INCORRECTO).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithText(PinViewModel.MENSAJE_PIN_INCORRECTO).assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("0 de 4 números escritos").assertExists()
+        // T-234: los círculos se borran solos cuando termina la sacudida (unos 600 ms)
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            composeRule.onAllNodesWithContentDescription("0 de 4 números escritos").fetchSemanticsNodes().isNotEmpty()
+        }
     }
 }

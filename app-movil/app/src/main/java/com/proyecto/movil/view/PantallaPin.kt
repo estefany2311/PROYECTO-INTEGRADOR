@@ -1,5 +1,7 @@
 package com.proyecto.movil.view
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,6 +18,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -83,7 +88,7 @@ fun ContenidoPin(
     onBorrar: () -> Unit,
     onVolver: () -> Unit
 ) {
-    val tecladoActivo = !estado.verificando && estado.sesion == null
+    val tecladoActivo = !estado.verificando && !estado.sacudiendo && estado.sesion == null
 
     Column(
         modifier = Modifier
@@ -116,7 +121,11 @@ fun ContenidoPin(
         Text("Escribe tu clave secreta", fontSize = 22.sp, color = ColoresAventura.TextoOscuro)
         Spacer(Modifier.height(24.dp))
 
-        CirculosPin(cantidadEscrita = estado.pin.length)
+        CirculosPin(
+            cantidadEscrita = estado.pin.length,
+            sacudidas = estado.sacudidas,
+            enError = estado.sacudiendo
+        )
         Spacer(Modifier.height(16.dp))
 
         // Altura fija para que el teclado no salte cuando aparece o desaparece el mensaje
@@ -153,13 +162,13 @@ fun ContenidoPin(
     }
 }
 
-// T-207: aviso grande con ícono y color según el error, para que el niño entienda sin frustrarse
+// T-207: aviso grande con color según el error, para que el niño entienda sin frustrarse
 @Composable
 private fun TarjetaError(titulo: String, detalle: String?, tipo: TipoError?) {
-    val (color, icono) = when (tipo) {
-        TipoError.BLOQUEADO -> ColoresAventura.Naranja to ""
-        TipoError.SIN_CONEXION -> ColoresAventura.Gris to ""
-        else -> ColoresAventura.Rojo to ""          // PIN incorrecto
+    val color = when (tipo) {
+        TipoError.BLOQUEADO -> ColoresAventura.Naranja
+        TipoError.SIN_CONEXION -> ColoresAventura.Gris
+        else -> ColoresAventura.Rojo          // PIN incorrecto
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -170,8 +179,6 @@ private fun TarjetaError(titulo: String, detalle: String?, tipo: TipoError?) {
             .padding(horizontal = 20.dp, vertical = 12.dp)
             .testTag("aviso_pin")
     ) {
-        Text(icono, fontSize = 40.sp)
-        Spacer(Modifier.width(12.dp))
         Column {
             Text(
                 titulo,
@@ -187,22 +194,43 @@ private fun TarjetaError(titulo: String, detalle: String?, tipo: TipoError?) {
     }
 }
 
-// 4 círculos: rellenos los números ya escritos. El PIN nunca se muestra.
+// Ida y vuelta cada vez más corta, como cuando alguien dice "no" con la cabeza (en dp)
+private val PASOS_SACUDIDA = listOf(-24f, 24f, -16f, 16f, -8f, 8f, 0f)
+
+/**
+ * 4 círculos: rellenos los números ya escritos. El PIN nunca se muestra.
+ * T-234: cada vez que [sacudidas] cambia, la fila se sacude y la tablet vibra.
+ * Mientras [enError], los círculos llenos se ven en rojo; el ViewModel los borra al terminar.
+ */
 @Composable
-private fun CirculosPin(cantidadEscrita: Int) {
+private fun CirculosPin(cantidadEscrita: Int, sacudidas: Int = 0, enError: Boolean = false) {
+    val desplazamiento = remember { Animatable(0f) }
+    val vibracion = LocalHapticFeedback.current
+
+    LaunchedEffect(sacudidas) {
+        if (sacudidas == 0) return@LaunchedEffect      // al abrir la pantalla no se sacude
+        vibracion.performHapticFeedback(HapticFeedbackType.LongPress)
+        // 7 pasos de 70 ms = 490 ms: termina antes de que el ViewModel borre los círculos (600 ms)
+        PASOS_SACUDIDA.forEach { x -> desplazamiento.animateTo(x, tween(durationMillis = 70)) }
+    }
+
+    val colorLleno = if (enError) ColoresAventura.Rojo else ColoresAventura.TextoOscuro
     Row(
         horizontalArrangement = Arrangement.spacedBy(20.dp),
-        modifier = Modifier.semantics {
-            contentDescription = "$cantidadEscrita de ${PinViewModel.LARGO_PIN} números escritos"
-        }
+        modifier = Modifier
+            .graphicsLayer { translationX = desplazamiento.value.dp.toPx() }
+            .testTag("circulos_pin")
+            .semantics {
+                contentDescription = "$cantidadEscrita de ${PinViewModel.LARGO_PIN} números escritos"
+            }
     ) {
         repeat(PinViewModel.LARGO_PIN) { i ->
             Box(
                 Modifier
                     .size(32.dp)
                     .clip(CircleShape)
-                    .background(if (i < cantidadEscrita) ColoresAventura.TextoOscuro else Color.White)
-                    .border(3.dp, ColoresAventura.TextoOscuro, CircleShape)
+                    .background(if (i < cantidadEscrita) colorLleno else Color.White)
+                    .border(3.dp, colorLleno, CircleShape)
             )
         }
     }
@@ -251,7 +279,7 @@ fun ContenidoPinPreview() {
     }
 }
 
-@Preview(name = "PIN · incorrecto", widthDp = 800, heightDp = 1280, showBackground = true)
+@Preview(name = "PIN · incorrecto (durante la sacudida)", widthDp = 800, heightDp = 1280, showBackground = true)
 @Composable
 fun ContenidoPinErrorPreview() {
     AppMovilTheme(dynamicColor = false) {
@@ -259,6 +287,8 @@ fun ContenidoPinErrorPreview() {
             nombre = "Ana",
             avatarUrl = "",
             estado = PinUiState(
+                pin = "0000",
+                sacudiendo = true,
                 mensajeError = PinViewModel.MENSAJE_PIN_INCORRECTO,
                 detalleError = PinViewModel.textoIntentos(3),
                 tipoError = TipoError.PIN_INCORRECTO

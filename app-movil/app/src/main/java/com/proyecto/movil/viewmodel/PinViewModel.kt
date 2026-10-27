@@ -9,6 +9,7 @@ import com.proyecto.movil.model.local.IAlmacenSesion
 import com.proyecto.movil.model.local.SesionGuardada
 import com.proyecto.movil.model.repository.ISesionRepository
 import com.proyecto.movil.model.repository.SesionRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -23,7 +24,9 @@ data class PinUiState(
     val mensajeError: String? = null,
     val sesion: SesionRespuesta? = null,
     val detalleError: String? = null,   // T-207: "Te quedan 3 intentos." o el tiempo de espera
-    val tipoError: TipoError? = null    // T-207: para el ícono y el color
+    val tipoError: TipoError? = null,   // T-207: para el ícono y el color
+    val sacudidas: Int = 0,             // T-234: sube en cada error; la pantalla sacude los círculos al cambiar
+    val sacudiendo: Boolean = false     // T-234: mientras dura la sacudida el teclado espera
 )
 
 class PinViewModel(
@@ -36,6 +39,9 @@ class PinViewModel(
         const val MENSAJE_PIN_INCORRECTO = "Esa no es tu clave. Inténtalo otra vez."
         const val MENSAJE_BLOQUEADO = "Espera un momento y vuelve a intentarlo."
         const val MENSAJE_SIN_CONEXION = "No pudimos entrar. Pídele ayuda a tu profesor."
+
+        // T-234: lo que dura la sacudida; después se borran los 4 círculos solos
+        const val DURACION_SACUDIDA_MS = 600L
 
         // T-207: textos con los datos que manda el backend
         fun textoIntentos(intentosRestantes: Int?): String? = when (intentosRestantes) {
@@ -65,7 +71,8 @@ class PinViewModel(
     // Al completar los 4 números se verifica solo, sin botón de "Entrar"
     fun presionarDigito(digito: Int) {
         val estado = _uiState.value
-        if (estado.verificando || estado.sesion != null || digito !in 0..9 || estado.pin.length >= LARGO_PIN) return
+        if (estado.verificando || estado.sacudiendo || estado.sesion != null ||
+            digito !in 0..9 || estado.pin.length >= LARGO_PIN) return
 
         val nuevoPin = estado.pin + digito
         _uiState.value = estado.copy(pin = nuevoPin)
@@ -74,7 +81,7 @@ class PinViewModel(
 
     fun borrar() {
         val estado = _uiState.value
-        if (estado.verificando || estado.sesion != null) return
+        if (estado.verificando || estado.sacudiendo || estado.sesion != null) return
         _uiState.value = estado.copy(pin = estado.pin.dropLast(1))
     }
 
@@ -91,17 +98,33 @@ class PinViewModel(
                     )
                     _uiState.update { it.copy(verificando = false, sesion = sesion) }
                 }
-                is ResultadoLogin.PinIncorrecto -> fallar(
+                is ResultadoLogin.PinIncorrecto -> fallarConSacudida(
                     MENSAJE_PIN_INCORRECTO, textoIntentos(resultado.intentosRestantes), TipoError.PIN_INCORRECTO
                 )
-                is ResultadoLogin.Bloqueado -> fallar(
+                is ResultadoLogin.Bloqueado -> fallarConSacudida(
                     MENSAJE_BLOQUEADO, textoBloqueo(resultado.segundosRestantes), TipoError.BLOQUEADO
                 )
+                // Sin conexión no es culpa del niño: no se sacude, solo se limpia
                 is ResultadoLogin.ErrorConexion -> fallar(
                     MENSAJE_SIN_CONEXION, null, TipoError.SIN_CONEXION
                 )
             }
         }
+    }
+
+    /**
+     * T-234: los 4 círculos se quedan llenos mientras se sacuden (así el niño ve que se equivocó)
+     * y después se borran solos para que escriba de nuevo desde cero.
+     */
+    private suspend fun fallarConSacudida(mensaje: String, detalle: String?, tipo: TipoError) {
+        _uiState.update {
+            it.copy(
+                verificando = false, mensajeError = mensaje, detalleError = detalle, tipoError = tipo,
+                sacudidas = it.sacudidas + 1, sacudiendo = true
+            )
+        }
+        delay(DURACION_SACUDIDA_MS)
+        _uiState.update { it.copy(pin = "", sacudiendo = false) }
     }
 
     // Se limpia el PIN para que el estudiante lo escriba de nuevo desde cero
