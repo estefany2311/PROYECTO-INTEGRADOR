@@ -10,6 +10,10 @@ import retrofit2.Response
 
 interface ISesionRepository {
     suspend fun iniciarSesion(estudianteId: Long, pin: String): ResultadoLogin
+
+    // T-236: true si el backend borró la sesión. Con cuerpo por defecto para que los falsos
+    // de las pruebas que no lo usan sigan compilando.
+    suspend fun cerrarSesion(): Boolean = true
 }
 
 class SesionRepository : ISesionRepository {
@@ -28,6 +32,14 @@ class SesionRepository : ISesionRepository {
             }
         } catch (e: Exception) {
             ResultadoLogin.ErrorConexion(e.message ?: "Error de conexión")
+        }
+    }
+
+    override suspend fun cerrarSesion(): Boolean {
+        return try {
+            api.cerrarSesion().isSuccessful
+        } catch (e: Exception) {
+            false   // sin conexión: la app igual borra el token del dispositivo
         }
     }
 

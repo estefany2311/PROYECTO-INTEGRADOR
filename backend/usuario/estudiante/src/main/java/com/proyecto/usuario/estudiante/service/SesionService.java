@@ -72,6 +72,15 @@ public class SesionService {
         return new SesionResponse(token, estudiante.id(), estudiante.nombre(), estudiante.avatarUrl());
     }
 
+    /**
+     * T-236 (US-04): "Salir" en la tablet. Se borra la sesión de la base, así el token
+     * deja de servir aunque alguien lo haya copiado. Si ya no existía (venció o se cerró antes)
+     * no es un error: el resultado es el mismo, la sesión queda cerrada.
+     */
+    public void cerrarSesion(String token) {
+        sesiones.eliminar(generadorToken.hash(token));
+    }
+
     // Devuelve el error a lanzar: PIN incorrecto con intentos restantes, o bloqueo si ya no quedan
     private RuntimeException registrarFallo(long estudianteId, LocalDateTime ahora) {
         int fallidos = intentos.registrarFallo(estudianteId);

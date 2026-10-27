@@ -45,6 +45,12 @@ public class ManejadorErrores {
                 .body(cuerpo);
     }
 
+    // T-236 · 401: "Salir" sin la cabecera Authorization: Bearer <token>
+    @ExceptionHandler(TokenFaltanteException.class)
+    public ResponseEntity<Map<String, Object>> tokenFaltante(TokenFaltanteException e) {
+        return respuesta(HttpStatus.UNAUTHORIZED, e.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> validacion(MethodArgumentNotValidException e) {
         String mensaje = e.getBindingResult().getFieldErrors().stream()
