@@ -152,3 +152,40 @@ class LecturaAPITests(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual([l['titulo'] for l in resp.data], ['La llama viajera'])
  
+    # --- Filtros por grado y dificultad (T-224) ---
+    def crear_lecturas_de_filtro(self):
+        Lectura.objects.create(titulo='La llama viajera', texto=self.TEXTO, tipo_reto='oralidad',
+                               grado=2, dificultad='basica')
+        Lectura.objects.create(titulo='Mi chacra', texto=self.TEXTO, tipo_reto='escritura',
+                               grado=2, dificultad='intermedia')
+        Lectura.objects.create(titulo='El río que cantaba', texto=self.TEXTO, tipo_reto='oralidad',
+                               grado=3, dificultad='avanzada')
+
+    def titulos(self, params):
+        resp = self.client.get(self.URL, params)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        return sorted(l['titulo'] for l in resp.data)
+
+    def test_filtrar_solo_por_grado(self):
+        self.crear_lecturas_de_filtro()
+        self.assertEqual(self.titulos({'grado': 2}), ['La llama viajera', 'Mi chacra'])
+
+    def test_filtrar_solo_por_dificultad(self):
+        self.crear_lecturas_de_filtro()
+        self.assertEqual(self.titulos({'dificultad': 'avanzada'}), ['El río que cantaba'])
+
+    def test_combinar_grado_y_tipo_de_reto(self):
+        self.crear_lecturas_de_filtro()
+        self.assertEqual(self.titulos({'grado': 2, 'tipo_reto': 'oralidad'}), ['La llama viajera'])
+
+    def test_combinar_busqueda_y_grado(self):
+        self.crear_lecturas_de_filtro()
+        self.assertEqual(self.titulos({'search': 'río', 'grado': 3}), ['El río que cantaba'])
+
+    def test_filtro_sin_resultados_devuelve_lista_vacia(self):
+        self.crear_lecturas_de_filtro()
+        self.assertEqual(self.titulos({'grado': 6}), [])
+
+    def test_filtros_vacios_devuelven_todas(self):
+        self.crear_lecturas_de_filtro()
+        self.assertEqual(len(self.titulos({'grado': '', 'dificultad': ''})), 5)
