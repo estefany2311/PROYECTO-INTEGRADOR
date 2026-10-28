@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from .models import Permiso, Rol, RolPermiso, Usuario
 from .serializers import (
     ActualizarPermisosRolSerializer,
+    CambiarEstadoUsuarioSerializer,
     CambiarRolSerializer,
     DocenteCreateSerializer,
     DocenteListSerializer,
@@ -116,4 +117,19 @@ class UsuarioRolView(APIView):
         serializer.is_valid(raise_exception=True)
         usuario.rol = serializer.validated_data['rol']
         usuario.save(update_fields=['rol'])
+        return Response(UsuarioListSerializer(usuario).data)
+
+class UsuarioEstadoView(APIView):
+    """Activa o desactiva una cuenta. Usa el permiso usuarios.desactivar."""
+    permission_classes = [TienePermiso]
+    modulo = 'usuarios'
+
+    def patch(self, request, pk):
+        usuario = generics.get_object_or_404(Usuario.objects.select_related('rol'), pk=pk)
+        serializer = CambiarEstadoUsuarioSerializer(
+            data=request.data, context={'usuario': usuario, 'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        usuario.is_active = serializer.validated_data['is_active']
+        usuario.save(update_fields=['is_active'])
         return Response(UsuarioListSerializer(usuario).data)

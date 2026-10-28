@@ -132,3 +132,19 @@ class CambiarRolSerializer(serializers.Serializer):
         if self.context['usuario'].pk == self.context['request'].user.pk:
             raise serializers.ValidationError({'rol': "No puedes cambiar tu propio rol."})
         return attrs
+
+class CambiarEstadoUsuarioSerializer(serializers.Serializer):
+    is_active = serializers.BooleanField()
+
+    def validate(self, attrs):
+        usuario = self.context['usuario']
+        if not attrs['is_active']:
+            if usuario.pk == self.context['request'].user.pk:
+                raise serializers.ValidationError({'is_active': 'No puedes desactivar tu propia cuenta.'})
+            es_admin = usuario.rol is not None and usuario.rol.nombre == 'ADMIN'
+            quedan_admins = (
+                Usuario.objects.filter(rol__nombre='ADMIN', is_active=True).exclude(pk=usuario.pk).exists()
+            )
+            if es_admin and not quedan_admins:
+                raise serializers.ValidationError({'is_active': 'Debe quedar al menos un administrador activo.'})
+        return attrs
