@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { listarAulas, listarLecturas } from "../api";
 
 // T-190 (US-35): catálogo de lecturas del aula con filtros.
@@ -30,6 +30,7 @@ const claseDificultad = (valor) => {
 };
 
 export default function Catalogo() {
+  const navegar = useNavigate();
   const [aulas, setAulas] = useState([]);
   const [aulaId, setAulaId] = useState("");
   const [lecturas, setLecturas] = useState([]);
@@ -96,6 +97,27 @@ export default function Catalogo() {
   const visibles = lecturas.filter((l) =>
     l.titulo.toLowerCase().includes(busqueda.trim().toLowerCase())
   );
+
+  // T-229: al usar la lectura como tarea se viaja a Alumnos con la lectura elegida.
+  // Ahí se elegirá al alumno (el modal de asignación llega en T-193).
+  const usarComoTarea = () => {
+    navegar("/alumnos", {
+      state: {
+        lectura: {
+          id: detalle.id,
+          titulo: detalle.titulo,
+          gradoNombre: detalle.gradoNombre,
+          dificultad: detalle.dificultad,
+          aulaId,
+          aulaNombre: aula?.nombre,
+        },
+      },
+    });
+  };
+
+  // dato útil en la vista previa: cuánto texto tendrá que leer el alumno
+  const contarPalabras = (texto) =>
+    (texto || "").trim().split(/\s+/).filter(Boolean).length;
 
   return (
     <div>
@@ -259,16 +281,38 @@ export default function Catalogo() {
                   </span>
                   {detalle.tipoReto && <span className="tag tag-neutro">{detalle.tipoReto}</span>}
                 </div>
+
+                {/* T-229: vista previa con el texto completo antes de asignarlo */}
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <span className="text-uppercase text-secondary small fw-semibold">Vista previa</span>
+                  <span className="text-secondary small">
+                    {contarPalabras(detalle.texto)} palabras
+                  </span>
+                </div>
                 <p className="lectura-completa mb-0">{detalle.texto}</p>
               </div>
-              <div className="modal-footer border-0">
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary rounded-pill"
-                  onClick={() => setDetalle(null)}
-                >
-                  Cerrar
-                </button>
+              <div className="modal-footer border-0 flex-wrap gap-2 justify-content-between">
+                <span className="text-secondary small">
+                  <i className="bi bi-info-circle me-1" />
+                  Se asignará a un alumno de {aula?.nombre}
+                </span>
+                <div className="d-flex gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary rounded-pill"
+                    onClick={() => setDetalle(null)}
+                  >
+                    Cerrar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary rounded-pill"
+                    onClick={usarComoTarea}
+                  >
+                    <i className="bi bi-journal-plus me-2" />
+                    Usar como tarea
+                  </button>
+                </div>
               </div>
             </div>
           </div>

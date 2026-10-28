@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   listarAulas, listarEstudiantes, crearEstudiante,
   actualizarEstudiante, cambiarEstadoEstudiante,
@@ -10,6 +10,8 @@ const COLORES = ["#9B22E1", "#2FC5F6", "#F59E0B", "#F51E38", "#22C55E", "#6366F1
 const FORM_VACIO = { nombres: "", apellidos: "", gradoId: "" };
 
 export default function Alumnos() {
+  const ubicacion = useLocation();
+  const navegar = useNavigate();
   const [aulas, setAulas] = useState([]);
   const [aulaId, setAulaId] = useState("");
   const [alumnos, setAlumnos] = useState([]);
@@ -21,6 +23,10 @@ export default function Alumnos() {
   const [form, setForm] = useState(FORM_VACIO);
   const [errores, setErrores] = useState({});
   const [errorServidor, setErrorServidor] = useState(null);
+  // T-229: lectura que llega desde el catálogo con el botón "Usar como tarea".
+  // El aula de esa lectura se guarda una sola vez: al cerrar el aviso no debe recargarse.
+  const [lecturaElegida, setLecturaElegida] = useState(ubicacion.state?.lectura ?? null);
+  const aulaPedida = useRef(ubicacion.state?.lectura?.aulaId);
 
   const aula = aulas.find((a) => String(a.id) === String(aulaId));
   const activos = alumnos.filter((a) => a.activo).length;
@@ -30,12 +36,16 @@ export default function Alumnos() {
       .then(setAlumnos)
       .catch((e) => setMensaje({ tipo: "danger", texto: e.message }));
 
-  // al abrir la pantalla: cargar las aulas del docente
+  // al abrir la pantalla: cargar las aulas del docente.
+  // Si venimos del catálogo, abrimos directamente el aula de la lectura elegida.
   useEffect(() => {
     listarAulas()
       .then((data) => {
         setAulas(data);
-        if (data.length > 0) setAulaId(String(data[0].id));
+        if (data.length > 0) {
+          const pedida = data.find((a) => String(a.id) === String(aulaPedida.current));
+          setAulaId(String(pedida ? pedida.id : data[0].id));
+        }
       })
       .catch((e) => setMensaje({ tipo: "danger", texto: e.message }));
   }, []);
@@ -113,6 +123,12 @@ export default function Alumnos() {
     setConfirmar(null);
   };
 
+  // T-229: descarta la lectura que llegó del catálogo (y borra el state de la ruta)
+  const quitarLectura = () => {
+    setLecturaElegida(null);
+    navegar("/alumnos", { replace: true, state: null });
+  };
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
@@ -128,7 +144,11 @@ export default function Alumnos() {
                 id="aula"
                 className="form-select rounded-pill"
                 value={aulaId}
-                onChange={(ev) => setAulaId(ev.target.value)}
+                onChange={(ev) => {
+                  setAulaId(ev.target.value);
+                  // la lectura elegida era para el aula anterior
+                  if (lecturaElegida) quitarLectura();
+                }}
               >
                 {aulas.map((a) => (
                   <option key={a.id} value={a.id}>{a.nombre}</option>
@@ -142,6 +162,28 @@ export default function Alumnos() {
           </button>
         </div>
       </div>
+
+      {/* T-229: la lectura que se eligió en el catálogo */}
+      {lecturaElegida && (
+        <div className="alert alert-info d-flex align-items-start gap-2">
+          <i className="bi bi-journal-bookmark-fill fs-5" />
+          <div className="flex-grow-1">
+            <b>Lectura elegida:</b> «{lecturaElegida.titulo}»
+            {lecturaElegida.gradoNombre && (
+              <span className="text-secondary"> · {lecturaElegida.gradoNombre}</span>
+            )}
+            <div className="small">
+              Seleccionada desde el catálogo de {lecturaElegida.aulaNombre || "tu aula"} para usarla como tarea.
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn-close"
+            aria-label="Quitar lectura elegida"
+            onClick={quitarLectura}
+          />
+        </div>
+      )}
 
       {mensaje && (
         <div className={`alert alert-${mensaje.tipo} alert-dismissible`}>

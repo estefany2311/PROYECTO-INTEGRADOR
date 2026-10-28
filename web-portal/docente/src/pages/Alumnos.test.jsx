@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -8,11 +8,12 @@ import * as api from "../api";
 vi.mock("../api");
 
 const AULA = { id: 10, nombre: "Aula Rural", grados: [{ id: 1, nombre: "1.º" }] };
+const AULA2 = { id: 20, nombre: "Aula Costa", grados: [{ id: 2, nombre: "2.º" }] };
 const ANA = { id: 1, nombres: "Ana", apellidos: "Quispe", gradoId: 1, gradoNombre: "1.º", activo: true };
 
-const mostrar = () =>
+const mostrar = (state) =>
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[{ pathname: "/alumnos", state }]}>
       <Alumnos />
     </MemoryRouter>
   );
@@ -64,5 +65,43 @@ describe("Pantalla de alumnos", () => {
       gradoId: 1,
     });
     expect(await screen.findByText("Alumno registrado correctamente")).toBeInTheDocument();
+  });
+
+  // T-229: la lectura elegida en el catálogo llega a esta pantalla
+  it("muestra la lectura elegida desde el catálogo", async () => {
+    api.listarEstudiantes.mockResolvedValue([ANA]);
+    mostrar({
+      lectura: {
+        id: 5,
+        titulo: "El zorro y el cuervo",
+        gradoNombre: "1.º",
+        aulaId: "10",
+        aulaNombre: "Aula Rural",
+      },
+    });
+
+    expect(await screen.findByText(/lectura elegida/i)).toBeInTheDocument();
+    expect(screen.getByText(/el zorro y el cuervo/i)).toBeInTheDocument();
+    expect(screen.getByText(/catálogo de Aula Rural/i)).toBeInTheDocument();
+  });
+
+  it("abre el aula de la lectura elegida", async () => {
+    api.listarAulas.mockResolvedValue([AULA, AULA2]);
+    api.listarEstudiantes.mockResolvedValue([]);
+    mostrar({ lectura: { id: 5, titulo: "El zorro y el cuervo", aulaId: "20" } });
+
+    await waitFor(() => expect(api.listarEstudiantes).toHaveBeenCalledWith("20"));
+    expect(screen.getByLabelText("Aula")).toHaveValue("20");
+  });
+
+  it("permite quitar el aviso de la lectura elegida", async () => {
+    api.listarEstudiantes.mockResolvedValue([ANA]);
+    mostrar({ lectura: { id: 5, titulo: "El zorro y el cuervo", aulaId: "10" } });
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /quitar lectura elegida/i })
+    );
+
+    expect(screen.queryByText(/lectura elegida/i)).not.toBeInTheDocument();
   });
 });

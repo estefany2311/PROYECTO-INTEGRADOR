@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import Catalogo from "./Catalogo";
 import * as api from "../api";
@@ -41,6 +41,16 @@ const mostrar = () =>
       <Catalogo />
     </MemoryRouter>
   );
+
+// pantalla de mentira que solo muestra lo que recibió por el state de la ruta
+const Destino = () => {
+  const { state } = useLocation();
+  return (
+    <div>
+      destino: {state?.lectura?.titulo} en {state?.lectura?.aulaId}
+    </div>
+  );
+};
 
 describe("Pantalla de catálogo (T-190)", () => {
   beforeEach(() => {
@@ -125,6 +135,31 @@ describe("Pantalla de catálogo (T-190)", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(
       within(screen.getByRole("dialog")).getByText(/un cuervo con un queso en el pico/i)
+    ).toBeInTheDocument();
+    // T-229: la vista previa muestra el tamaño del texto
+    expect(within(screen.getByRole("dialog")).getByText("12 palabras")).toBeInTheDocument();
+  });
+
+  // T-229: el botón del modal lleva la lectura a Alumnos para asignarla
+  it("lleva la lectura elegida a Alumnos con Usar como tarea", async () => {
+    api.listarLecturas.mockResolvedValue([ZORRO]);
+    render(
+      <MemoryRouter initialEntries={["/catalogo"]}>
+        <Routes>
+          <Route path="/catalogo" element={<Catalogo />} />
+          <Route path="/alumnos" element={<Destino />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await screen.findByText("El zorro y el cuervo");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /ver lectura el zorro y el cuervo/i })
+    );
+    await userEvent.click(screen.getByRole("button", { name: /usar como tarea/i }));
+
+    expect(
+      await screen.findByText(/destino: El zorro y el cuervo en 10/)
     ).toBeInTheDocument();
   });
 });
