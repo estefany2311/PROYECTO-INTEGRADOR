@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import Permiso, Usuario, Rol
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 PERMISOS_ROLES_ADMIN = {'roles.ver', 'roles.editar'}
 
@@ -148,3 +150,15 @@ class CambiarEstadoUsuarioSerializer(serializers.Serializer):
             if es_admin and not quedan_admins:
                 raise serializers.ValidationError({'is_active': 'Debe quedar al menos un administrador activo.'})
         return attrs
+
+class LoginSerializer(TokenObtainPairSerializer):
+    """Login con JWT que avisa con claridad cuando la cuenta está desactivada."""
+
+    def validate(self, attrs):
+        usuario = Usuario.objects.filter(username=attrs.get('username')).first()
+        if usuario and not usuario.is_active and usuario.check_password(attrs.get('password', '')):
+            raise AuthenticationFailed({
+                'detail': 'Tu cuenta está desactivada. Contacta al administrador.',
+                'code': 'cuenta_inactiva',
+            })
+        return super().validate(attrs)

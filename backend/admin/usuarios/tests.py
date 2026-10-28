@@ -146,6 +146,29 @@ class LoginTests(BaseApiTest):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
         self.assertEqual(self.client.get(URL_DOCENTES).status_code, 200)
 
+    def test_cuenta_desactivada_no_puede_iniciar_sesion(self):
+        self.docente.is_active = False
+        self.docente.save()
+        resp = self.client.post(URL_LOGIN, {"username": "docente_test", "password": "Docente12345"}, format="json")
+        self.assertEqual(resp.status_code, 401)
+        self.assertEqual(resp.data["detail"], "Tu cuenta está desactivada. Contacta al administrador.")
+
+    def test_cuenta_desactivada_con_contrasena_incorrecta_no_revela_nada(self):
+        self.docente.is_active = False
+        self.docente.save()
+        resp = self.client.post(URL_LOGIN, {"username": "docente_test", "password": "otra-clave"}, format="json")
+        self.assertEqual(resp.status_code, 401)
+        self.assertNotIn("desactivada", str(resp.data))
+
+    def test_token_de_cuenta_desactivada_deja_de_funcionar(self):
+        resp = self.client.post(URL_LOGIN, {"username": "docente_test", "password": "Docente12345"}, format="json")
+        token = resp.data["access"]
+        self.docente.is_active = False
+        self.docente.save()
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+        self.assertEqual(self.client.get("/api/auth/me/").status_code, 401)
+
+
 
 class PermisosTests(TestCase):
     # Los permisos y sus asignaciones vienen de la migración 0005_cargar_permisos

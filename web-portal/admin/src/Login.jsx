@@ -20,10 +20,13 @@ export default function Login({ onLogin, aviso }) {
       onLogin();
     } catch (err) {
       setError(
-        err.estado === 401
-          ? "Usuario o contraseña incorrectos."
-          : err.mensaje ?? "No se pudo iniciar sesión."
+        err.datos?.code === "cuenta_inactiva"
+          ? err.datos.detail
+          : err.estado === 401
+            ? "Usuario o contraseña incorrectos."
+            : err.mensaje ?? "No se pudo iniciar sesión."
       );
+
     } finally {
       setCargando(false);
     }

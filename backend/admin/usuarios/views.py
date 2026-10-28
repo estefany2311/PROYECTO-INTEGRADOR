@@ -4,6 +4,7 @@ from rest_framework import filters, generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import Permiso, Rol, RolPermiso, Usuario
 from .serializers import (
@@ -16,6 +17,7 @@ from .serializers import (
     PermisoSerializer,
     RolSerializer,
     UsuarioListSerializer,
+    LoginSerializer,
 )
 from .permissions import TienePermiso
 
@@ -133,3 +135,6 @@ class UsuarioEstadoView(APIView):
         usuario.is_active = serializer.validated_data['is_active']
         usuario.save(update_fields=['is_active'])
         return Response(UsuarioListSerializer(usuario).data)
+
+class LoginView(TokenObtainPairView):
+    serializer_class = LoginSerializer
