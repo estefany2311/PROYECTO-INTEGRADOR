@@ -101,4 +101,34 @@ class AsignacionControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.mensaje").value("El aula no pertenece al docente"));
     }
+
+    // T-231: el alumno pertenece a otra aula
+    @Test
+    void alumnoDeOtraAulaDevuelve404() throws Exception {
+        when(service.asignar(eq(1L), eq(10L), any(AsignarLecturaRequest.class)))
+                .thenThrow(new ReglaNegocioException(
+                        "El alumno no existe en esta aula", HttpStatus.NOT_FOUND));
+
+        mvc.perform(post("/api/docente/aulas/10/asignaciones")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"lecturaId\":7,\"estudianteId\":5}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje").value("El alumno no existe en esta aula"));
+    }
+
+    // T-231: la lectura está desactivada
+    @Test
+    void lecturaInactivaDevuelve400() throws Exception {
+        when(service.asignar(eq(1L), eq(10L), any(AsignarLecturaRequest.class)))
+                .thenThrow(new ReglaNegocioException(
+                        "La lectura no está activa", HttpStatus.BAD_REQUEST));
+
+        mvc.perform(post("/api/docente/aulas/10/asignaciones")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"lecturaId\":7,\"estudianteId\":5}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("La lectura no está activa"));
+    }
 }

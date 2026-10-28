@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -115,6 +116,21 @@ class AsignacionServiceTest {
     }
 
     @Test
+    void rechazaAlumnoDeOtraAula() {
+        // el repositorio busca por (id, aulaId): un alumno de otra aula no aparece
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(5L, 10L)).thenReturn(Optional.empty());
+
+        ReglaNegocioException ex = assertThrows(ReglaNegocioException.class,
+                () -> service.asignar(1L, 10L, new AsignarLecturaRequest(7L, 5L)));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getEstado());
+        assertEquals("El alumno no existe en esta aula", ex.getMessage());
+        verifyNoInteractions(lecturaRepository); // ni siquiera se busca la lectura
+        verify(asignacionRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
     void rechazaLecturaInexistente() {
         when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
         when(estudianteRepository.findByIdAndAulaId(5L, 10L)).thenReturn(Optional.of(ana));
@@ -124,6 +140,22 @@ class AsignacionServiceTest {
                 () -> service.asignar(1L, 10L, new AsignarLecturaRequest(99L, 5L)));
 
         assertEquals(HttpStatus.NOT_FOUND, ex.getEstado());
+        verify(asignacionRepository, never()).saveAndFlush(any());
+    }
+
+    // T-231: una lectura desactivada no se puede asignar
+    @Test
+    void rechazaLecturaInactiva() {
+        Lectura lectura = lecturaInactiva();
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(5L, 10L)).thenReturn(Optional.of(ana));
+        when(lecturaRepository.findById(7L)).thenReturn(Optional.of(lectura));
+
+        ReglaNegocioException ex = assertThrows(ReglaNegocioException.class,
+                () -> service.asignar(1L, 10L, new AsignarLecturaRequest(7L, 5L)));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getEstado());
+        assertEquals("La lectura no está activa", ex.getMessage());
         verify(asignacionRepository, never()).saveAndFlush(any());
     }
 
@@ -163,6 +195,12 @@ class AsignacionServiceTest {
     private Lectura lecturaActiva() {
         Lectura lectura = mock(Lectura.class);
         when(lectura.isActivo()).thenReturn(true);
+        return lectura;
+    }
+
+    private Lectura lecturaInactiva() {
+        Lectura lectura = mock(Lectura.class);
+        when(lectura.isActivo()).thenReturn(false);
         return lectura;
     }
 }
