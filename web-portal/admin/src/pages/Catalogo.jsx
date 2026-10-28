@@ -151,41 +151,54 @@ function ModalLectura({ onCerrar, onGuardado, onNoAutorizado }) {
   );
 }
 
+const sinFiltros = { search: "", tipo_reto: "", grado: "", dificultad: "" };
+
 export default function Catalogo({ onNoAutorizado, puede = () => true }) {
   const [lecturas, setLecturas] = useState([]);
+  const [filtros, setFiltros] = useState(sinFiltros);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [exito, setExito] = useState("");
   const [recarga, setRecarga] = useState(0);
   const [modalAbierto, setModalAbierto] = useState(false);
 
+  const hayFiltros = Object.values(filtros).some((v) => v);
+
   useEffect(() => {
     let activo = true;
-    listarLecturas()
-      .then((datos) => {
-        if (!activo) return;
-        setLecturas(Array.isArray(datos) ? datos : datos.results ?? []);
-        setError("");
-      })
-      .catch((err) => {
-        if (!activo) return;
-        if (err.estado === 401) onNoAutorizado();
-        else setError(err.datos?.detail ?? err.mensaje ?? "No se pudo cargar el catálogo.");
-      })
-      .finally(() => {
-        if (activo) setCargando(false);
-      });
+    // Espera a que el usuario deje de escribir antes de consultar
+    const espera = setTimeout(() => {
+      setCargando(true);
+      listarLecturas({ ...filtros, search: filtros.search.trim() })
+        .then((datos) => {
+          if (!activo) return;
+          setLecturas(Array.isArray(datos) ? datos : datos.results ?? []);
+          setError("");
+        })
+        .catch((err) => {
+          if (!activo) return;
+          if (err.estado === 401) onNoAutorizado();
+          else if (err.estado === 400) setError(Object.values(err.datos ?? {}).flat().join(" ") || "Revisa los filtros.");
+          else setError(err.datos?.detail ?? err.mensaje ?? "No se pudo cargar el catálogo.");
+        })
+        .finally(() => {
+          if (activo) setCargando(false);
+        });
+    }, 300);
     return () => {
       activo = false;
+      clearTimeout(espera);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recarga]);
+  }, [filtros, recarga]);
 
   useEffect(() => {
     if (!exito) return;
     const t = setTimeout(() => setExito(""), 4000);
     return () => clearTimeout(t);
   }, [exito]);
+
+  const cambiarFiltro = (e) => setFiltros({ ...filtros, [e.target.name]: e.target.value });
 
   const alGuardar = (_lectura, mensaje) => {
     setModalAbierto(false);
@@ -214,8 +227,29 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
       )}
 
       <div className="card">
-        <div className="card-header d-flex align-items-center">
-          <span className="fw-semibold">Lecturas registradas</span>
+        <div className="card-header d-flex flex-wrap gap-2 align-items-center">
+          <input name="search" className="form-control" style={{ maxWidth: 240 }} placeholder="Buscar por título"
+            aria-label="Buscar por título" value={filtros.search} onChange={cambiarFiltro} />
+          <select name="tipo_reto" className="form-select" style={{ maxWidth: 170 }} aria-label="Tipo de reto"
+            value={filtros.tipo_reto} onChange={cambiarFiltro}>
+            <option value="">Todo tipo de reto</option>
+            {TIPOS_RETO.map((t) => <option key={t.valor} value={t.valor}>{t.texto}</option>)}
+          </select>
+          <select name="grado" className="form-select" style={{ maxWidth: 150 }} aria-label="Grado"
+            value={filtros.grado} onChange={cambiarFiltro}>
+            <option value="">Todos los grados</option>
+            {GRADOS.map((g) => <option key={g} value={g}>{g}.° grado</option>)}
+          </select>
+          <select name="dificultad" className="form-select" style={{ maxWidth: 160 }} aria-label="Dificultad"
+            value={filtros.dificultad} onChange={cambiarFiltro}>
+            <option value="">Toda dificultad</option>
+            {DIFICULTADES.map((d) => <option key={d.valor} value={d.valor}>{d.texto}</option>)}
+          </select>
+          {hayFiltros && (
+            <button type="button" className="btn btn-sm btn-light" onClick={() => setFiltros(sinFiltros)}>
+              <i className="bi bi-x-lg me-1"></i>Limpiar filtros
+            </button>
+          )}
           <span className="ms-auto note">
             {cargando ? "Cargando..." : `${lecturas.length} ${lecturas.length === 1 ? "lectura" : "lecturas"}`}
           </span>
@@ -226,11 +260,11 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
         {!error && !cargando && lecturas.length === 0 && (
           <div className="text-center text-secondary py-5">
             <i className="bi bi-journal-richtext fs-2 d-block mb-2"></i>
-            Aún no hay lecturas en el catálogo.
+            {hayFiltros ? "Ninguna lectura coincide con los filtros." : "Aún no hay lecturas en el catálogo."}
           </div>
         )}
 
-        {lecturas.length > 0 && (
+        {!error && lecturas.length > 0 && (
           <div className="table-responsive">
             <table className="table table-hover">
               <thead>
