@@ -61,3 +61,11 @@ export const listarLecturas = (aulaId, filtros = {}) => {
   const query = params.toString();
   return pedir(`/api/docente/aulas/${aulaId}/lecturas${query ? `?${query}` : ""}`);
 };
+
+// T-193: asigna una lectura del catálogo a un alumno concreto.
+// El endpoint lo implementa T-192: POST .../asignaciones { lecturaId, estudianteId }
+export const asignarLectura = (aulaId, datos) =>
+  pedir(`/api/docente/aulas/${aulaId}/asignaciones`, {
+    method: "POST",
+    body: JSON.stringify(datos),
+  });

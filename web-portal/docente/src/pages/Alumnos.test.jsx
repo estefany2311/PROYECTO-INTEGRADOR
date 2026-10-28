@@ -104,4 +104,36 @@ describe("Pantalla de alumnos", () => {
 
     expect(screen.queryByText(/lectura elegida/i)).not.toBeInTheDocument();
   });
+
+  // T-193: desde la lectura elegida se abre el modal de asignación
+  it("abre el modal para asignar la lectura elegida", async () => {
+    api.listarEstudiantes.mockResolvedValue([ANA]);
+    mostrar({
+      lectura: { id: 5, titulo: "El zorro y el cuervo", gradoNombre: "1.º", aulaId: "10" },
+    });
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /asignar a un alumno/i })
+    );
+
+    expect(screen.getByRole("dialog", { name: /asignar lectura/i })).toBeInTheDocument();
+    expect(screen.getByLabelText("Alumno")).toBeInTheDocument();
+  });
+
+  it("asigna la lectura y muestra el mensaje de éxito", async () => {
+    api.listarEstudiantes.mockResolvedValue([ANA]);
+    api.asignarLectura.mockResolvedValue({ id: 1 });
+    mostrar({
+      lectura: { id: 5, titulo: "El zorro y el cuervo", gradoNombre: "1.º", aulaId: "10" },
+    });
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /asignar a un alumno/i })
+    );
+    await userEvent.selectOptions(screen.getByLabelText("Alumno"), "1");
+    await userEvent.click(screen.getByRole("button", { name: "Asignar tarea" }));
+
+    expect(await screen.findByText(/asignada a Ana Quispe/i)).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /asignar lectura/i })).not.toBeInTheDocument();
+  });
 });

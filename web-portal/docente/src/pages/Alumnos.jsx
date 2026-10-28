@@ -5,6 +5,7 @@ import {
   actualizarEstudiante, cambiarEstadoEstudiante,
 } from "../api";
 import AccesoAlumno from "../components/AccesoAlumno";
+import AsignarTarea from "../components/AsignarTarea";
 
 const COLORES = ["#9B22E1", "#2FC5F6", "#F59E0B", "#F51E38", "#22C55E", "#6366F1"];
 const FORM_VACIO = { nombres: "", apellidos: "", gradoId: "" };
@@ -20,6 +21,7 @@ export default function Alumnos() {
   const [editando, setEditando] = useState(null); // alumno en edición; null = modo "agregar"
   const [confirmar, setConfirmar] = useState(null); // alumno a desactivar/reactivar
   const [acceso, setAcceso] = useState(null); // T-187: alumno al que le configuramos avatar/PIN
+  const [asignando, setAsignando] = useState(false); // T-193: modal para asignar la lectura elegida
   const [form, setForm] = useState(FORM_VACIO);
   const [errores, setErrores] = useState({});
   const [errorServidor, setErrorServidor] = useState(null);
@@ -27,6 +29,7 @@ export default function Alumnos() {
   // El aula de esa lectura se guarda una sola vez: al cerrar el aviso no debe recargarse.
   const [lecturaElegida, setLecturaElegida] = useState(ubicacion.state?.lectura ?? null);
   const aulaPedida = useRef(ubicacion.state?.lectura?.aulaId);
+  const [cargandoAlumnos, setCargandoAlumnos] = useState(true);
 
   const aula = aulas.find((a) => String(a.id) === String(aulaId));
   const activos = alumnos.filter((a) => a.activo).length;
@@ -55,7 +58,8 @@ export default function Alumnos() {
     if (!aulaId) return;
     listarEstudiantes(aulaId)
       .then(setAlumnos)
-      .catch((e) => setMensaje({ tipo: "danger", texto: e.message }));
+      .catch((e) => setMensaje({ tipo: "danger", texto: e.message }))
+      .finally(() => setCargandoAlumnos(false));
   }, [aulaId]);
 
   // abre el modal vacío (agregar) o con los datos del alumno (editar)
@@ -145,6 +149,7 @@ export default function Alumnos() {
                 className="form-select rounded-pill"
                 value={aulaId}
                 onChange={(ev) => {
+                  setCargandoAlumnos(true);
                   setAulaId(ev.target.value);
                   // la lectura elegida era para el aula anterior
                   if (lecturaElegida) quitarLectura();
@@ -175,6 +180,14 @@ export default function Alumnos() {
             <div className="small">
               Seleccionada desde el catálogo de {lecturaElegida.aulaNombre || "tu aula"} para usarla como tarea.
             </div>
+            <button
+              type="button"
+              className="btn btn-sm btn-primary rounded-pill mt-2"
+              onClick={() => setAsignando(true)}
+            >
+              <i className="bi bi-person-plus me-2" />
+              Asignar a un alumno
+            </button>
           </div>
           <button
             type="button"
@@ -405,7 +418,24 @@ export default function Alumnos() {
         />
       )}
 
-      {(abierto || confirmar || acceso) && <div className="modal-backdrop fade show" />}
+      {/* T-193: asignar la lectura elegida a un alumno */}
+      {asignando && lecturaElegida && (
+        <AsignarTarea
+          aulaId={aulaId}
+          lectura={lecturaElegida}
+          alumnos={alumnos}
+          cargando={cargandoAlumnos}
+          onCerrar={() => setAsignando(false)}
+          onAsignada={(texto) => {
+            setAsignando(false);
+            setLecturaElegida(null);
+            navegar("/alumnos", { replace: true, state: null });
+            setMensaje({ tipo: "success", texto });
+          }}
+        />
+      )}
+
+      {(abierto || confirmar || acceso || asignando) && <div className="modal-backdrop fade show" />}
     </div>
   );
 }
