@@ -70,4 +70,15 @@ class CatalogoControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.mensaje").value("El aula no pertenece al docente"));
     }
+
+    // T-230: un aula que no existe responde 404
+    @Test
+    void aulaInexistente_devuelve404() throws Exception {
+        when(service.listar(1L, 99L, null, null, null))
+                .thenThrow(new ReglaNegocioException("El aula no existe", HttpStatus.NOT_FOUND));
+
+        mvc.perform(get("/api/docente/aulas/99/lecturas").header("X-Docente-Id", 1))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje").value("El aula no existe"));
+    }
 }

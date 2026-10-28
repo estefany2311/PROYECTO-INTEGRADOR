@@ -121,4 +121,51 @@ class CatalogoServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, ex.getEstado());
         verifyNoInteractions(lecturaRepository);
     }
+
+    // T-230: un aula sin grados no tiene catálogo posible
+    @Test
+    void aulaSinGrados_devuelveVacioSinConsultarElCatalogo() {
+        Aula sinGrados = new Aula();
+        sinGrados.setNombre("Aula sin grados");
+        sinGrados.setDocenteId(1L);
+        sinGrados.setGrados(Set.of());
+        when(aulaRepository.findById(20L)).thenReturn(Optional.of(sinGrados));
+
+        List<LecturaResponse> catalogo = service.listar(1L, 20L, null, null, null);
+
+        assertTrue(catalogo.isEmpty());
+        verifyNoInteractions(lecturaRepository);
+    }
+
+    // T-230: pedir un grado que el aula no atiende no inventa lecturas
+    @Test
+    void gradoQueNoAtiendeElAula_devuelveVacio() {
+        List<LecturaResponse> catalogo = service.listar(1L, 10L, (short) 5, null, null);
+
+        assertTrue(catalogo.isEmpty());
+    }
+
+    // T-230: los filtros vacíos o en blanco se comportan como "sin filtro"
+    @Test
+    void filtrosEnBlancoNoFiltran() {
+        List<LecturaResponse> catalogo = service.listar(1L, 10L, null, "  ", "");
+
+        assertEquals(2, catalogo.size());
+    }
+
+    @Test
+    void combinaGradoDificultadYTipoDeReto() {
+        List<LecturaResponse> catalogo = service.listar(1L, 10L, (short) 2, "intermedia", "escritura");
+
+        assertEquals(1, catalogo.size());
+        assertEquals("La llama viajera", catalogo.get(0).titulo());
+    }
+
+    @Test
+    void tipoDeRetoIgnoraMayusculas() {
+        List<LecturaResponse> catalogo = service.listar(1L, 10L, null, null, "ESCRITURA");
+
+        assertEquals(1, catalogo.size());
+        assertEquals("La llama viajera", catalogo.get(0).titulo());
+    }
 }
