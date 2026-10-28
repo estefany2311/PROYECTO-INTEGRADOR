@@ -23,8 +23,8 @@ public class Asignacion {
     @JoinColumn(name = "estudiante_id")
     private Estudiante estudiante;
 
-    // la fecha la pone la base de datos (DEFAULT now())
-    @Column(name = "fecha_asignacion", nullable = false, insertable = false, updatable = false)
+    // T-192: se fija al crear la asignación; la BD conserva DEFAULT now() como respaldo
+    @Column(name = "fecha_asignacion", nullable = false, updatable = false)
     private LocalDateTime fechaAsignacion;
 
     public Asignacion() {
@@ -33,6 +33,7 @@ public class Asignacion {
     public Asignacion(Long lecturaId, Estudiante estudiante) {
         this.lecturaId = lecturaId;
         this.estudiante = estudiante;
+        this.fechaAsignacion = LocalDateTime.now();
     }
 
     public Long getId() { return id; }
