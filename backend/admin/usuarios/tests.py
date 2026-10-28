@@ -169,7 +169,6 @@ class LoginTests(BaseApiTest):
         self.assertEqual(self.client.get("/api/auth/me/").status_code, 401)
 
 
-
 class PermisosTests(TestCase):
     # Los permisos y sus asignaciones vienen de la migración 0005_cargar_permisos
     def setUp(self):
@@ -282,3 +281,51 @@ class RolesPermisosApiTests(BaseApiTest):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual([u["username"] for u in resp.data], ["docente_test"])
         self.assertEqual(resp.data[0]["rol"]["nombre"], "DOCENTE")
+
+
+class AccesoDenegadoPorRolTests(BaseApiTest):
+    """El docente y un usuario sin rol reciben 403 en lo que no les corresponde (US-45)."""
+
+    def rutas_prohibidas_para_docente(self):
+        return [
+            ("get", "/api/docentes/", None),
+            ("post", "/api/docentes/", DOCENTE_VALIDO),
+            ("get", "/api/roles/", None),
+            ("get", "/api/permisos/", None),
+            ("get", "/api/usuarios/", None),
+            ("patch", f"/api/usuarios/{self.admin.id}/rol/", {"rol": 1}),
+            ("patch", f"/api/usuarios/{self.admin.id}/estado/", {"is_active": False}),
+            ("post", "/api/colegios/", {"codigo_modular": "0734120", "nombre": "IE Prueba", "region": "Puno"}),
+            ("post", "/api/lecturas/", {"titulo": "Prueba", "texto": "Texto suficientemente largo para la prueba.",
+                                        "tipo_reto": "lectura"}),
+        ]
+
+    def test_docente_recibe_403_donde_no_tiene_permiso(self):
+        self.client.force_authenticate(self.docente)
+        for metodo, url, datos in self.rutas_prohibidas_para_docente():
+            with self.subTest(metodo=metodo, url=url):
+                resp = getattr(self.client, metodo)(url, datos, format="json")
+                self.assertEqual(resp.status_code, 403)
+                self.assertEqual(resp.data["detail"], "No tienes permiso para realizar esta acción.")
+
+    def test_docente_si_puede_ver_colegios_y_catalogo(self):
+        self.client.force_authenticate(self.docente)
+        for url in ("/api/colegios/", "/api/lecturas/"):
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_usuario_sin_rol_recibe_403_en_todo(self):
+        sin_rol = Usuario.objects.create_user(
+            username="sin_rol", email="sin_rol@correo.com", password="SinRol12345"
+        )
+        self.client.force_authenticate(sin_rol)
+        for url in ("/api/colegios/", "/api/lecturas/", "/api/docentes/", "/api/roles/", "/api/usuarios/"):
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_admin_si_puede_entrar_a_todo(self):
+        self.client.force_authenticate(self.admin)
+        for url in ("/api/colegios/", "/api/lecturas/", "/api/docentes/", "/api/roles/",
+                    "/api/permisos/", "/api/usuarios/"):
+            with self.subTest(url=url):
+               self.assertEqual(self.client.get(url).status_code, 200)
