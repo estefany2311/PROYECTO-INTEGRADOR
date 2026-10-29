@@ -9,6 +9,7 @@ Paquete sugerido: com.proyecto.usuario.docente
 - Swagger UI: http://localhost:8081/swagger-ui.html
 - OpenAPI JSON: http://localhost:8081/v3/api-docs
 - Postman unificado: `docs/postman-docente-sprint2.json`
+- Ambiente de pruebas: `docs/ambiente-pruebas.md`
 
 Las rutas `/api/docente/**` requieren el header `X-Docente-Id` con el id del docente.
 La colección Postman incluye US-23, US-24, US-35, US-36 y US-37; ajusta sus variables
