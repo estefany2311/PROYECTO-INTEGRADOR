@@ -6,6 +6,7 @@ import Layout from "./components/Layout";
 import Colegios from "./pages/Colegios";
 import RolesPermisos from "./pages/RolesPermisos";
 import Catalogo from "./pages/Catalogo";
+import Usuarios from "./pages/Usuarios";
 import { obtenerMiPerfil, sesion } from "./api";
 import "./App.css";
 
@@ -80,7 +81,7 @@ export default function App() {
     return <div className="p-5 text-center text-secondary">Cargando permisos…</div>;
   }
 
-  const modulos = ["colegios", "docentes", "roles", "catalogo"];
+  const modulos = ["colegios", "docentes", "usuarios", "roles", "catalogo"];
   const paginaActual = puede(`${pagina}.ver`) ? pagina : modulos.find((m) => puede(`${m}.ver`));
 
   return (
@@ -109,6 +110,10 @@ export default function App() {
       {paginaActual === "roles" && <RolesPermisos onNoAutorizado={sesionExpirada} />}
 
       {paginaActual === "catalogo" && <Catalogo onNoAutorizado={sesionExpirada} puede={puede} />}
+
+      {paginaActual === "usuarios" && (
+        <Usuarios onNoAutorizado={sesionExpirada} puede={puede} usuarioActualId={perfil.id} />
+      )}
 
       {paginaActual === "docentes" && (
         <section>
