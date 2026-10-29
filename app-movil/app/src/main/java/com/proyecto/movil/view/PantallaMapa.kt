@@ -70,6 +70,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun PantallaMapa(
     onSalir: (codigoAula: String?) -> Unit,
+    onAbrirNivel: (nivelId: Int) -> Unit = {},
     viewModel: MapaViewModel = viewModel()
 ) {
     val sesion = viewModel.sesion
@@ -102,7 +103,10 @@ fun PantallaMapa(
             ContenidoMapa(
                 estado = estado,
                 onReintentar = { viewModel.cargarMapa() },
-                onNivelTocado = viewModel::tocarNivel
+                // T-215: un nivel disponible abre su detalle; uno bloqueado muestra el aviso (T-240)
+                onNivelTocado = { nivel ->
+                    if (nivel.disponible) onAbrirNivel(nivel.id) else viewModel.tocarNivel(nivel)
+                }
             )
         }
         aviso?.let { mensaje ->

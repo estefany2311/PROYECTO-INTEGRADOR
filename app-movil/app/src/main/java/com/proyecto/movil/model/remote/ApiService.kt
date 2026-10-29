@@ -1,6 +1,7 @@
 package com.proyecto.movil.model.remote
 
 import com.proyecto.movil.model.InicioSesionRequest
+import com.proyecto.movil.model.NivelDetalle
 import com.proyecto.movil.model.Perfil
 import com.proyecto.movil.model.SesionRespuesta
 import retrofit2.Response
@@ -8,6 +9,7 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ApiService {
@@ -21,4 +23,8 @@ interface ApiService {
     // T-236: invalida el token en el backend. El token lo pone solo el interceptor de RetrofitClient.
     @DELETE("api/estudiante/sesion")
     suspend fun cerrarSesion(): Response<Unit>
+
+    // T-215: detalle de un nivel (T-214). Response<> para leer el 403 de un nivel bloqueado
+    @GET("api/estudiante/niveles/{nivelId}")
+    suspend fun obtenerNivel(@Path("nivelId") nivelId: Int): Response<NivelDetalle>
 }

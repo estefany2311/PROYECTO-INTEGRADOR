@@ -2,12 +2,14 @@ package com.proyecto.movil
 
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -15,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.view.PantallaCodigoAula
+import com.proyecto.movil.view.PantallaDetalleNivel
 import com.proyecto.movil.view.PantallaMapa
 import com.proyecto.movil.view.PantallaPerfiles
 import com.proyecto.movil.view.PantallaPin
@@ -75,7 +78,10 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("mapa") {
-                            PantallaMapa(onSalir = { codigoAula ->
+                            PantallaMapa(
+                                // T-215: el mapa queda debajo; "atrás" en el detalle vuelve aquí
+                                onAbrirNivel = { nivelId -> navController.navigate("nivel/$nivelId") },
+                                onSalir = { codigoAula ->
                                 // T-208: vuelve a "¿Quién eres?" del mismo salón para que entre otro niño.
                                 // Si no hay código guardado, vuelve a pedir el código del aula.
                                 val destino = if (codigoAula.isNullOrBlank()) "codigoAula"
@@ -88,6 +94,22 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate("perfiles/${Uri.encode(codigoAula)}")
                                 }
                             })
+                        }
+                        // T-215 (US-07): detalle del nivel con el botón "Comenzar"
+                        composable(
+                            "nivel/{nivelId}",
+                            arguments = listOf(navArgument("nivelId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val contexto = LocalContext.current
+                            PantallaDetalleNivel(
+                                nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
+                                onVolver = { navController.popBackStack() },
+                                onComenzar = {
+                                    // Las pantallas de cada reto (lectura, escritura, oralidad) llegan en el
+                                    // Sprint 3 (US-10, T-219). Por ahora se avisa para la demo.
+                                    Toast.makeText(contexto, "El reto se abre en la próxima versión", Toast.LENGTH_SHORT).show()
+                                }
+                            )
                         }
                     }
                 }
