@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Panel de Administración (T-156)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Mockup T-156 · Paleta del proyecto (morado #9B22E1 del Sprint 1) */
+  :root{
+    --primary:#9B22E1; --primary-soft:#f3e8fd; --primary-dark:#7a16b5;
+    --sidebar:#1e1b2e; --sidebar-text:#b9b4cc; --body:#f5f6fa; --border:#e7e8ef;
+    --text:#1f2333; --muted:#6b7085;
+    --bs-primary:#9B22E1; --bs-primary-rgb:155,34,225; --bs-link-color:#9B22E1;
+  }
+  body{font-family:Inter,system-ui,sans-serif;background:var(--body);color:var(--text);font-size:14px}
+  .btn-primary{--bs-btn-bg:var(--primary);--bs-btn-border-color:var(--primary);--bs-btn-hover-bg:var(--primary-dark);--bs-btn-hover-border-color:var(--primary-dark);--bs-btn-active-bg:var(--primary-dark)}
+  .btn-outline-primary{--bs-btn-color:var(--primary);--bs-btn-border-color:var(--primary);--bs-btn-hover-bg:var(--primary);--bs-btn-hover-border-color:var(--primary)}
+  .form-check-input:checked{background-color:var(--primary);border-color:var(--primary)}
+  .form-control:focus,.form-select:focus{border-color:#c98af0;box-shadow:0 0 0 .2rem rgba(155,34,225,.15)}
+
+  /* Layout */
+  .sidebar{position:fixed;inset:0 auto 0 0;width:250px;background:var(--sidebar);color:var(--sidebar-text);display:flex;flex-direction:column;z-index:1040;transition:transform .2s}
+  .brand{display:flex;align-items:center;gap:10px;padding:20px 22px;color:#fff;font-weight:700;font-size:16px}
+  .brand-logo{width:34px;height:34px;border-radius:10px;background:var(--primary);display:grid;place-items:center;font-size:18px}
+  .nav-section{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#7d7891;padding:18px 22px 6px}
+  .side-link{display:flex;align-items:center;gap:12px;padding:10px 22px;color:var(--sidebar-text);text-decoration:none;border-left:3px solid transparent;cursor:pointer}
+  .side-link:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .side-link.active{color:#fff;background:rgba(155,34,225,.18);border-left-color:var(--primary)}
+  .side-link i{font-size:17px}
+  .side-link .tag{margin-left:auto;font-size:10px;background:rgba(255,255,255,.08);padding:2px 7px;border-radius:10px}
+  .main{margin-left:250px;min-height:100vh}
+  .topbar{height:64px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:0 28px;position:sticky;top:0;z-index:1030}
+  .search{max-width:340px}
+  .search .form-control{background:var(--body);border-color:transparent;padding-left:36px}
+  .search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-weight:700}
+  .content{padding:28px}
+  .page-title h1{font-size:22px;font-weight:700;margin:0}
+  .breadcrumb{font-size:12.5px;margin:4px 0 0}
+
+  /* Cards y tablas */
+  .card{border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .card-header{background:#fff;border-bottom:1px solid var(--border);padding:16px 20px;border-radius:14px 14px 0 0!important}
+  .card-header h2{font-size:15px;font-weight:600;margin:0}
+  .kpi .icon{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:21px}
+  .kpi .value{font-size:24px;font-weight:700;line-height:1.1}
+  .kpi .label{color:var(--muted);font-size:13px}
+  .table{margin:0;--bs-table-hover-bg:#faf7fe}
+  .table thead th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:#fafbfc;border-bottom-color:var(--border);padding:12px 16px}
+  .table td{padding:12px 16px;vertical-align:middle;border-color:var(--border)}
+  .badge-soft{font-weight:600;font-size:11.5px;padding:5px 9px;border-radius:8px}
+  .bs-ok{background:#e7f8ef;color:#13804b}.bs-off{background:#fdecec;color:#c0352b}.bs-p{background:var(--primary-soft);color:var(--primary)}.bs-info{background:#e8f1fd;color:#2463b8}.bs-warn{background:#fff4e0;color:#b26b00}
+  .icon-btn{width:32px;height:32px;display:inline-grid;place-items:center;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--muted)}
+  .icon-btn:hover{color:var(--primary);border-color:#d9b6f3}
+  .mini-avatar{width:32px;height:32px;border-radius:50%;display:inline-grid;place-items:center;font-weight:600;font-size:12px;background:var(--primary-soft);color:var(--primary)}
+  .perm-table td:not(:first-child),.perm-table th:not(:first-child){text-align:center}
+  .role-item{border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer}
+  .role-item.active{border-color:var(--primary);background:#fcf8ff}
+  .note{font-size:12px;color:var(--muted)}
+  .story{font-size:11px;font-weight:600;color:var(--primary);background:var(--primary-soft);padding:3px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}
+  .page{display:none}.page.show{display:block}
+  h1,h2,h5,.card-header h2,.page-title h1{color:var(--text)}
+  a{color:var(--primary)}
+  .btn-primary{background:var(--primary)!important;border-color:var(--primary)!important;background-image:none!important;color:#fff!important}
+  .btn-primary:hover{background:var(--primary-dark)!important}
+  .text-primary{color:var(--primary)!important}
+  .login-brand h2{color:#fff}
+
+  /* Login dividido */
+  .login-wrap{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr;background:#fff}
+  .login-brand{background:linear-gradient(145deg,#2a1747 0%,#9B22E1 100%);color:#fff;padding:56px;display:flex;flex-direction:column;justify-content:space-between}
+  .login-form{display:flex;align-items:center;justify-content:center;padding:40px}
+  .login-form .box{width:100%;max-width:380px}
+
+  @media (max-width: 991px){
+    .sidebar{transform:translateX(-100%)} .sidebar.open{transform:none}
+    .main{margin-left:0} .login-wrap{grid-template-columns:1fr} .login-brand{display:none}
+    .content{padding:18px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="p-login" class="page">
+  <div class="login-wrap">
+    <div class="login-brand">
+      <div class="brand p-0"><div class="brand-logo"><i class="bi bi-book-half"></i></div>Plataforma Educativa</div>
+      <div>
+        <h2 class="fw-bold mb-3" style="font-size:30px">Competencias comunicativas para escuelas rurales multigrado</h2>
+        <p class="opacity-75 mb-4">Gestiona colegios, docentes, el catálogo de lecturas y los permisos de la plataforma desde un solo panel.</p>
+        <div class="d-flex gap-4 small opacity-75"><span><i class="bi bi-shield-lock me-1"></i>Acceso seguro</span><span><i class="bi bi-people me-1"></i>Solo administradores</span></div>
+      </div>
+      <div class="small opacity-50">Proyecto Integrador · IV Ciclo</div>
+    </div>
+    <div class="login-form">
+      <div class="box">
+        <h1 class="fw-bold mb-1" style="font-size:24px">Iniciar sesión</h1>
+        <p class="text-secondary mb-4">Ingresa tus credenciales de administrador</p>
+        <label class="form-label fw-medium">Usuario</label>
+        <div class="input-group mb-3"><span class="input-group-text bg-white"><i class="bi bi-person"></i></span><input class="form-control" placeholder="admin"></div>
+        <label class="form-label fw-medium">Contraseña</label>
+        <div class="input-group mb-2"><span class="input-group-text bg-white"><i class="bi bi-lock"></i></span><input type="password" class="form-control" value="password"></div>
+        <div class="alert alert-danger py-2 small d-flex gap-2 align-items-center"><i class="bi bi-exclamation-circle"></i>Usuario o contraseña incorrectos.</div>
+        <button class="btn btn-primary w-100 py-2" onclick="go('dashboard')">Ingresar al panel</button>
+        <p class="note text-center mt-4">Mockup T-156 · El mensaje de error se muestra solo si las credenciales fallan.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= LAYOUT ================= -->
+<div id="app">
+<aside class="sidebar" id="sidebar">
+  <div class="brand"><div class="brand-logo"><i class="bi bi-book-half"></i></div>Plataforma Educativa</div>
+  <div class="nav-section">General</div>
+  <a class="side-link" data-p="dashboard"><i class="bi bi-grid-1x2"></i>Dashboard</a>
+  <div class="nav-section">Instituciones</div>
+  <a class="side-link" data-p="colegios"><i class="bi bi-building"></i>Colegios<span class="tag">US-44</span></a>
+  <a class="side-link" data-p="docentes"><i class="bi bi-person-badge"></i>Docentes<span class="tag">US-43</span></a>
+  <div class="nav-section">Seguridad</div>
+  <a class="side-link" data-p="usuarios"><i class="bi bi-people"></i>Usuarios<span class="tag">US-46</span></a>
+  <a class="side-link" data-p="roles"><i class="bi bi-shield-check"></i>Roles y permisos<span class="tag">US-45</span></a>
+  <div class="nav-section">Contenido</div>
+  <a class="side-link" data-p="catalogo"><i class="bi bi-journal-richtext"></i>Catálogo<span class="tag">US-39</span></a>
+  <div class="nav-section">Próximos sprints</div>
+  <a class="side-link opacity-50"><i class="bi bi-bar-chart-line"></i>Reportes</a>
+  <a class="side-link opacity-50"><i class="bi bi-cpu"></i>Configuración IA</a>
+  <div class="mt-auto p-3"><a class="side-link rounded" data-p="login"><i class="bi bi-box-arrow-left"></i>Ver login</a></div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="btn btn-light d-lg-none" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="bi bi-list"></i></button>
+    <div class="search position-relative flex-grow-1"><i class="bi bi-search"></i><input class="form-control" placeholder="Buscar colegio, docente o lectura…"></div>
+    <div class="ms-auto d-flex align-items-center gap-3">
+      <button class="icon-btn position-relative"><i class="bi bi-bell"></i><span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger rounded-circle"></span></button>
+      <div class="d-flex align-items-center gap-2">
+        <div class="avatar">DV</div>
+        <div class="lh-sm d-none d-sm-block"><div class="fw-semibold">Daniela Vila</div><div class="note">Administrador</div></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+
+  <!-- ===== DASHBOARD ===== -->
+  <section id="p-dashboard" class="page">
+    <div class="page-title mb-4"><h1>Dashboard</h1><div class="breadcrumb text-secondary">Inicio / Dashboard</div></div>
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-xl-3"><div class="card kpi p-3"><div class="d-flex gap-3 align-items-center"><div class="icon bs-p"><i class="bi bi-building"></i></div><div><div class="value">12</div><div class="label">Colegios registrados</div></div></div></div></div>
+      <div class="col-sm-6 col-xl-3"><div class="card kpi p-3"><div class="d-flex gap-3 align-items-center"><div class="icon bs-info"><i class="bi bi-person-badge"></i></div><div><div class="value">38</div><div class="label">Docentes activos</div></div></div></div></div>
+      <div class="col-sm-6 col-xl-3"><div class="card kpi p-3"><div class="d-flex gap-3 align-items-center"><div class="icon bs-ok"><i class="bi bi-journal-text"></i></div><div><div class="value">64</div><div class="label">Lecturas en catálogo</div></div></div></div></div>
+      <div class="col-sm-6 col-xl-3"><div class="card kpi p-3"><div class="d-flex gap-3 align-items-center"><div class="icon bs-warn"><i class="bi bi-person-x"></i></div><div><div class="value">3</div><div class="label">Cuentas desactivadas</div></div></div></div></div>
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-7"><div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center"><h2>Últimos docentes registrados</h2><a class="small" onclick="go('docentes')" href="#">Ver todos</a></div>
+        <div class="table-responsive"><table class="table table-hover">
+          <thead><tr><th>Docente</th><th>Colegio</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td><span class="mini-avatar me-2">RQ</span>Rosa Quispe</td><td>IE N° 50123 Ccollpa</td><td><span class="badge-soft bs-ok">Activo</span></td></tr>
+            <tr><td><span class="mini-avatar me-2">JM</span>Jorge Mamani</td><td>IE N° 54210 Huaccana</td><td><span class="badge-soft bs-ok">Activo</span></td></tr>
+            <tr><td><span class="mini-avatar me-2">LC</span>Lucía Condori</td><td>Sin asignar</td><td><span class="badge-soft bs-warn">Pendiente</span></td></tr>
+          </tbody></table></div>
+      </div></div>
+      <div class="col-lg-5"><div class="card h-100">
+        <div class="card-header"><h2>Accesos rápidos</h2></div>
+        <div class="card-body d-grid gap-2">
+          <button class="btn btn-outline-primary text-start" onclick="go('colegios')"><i class="bi bi-plus-circle me-2"></i>Registrar colegio</button>
+          <button class="btn btn-outline-primary text-start" onclick="go('docentes')"><i class="bi bi-person-plus me-2"></i>Crear docente</button>
+          <button class="btn btn-outline-primary text-start" onclick="go('catalogo')"><i class="bi bi-journal-plus me-2"></i>Agregar lectura</button>
+          <button class="btn btn-outline-primary text-start" onclick="go('roles')"><i class="bi bi-shield-lock me-2"></i>Gestionar permisos</button>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ===== COLEGIOS US-44 ===== -->
+  <section id="p-colegios" class="page">
+    <div class="page-title d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
+      <div><h1>Colegios <span class="story">US-44</span></h1><div class="breadcrumb text-secondary">Instituciones / Colegios</div></div>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#mColegio"><i class="bi bi-plus-lg me-1"></i>Registrar colegio</button>
+    </div>
+    <div class="card">
+      <div class="card-header d-flex flex-wrap gap-2 align-items-center">
+        <input class="form-control" style="max-width:260px" placeholder="Buscar por nombre o código modular">
+        <select class="form-select" style="max-width:180px"><option>Todas las regiones</option><option>Apurímac</option><option>Cusco</option><option>Puno</option></select>
+        <span class="ms-auto note">12 colegios</span>
+      </div>
+      <div class="table-responsive"><table class="table table-hover">
+        <thead><tr><th>Código modular</th><th>Colegio</th><th>Región / Distrito</th><th>Docentes asignados</th><th class="text-end">Acciones</th></tr></thead>
+        <tbody>
+          <tr><td>0512346</td><td class="fw-medium">IE N° 50123 Ccollpa</td><td>Cusco / Ccatca</td><td><span class="mini-avatar">RQ</span> <span class="mini-avatar">AH</span> <span class="note ms-1">2 docentes</span></td><td class="text-end"><button class="icon-btn" data-bs-toggle="modal" data-bs-target="#mAsignar" title="Asignar docentes"><i class="bi bi-person-plus"></i></button> <button class="icon-btn" title="Editar"><i class="bi bi-pencil"></i></button></td></tr>
+          <tr><td>0623771</td><td class="fw-medium">IE N° 54210 Huaccana</td><td>Apurímac / Huaccana</td><td><span class="mini-avatar">JM</span> <span class="note ms-1">1 docente</span></td><td class="text-end"><button class="icon-btn" data-bs-toggle="modal" data-bs-target="#mAsignar"><i class="bi bi-person-plus"></i></button> <button class="icon-btn"><i class="bi bi-pencil"></i></button></td></tr>
+          <tr><td>0734120</td><td class="fw-medium">IE N° 70345 Chucuito</td><td>Puno / Chucuito</td><td><span class="badge-soft bs-warn">Sin docentes</span></td><td class="text-end"><button class="icon-btn" data-bs-toggle="modal" data-bs-target="#mAsignar"><i class="bi bi-person-plus"></i></button> <button class="icon-btn"><i class="bi bi-pencil"></i></button></td></tr>
+        </tbody></table></div>
+      <div class="card-footer bg-white d-flex justify-content-between align-items-center"><span class="note">Mostrando 1–3 de 12</span>
+        <ul class="pagination pagination-sm m-0"><li class="page-item disabled"><a class="page-link">«</a></li><li class="page-item active"><a class="page-link" style="background:var(--primary);border-color:var(--primary)">1</a></li><li class="page-item"><a class="page-link text-dark">2</a></li><li class="page-item"><a class="page-link text-dark">»</a></li></ul></div>
+    </div>
+  </section>
+
+  <!-- ===== DOCENTES US-43 (rediseño) ===== -->
+  <section id="p-docentes" class="page">
+    <div class="page-title d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
+      <div><h1>Docentes <span class="story">US-43 · rediseño</span></h1><div class="breadcrumb text-secondary">Instituciones / Docentes</div></div>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#mDocente"><i class="bi bi-person-plus me-1"></i>Crear docente</button>
+    </div>
+    <div class="card">
+      <div class="card-header d-flex gap-2"><input class="form-control" style="max-width:280px" placeholder="Buscar docente"><span class="ms-auto note align-self-center">38 docentes</span></div>
+      <div class="table-responsive"><table class="table table-hover">
+        <thead><tr><th>Docente</th><th>Usuario</th><th>Correo</th><th>Colegio</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td><span class="mini-avatar me-2">RQ</span>Rosa Quispe Huamán</td><td>rquispe</td><td>rquispe@ugel.edu.pe</td><td>IE N° 50123 Ccollpa</td><td><span class="badge-soft bs-ok">Activo</span></td></tr>
+          <tr><td><span class="mini-avatar me-2">JM</span>Jorge Mamani Ccori</td><td>jmamani</td><td>jmamani@ugel.edu.pe</td><td>IE N° 54210 Huaccana</td><td><span class="badge-soft bs-ok">Activo</span></td></tr>
+          <tr><td><span class="mini-avatar me-2">LC</span>Lucía Condori Apaza</td><td>lcondori</td><td>lcondori@ugel.edu.pe</td><td class="text-secondary">Sin asignar</td><td><span class="badge-soft bs-ok">Activo</span></td></tr>
+        </tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ===== USUARIOS US-46 ===== -->
+  <section id="p-usuarios" class="page">
+    <div class="page-title mb-4"><h1>Usuarios <span class="story">US-46</span></h1><div class="breadcrumb text-secondary">Seguridad / Usuarios</div></div>
+    <div class="card">
+      <div class="card-header d-flex flex-wrap gap-2">
+        <input class="form-control" style="max-width:260px" placeholder="Buscar usuario">
+        <select class="form-select" style="max-width:160px"><option>Todos los roles</option><option>Administrador</option><option>Docente</option></select>
+        <select class="form-select" style="max-width:160px"><option>Todos los estados</option><option>Activos</option><option>Inactivos</option></select>
+      </div>
+      <div class="table-responsive"><table class="table table-hover">
+        <thead><tr><th>Usuario</th><th>Rol</th><th>Último acceso</th><th>Estado</th><th class="text-end">Acción</th></tr></thead>
+        <tbody>
+          <tr><td><span class="mini-avatar me-2">DV</span>dvila</td><td><span class="badge-soft bs-p">Administrador</span></td><td>Hoy, 08:12</td><td><span class="badge-soft bs-ok">Activo</span></td><td class="text-end note">Tu cuenta</td></tr>
+          <tr><td><span class="mini-avatar me-2">RQ</span>rquispe</td><td><span class="badge-soft bs-info">Docente</span></td><td>Ayer, 17:40</td><td><span class="badge-soft bs-ok">Activo</span></td><td class="text-end"><button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#mDesactivar"><i class="bi bi-slash-circle me-1"></i>Desactivar</button></td></tr>
+          <tr class="table-light"><td><span class="mini-avatar me-2">PT</span>ptorres</td><td><span class="badge-soft bs-info">Docente</span></td><td>12/09/2026</td><td><span class="badge-soft bs-off">Inactivo</span></td><td class="text-end"><button class="btn btn-sm btn-outline-success"><i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar</button></td></tr>
+        </tbody></table></div>
+      <div class="card-footer bg-white note"><i class="bi bi-info-circle me-1"></i>Un usuario inactivo no puede iniciar sesión. Su información se conserva.</div>
+    </div>
+  </section>
+
+  <!-- ===== ROLES Y PERMISOS US-45 ===== -->
+  <section id="p-roles" class="page">
+    <div class="page-title d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
+      <div><h1>Roles y permisos <span class="story">US-45</span></h1><div class="breadcrumb text-secondary">Seguridad / Roles y permisos</div></div>
+      <button class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Guardar cambios</button>
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-4">
+        <div class="card"><div class="card-header"><h2>Roles</h2></div><div class="card-body d-grid gap-2">
+          <div class="role-item"><div class="d-flex justify-content-between"><span class="fw-semibold"><i class="bi bi-shield-fill-check me-2 text-primary"></i>Administrador</span><span class="note">2 usuarios</span></div><div class="note mt-1">Acceso total al panel</div></div>
+          <div class="role-item active"><div class="d-flex justify-content-between"><span class="fw-semibold"><i class="bi bi-person-badge me-2 text-primary"></i>Docente</span><span class="note">38 usuarios</span></div><div class="note mt-1">Gestiona su aula y alumnos</div></div>
+          <div class="role-item"><div class="d-flex justify-content-between"><span class="fw-semibold"><i class="bi bi-emoji-smile me-2 text-primary"></i>Estudiante</span><span class="note">412 usuarios</span></div><div class="note mt-1">Solo app móvil</div></div>
+        </div></div>
+      </div>
+      <div class="col-lg-8">
+        <div class="card"><div class="card-header d-flex justify-content-between"><h2>Permisos del rol: Docente</h2><span class="note">Se aplican en cada endpoint (403 si no tiene permiso)</span></div>
+        <div class="table-responsive"><table class="table perm-table">
+          <thead><tr><th>Módulo</th><th>Ver</th><th>Crear</th><th>Editar</th><th>Desactivar</th></tr></thead>
+          <tbody>
+            <tr><td class="fw-medium">Colegios</td><td><input class="form-check-input" type="checkbox" checked></td><td><input class="form-check-input" type="checkbox"></td><td><input class="form-check-input" type="checkbox"></td><td><input class="form-check-input" type="checkbox"></td></tr>
+            <tr><td class="fw-medium">Docentes</td><td><input class="form-check-input" type="checkbox"></td><td><input class="form-check-input" type="checkbox"></td><td><input class="form-check-input" type="checkbox"></td><td><input class="form-check-input" type="checkbox"></td></tr>
+            <tr><td class="fw-medium">Alumnos</td><td><input class="form-check-input" type="checkbox" checked></td><td><input class="form-check-input" type="checkbox" checked></td><td><input class="form-check-input" type="checkbox" checked></td><td><input class="form-check-input" type="checkbox" checked></td></tr>
+            <tr><td class="fw-medium">Catálogo de lecturas</td><td><input class="form-check-input" type="checkbox" checked></td><td><input class="form-check-input" type="checkbox"></td><td><input class="form-check-input" type="checkbox"></td><td><input class="form-check-input" type="checkbox"></td></tr>
+            <tr><td class="fw-medium">Asignaciones</td><td><input class="form-check-input" type="checkbox" checked></td><td><input class="form-check-input" type="checkbox" checked></td><td><input class="form-check-input" type="checkbox" checked></td><td><input class="form-check-input" type="checkbox"></td></tr>
+            <tr><td class="fw-medium">Reportes</td><td><input class="form-check-input" type="checkbox"></td><td>—</td><td>—</td><td>—</td></tr>
+          </tbody></table></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CATÁLOGO US-39/40/41 ===== -->
+  <section id="p-catalogo" class="page">
+    <div class="page-title d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
+      <div><h1>Catálogo de lecturas <span class="story">US-39 · US-40 · US-41</span></h1><div class="breadcrumb text-secondary">Contenido / Catálogo</div></div>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#mLectura"><i class="bi bi-plus-lg me-1"></i>Nueva lectura</button>
+    </div>
+    <div class="card">
+      <div class="card-header d-flex flex-wrap gap-2">
+        <input class="form-control" style="max-width:240px" placeholder="Buscar por título">
+        <select class="form-select" style="max-width:150px"><option>Todos los grados</option><option>1.° grado</option><option>2.° grado</option><option>3.° grado</option><option>4.° grado</option><option>5.° grado</option><option>6.° grado</option></select>
+        <select class="form-select" style="max-width:160px"><option>Toda dificultad</option><option>Básica</option><option>Intermedia</option><option>Avanzada</option></select>
+        <select class="form-select" style="max-width:150px"><option>Todo tipo de reto</option><option>Lectura</option><option>Escritura</option><option>Oralidad</option></select>
+      </div>
+      <div class="table-responsive"><table class="table table-hover">
+        <thead><tr><th>Título</th><th>Tipo de reto</th><th>Grado</th><th>Dificultad</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+        <tbody>
+          <tr><td class="fw-medium">El cóndor y el zorro</td><td><i class="bi bi-book me-1 text-primary"></i>Lectura</td><td>2.°</td><td><span class="badge-soft bs-ok">Básica</span></td><td><span class="badge-soft bs-ok">Activa</span></td><td class="text-end"><button class="icon-btn"><i class="bi bi-pencil"></i></button> <button class="icon-btn"><i class="bi bi-eye-slash"></i></button> <button class="icon-btn" disabled title="No se puede eliminar: está asignada"><i class="bi bi-trash"></i></button></td></tr>
+          <tr><td class="fw-medium">Mi chacra en la mañana</td><td><i class="bi bi-pencil-square me-1 text-primary"></i>Escritura</td><td>4.°</td><td><span class="badge-soft bs-warn">Intermedia</span></td><td><span class="badge-soft bs-ok">Activa</span></td><td class="text-end"><button class="icon-btn"><i class="bi bi-pencil"></i></button> <button class="icon-btn"><i class="bi bi-eye-slash"></i></button> <button class="icon-btn"><i class="bi bi-trash"></i></button></td></tr>
+          <tr><td class="fw-medium">La fiesta del Inti Raymi</td><td><i class="bi bi-mic me-1 text-primary"></i>Oralidad</td><td>6.°</td><td><span class="badge-soft bs-off">Avanzada</span></td><td><span class="badge-soft bs-off">Inactiva</span></td><td class="text-end"><button class="icon-btn"><i class="bi bi-pencil"></i></button> <button class="icon-btn"><i class="bi bi-eye"></i></button> <button class="icon-btn"><i class="bi bi-trash"></i></button></td></tr>
+        </tbody></table></div>
+      <div class="card-footer bg-white note"><i class="bi bi-info-circle me-1"></i>Las lecturas ya asignadas a alumnos no se pueden eliminar, solo desactivar (US-41).</div>
+    </div>
+  </section>
+
+  </main>
+</div>
+</div>
+
+<!-- ================= MODALES ================= -->
+<div class="modal fade" id="mColegio" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title fw-semibold">Registrar colegio</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body row g-3">
+    <div class="col-6"><label class="form-label">Código modular *</label><input class="form-control" placeholder="0512346"></div>
+    <div class="col-6"><label class="form-label">Región *</label><select class="form-select"><option>Cusco</option></select></div>
+    <div class="col-12"><label class="form-label">Nombre del colegio *</label><input class="form-control is-invalid" value=""><div class="invalid-feedback">El nombre es obligatorio.</div></div>
+    <div class="col-12"><label class="form-label">Distrito / Centro poblado</label><input class="form-control"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary">Guardar colegio</button></div>
+</div></div></div>
+
+<div class="modal fade" id="mAsignar" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title fw-semibold">Asignar docentes · IE N° 50123 Ccollpa</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <input class="form-control mb-3" placeholder="Buscar docente">
+    <div class="list-group">
+      <label class="list-group-item d-flex gap-2"><input class="form-check-input" type="checkbox" checked>Rosa Quispe Huamán</label>
+      <label class="list-group-item d-flex gap-2"><input class="form-check-input" type="checkbox" checked>Ana Huamán Ccama</label>
+      <label class="list-group-item d-flex gap-2"><input class="form-check-input" type="checkbox">Lucía Condori Apaza <span class="ms-auto note">sin colegio</span></label>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary">Guardar asignación</button></div>
+</div></div></div>
+
+<div class="modal fade" id="mDocente" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title fw-semibold">Crear docente</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body row g-3">
+    <div class="col-6"><label class="form-label">Nombres *</label><input class="form-control"></div>
+    <div class="col-6"><label class="form-label">Apellidos *</label><input class="form-control"></div>
+    <div class="col-6"><label class="form-label">Usuario *</label><input class="form-control"></div>
+    <div class="col-6"><label class="form-label">Correo *</label><input class="form-control"></div>
+    <div class="col-12"><label class="form-label">Contraseña *</label><input type="password" class="form-control"><div class="form-text">Mínimo 8 caracteres.</div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary">Crear docente</button></div>
+</div></div></div>
+
+<div class="modal fade" id="mDesactivar" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content text-center p-3">
+  <div class="mx-auto mb-2 kpi"><div class="icon bs-off mx-auto"><i class="bi bi-slash-circle"></i></div></div>
+  <h5 class="fw-semibold">¿Desactivar a rquispe?</h5>
+  <p class="note">No podrá iniciar sesión hasta que la reactives.</p>
+  <div class="d-flex gap-2"><button class="btn btn-light w-50" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-danger w-50">Desactivar</button></div>
+</div></div></div>
+
+<div class="modal fade" id="mLectura" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title fw-semibold">Nueva lectura</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body row g-3">
+    <div class="col-md-8"><label class="form-label">Título *</label><input class="form-control" placeholder="El cóndor y el zorro"></div>
+    <div class="col-md-4"><label class="form-label">Tipo de reto *</label><select class="form-select"><option>Lectura</option><option>Escritura</option><option>Oralidad</option></select></div>
+    <div class="col-md-6"><label class="form-label">Grado *</label><select class="form-select"><option>2.° grado</option></select></div>
+    <div class="col-md-6"><label class="form-label">Dificultad *</label><select class="form-select"><option>Básica</option><option>Intermedia</option><option>Avanzada</option></select></div>
+    <div class="col-12"><label class="form-label">Texto de la lectura *</label><textarea class="form-control" rows="5" placeholder="Había una vez un cóndor que vivía en lo alto de la montaña…"></textarea></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary">Guardar lectura</button></div>
+</div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  function go(p){
+    const login = p === 'login';
+    document.getElementById('app').style.display = login ? 'none' : 'block';
+    document.getElementById('p-login').classList.toggle('show', login);
+    document.querySelectorAll('main .page').forEach(s => s.classList.toggle('show', s.id === 'p-' + p));
+    document.querySelectorAll('.side-link[data-p]').forEach(a => a.classList.toggle('active', a.dataset.p === p));
+    document.getElementById('sidebar').classList.remove('open');
+    if (location.hash !== '#' + p) history.replaceState(null, '', '#' + p);
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll('.side-link[data-p]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); go(a.dataset.p); }));
+  go(location.hash.slice(1) || 'dashboard');
+</script>
+</body>
+</html>

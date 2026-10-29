@@ -1,0 +1,12 @@
+asgiref==3.12.1
+bcrypt==5.0.0
+Django==6.1.1
+django-cors-headers==4.9.0
+djangorestframework==3.18.1
+djangorestframework_simplejwt==5.5.1
+psycopg2-binary==2.9.13
+PyJWT==2.15.1
+python-dotenv==1.2.4
+sqlparse==0.6.0
+tzdata==2026.5
+drf-spectacular==0.30.0
