@@ -1,9 +1,10 @@
 import { useState } from "react";
+import Koala from "./Koala";
 
 const SECCIONES = [
   {
     titulo: "General",
-    enlaces: [{ id: "dashboard", icono: "bi-grid-1x2", texto: "Dashboard" }],
+    enlaces: [{ id: "dashboard", icono: "bi-house-heart", texto: "Inicio", disponible: true, libre: true }],
   },
   {
     titulo: "Instituciones",
@@ -37,7 +38,7 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
     // Un enlace disponible solo se muestra si el rol tiene el permiso "<modulo>.ver"
-  const puedeVer = (enlace) => !enlace.disponible || permisos.includes(`${enlace.id}.ver`);
+  const puedeVer = (enlace) => !enlace.disponible || enlace.libre || permisos.includes(`${enlace.id}.ver`);
 
   const navegar = (id) => {
     onNavegar(id);
@@ -53,8 +54,8 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
     <div className="app-layout">
       <aside className={`sidebar${menuAbierto ? " open" : ""}`}>
         <div className="brand">
-          <div className="brand-logo">
-            <i className="bi bi-book-half"></i>
+          <div className="brand-logo koala-logo">
+            <Koala size={30} />
           </div>
           Plataforma Educativa
         </div>
@@ -73,7 +74,7 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
                   >
                     <i className={`bi ${enlace.icono}`}></i>
                     {enlace.texto}
-                    <span className="tag">{enlace.etiqueta}</span>
+                    {enlace.etiqueta && <span className="tag">{enlace.etiqueta}</span>}
                   </button>
                 ) : (
                   <span key={enlace.id} className="side-link disabled" aria-disabled="true">

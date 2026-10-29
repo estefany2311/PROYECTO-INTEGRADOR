@@ -7,6 +7,7 @@ import Colegios from "./pages/Colegios";
 import RolesPermisos from "./pages/RolesPermisos";
 import Catalogo from "./pages/Catalogo";
 import Usuarios from "./pages/Usuarios";
+import Inicio from "./pages/Inicio";
 import { obtenerMiPerfil, sesion } from "./api";
 import "./App.css";
 
@@ -14,7 +15,7 @@ export default function App() {
   const [autenticado, setAutenticado] = useState(Boolean(sesion.token));
   const [recarga, setRecarga] = useState(0);
   const [aviso, setAviso] = useState("");
-  const [pagina, setPagina] = useState("colegios");
+  const [pagina, setPagina] = useState("dashboard");
   // La búsqueda de la topbar abre Colegios con ese texto; el id fuerza a reiniciar la página
   const [busquedaGlobal, setBusquedaGlobal] = useState({ id: 0, texto: "" });
   const [perfil, setPerfil] = useState(null);
@@ -57,23 +58,14 @@ export default function App() {
 
   if (!autenticado) {
     return (
-      <div className="login-viewport">
-        <div className="login-container">
-          <div className="login-header">
-            <span className="brand-badge"></span>
-            <h1>Panel de Administración</h1>
-            <p>Ingresa tus credenciales para gestionar el portal de docentes</p>
-          </div>
-          <Login
-            aviso={aviso}
-            onLogin={() => {
-              setAviso("");
-              setPagina("colegios");
-              setAutenticado(true);
-            }}
-          />
-        </div>
-      </div>
+      <Login
+        aviso={aviso}
+        onLogin={() => {
+          setAviso("");
+          setPagina("dashboard");
+          setAutenticado(true);
+        }}
+      />
     );
   }
 
@@ -81,8 +73,8 @@ export default function App() {
     return <div className="p-5 text-center text-secondary">Cargando permisos…</div>;
   }
 
-  const modulos = ["colegios", "docentes", "usuarios", "roles", "catalogo"];
-  const paginaActual = puede(`${pagina}.ver`) ? pagina : modulos.find((m) => puede(`${m}.ver`));
+  // Inicio siempre está disponible; las demás páginas requieren el permiso "<modulo>.ver"
+  const paginaActual = pagina === "dashboard" || puede(`${pagina}.ver`) ? pagina : "dashboard";
 
   return (
     <Layout
@@ -94,8 +86,14 @@ export default function App() {
       rol={perfil.rol}
       permisos={permisos}
     >
-      {!paginaActual && (
-        <div className="alert alert-warning">No tienes acceso a ningún módulo. Contacta al administrador.</div>
+      {paginaActual === "dashboard" && (
+        <Inicio
+          nombre={perfil.nombre_completo}
+          rol={perfil.rol}
+          puede={puede}
+          onNavegar={setPagina}
+          onNoAutorizado={sesionExpirada}
+        />
       )}
 
       {paginaActual === "colegios" && (
