@@ -16,14 +16,21 @@ enum class TipoReto {
     }
 }
 
-// Estado de un nivel para el alumno (US-06): "bloqueado", "desbloqueado", "completado"
+/*
+ * T-213 (US-06): estado de un nivel para el alumno, tal como lo manda el backend en "estado":
+ *   "bloqueado"    → todavía no puede entrar (le falta completar el nivel anterior)
+ *   "desbloqueado" → puede jugarlo ahora
+ *   "completado"   → ya lo terminó (puede volver a jugarlo)
+ * El backend docente (T-197) calcula el estado con el progreso del alumno; la app solo lo lee.
+ */
 enum class EstadoNivel {
     BLOQUEADO, DESBLOQUEADO, COMPLETADO;
 
     companion object {
-        // Si llega un valor desconocido se trata como bloqueado: nunca se abre un nivel por error
+        // Sin importar mayúsculas ni espacios. Si llega un valor desconocido o falta,
+        // se trata como bloqueado: nunca se abre un nivel por error
         fun desde(valor: String?): EstadoNivel =
-            entries.firstOrNull { it.name.equals(valor, ignoreCase = true) } ?: BLOQUEADO
+            entries.firstOrNull { it.name.equals(valor?.trim(), ignoreCase = true) } ?: BLOQUEADO
     }
 }
 
@@ -40,7 +47,12 @@ data class NivelMapa(
     // Se guardan como texto y se convierten aquí: si el backend agrega un valor nuevo, la app no se cae
     val reto: TipoReto get() = TipoReto.desde(tipoReto)
     val estadoNivel: EstadoNivel get() = EstadoNivel.desde(estado)
+
+    // T-213: atajos para la pantalla (T-239 estilos, T-240 mensaje al tocar un bloqueado)
     val bloqueado: Boolean get() = estadoNivel == EstadoNivel.BLOQUEADO
+    val completado: Boolean get() = estadoNivel == EstadoNivel.COMPLETADO
+    // Se puede entrar si está desbloqueado o ya completado (para repetirlo)
+    val disponible: Boolean get() = !bloqueado
 }
 
 // Mapa completo del alumno, con el resumen para la cabecera
