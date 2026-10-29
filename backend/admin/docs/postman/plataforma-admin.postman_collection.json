@@ -4,412 +4,418 @@
     "name": "Plataforma Educativa - Admin",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "57980374",
-    "_collection_link": "https://go.postman.co/collection/57980374-0140c404-f18b-4d2b-aabc-4e97eb22a9ad?source=collection_link"
+    "_collection_link": "https://go.postman.co/collection/57980374-0140c404-f18b-4d2b-aabc-4e97eb22a9ad?source=collection_link",
+    "description": "Colección única del módulo Admin (Django). Ejecutar completa con Run collection: 1) Docentes, 2) Colegios, 3) Roles y permisos, 4) Catálogo, 5) Usuarios. Completar la variable admin_password antes de correrla."
   },
   "item": [
     {
-      "name": "Login admin",
-      "event": [
+      "name": "1 Docentes",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "   pm.test(\"Login correcto (200)\", () => pm.response.to.have.status(200));\r\n   pm.collectionVariables.set(\"token\", pm.response.json().access);"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "noauth"
-        },
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "   { \"username\": \"Daniela\", \"password\": \"{{admin_password}}\" }",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{base_url}}/auth/login/",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "auth",
-            "login",
-            ""
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "2 Crear docente valido",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "   pm.test(\"201 Created\", () => pm.response.to.have.status(201));\r\n   pm.test(\"No expone la contraseña\", () => pm.expect(pm.response.json()).to.not.have.property(\"password\"));\r\n   pm.collectionVariables.set(\"docente_user\", pm.response.json().username);"
-            ]
-          }
-        },
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "   const docentes = [\r\n     [\"Rosa\", \"Quispe\"], [\"Jorge\", \"Mamani\"], [\"Lucia\", \"Condori\"],\r\n     [\"Ana\", \"Huaman\"], [\"Pedro\", \"Ccama\"], [\"Maria\", \"Apaza\"],\r\n   ];\r\n   const [nombre, apellido] = docentes[Math.floor(Math.random() * docentes.length)];\r\n   const numero = String(Date.now()).slice(-4);\r\n   pm.collectionVariables.set(\"nombre\", nombre);\r\n   pm.collectionVariables.set(\"apellido\", apellido);\r\n   pm.collectionVariables.set(\"sufijo\", `${nombre[0]}${apellido}${numero}`.toLowerCase());"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "   {\r\n     \"username\": \"{{sufijo}}\",\r\n     \"first_name\": \"{{nombre}}\",\r\n     \"last_name\": \"{{apellido}}\",\r\n     \"email\": \"{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{base_url}}/docentes/",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "docentes",
-            ""
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "3 Falta apellido",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "   pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "   {\r\n     \"username\": \"x1\",\r\n     \"first_name\": \"Ana\",\r\n     \"email\": \"x1@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{base_url}}/docentes/",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "docentes",
-            ""
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "4 Correo invalido",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "   pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "   {\r\n     \"username\": \"x2\",\r\n     \"first_name\": \"Ana\",\r\n     \"last_name\": \"Paz\",\r\n     \"email\": \"abc\",\r\n     \"password\": \"Clave12345\"\r\n   }",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{base_url}}/docentes/",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "docentes",
-            ""
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "5 Correo repetido",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "   pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "   {\r\n     \"username\": \"otro{{sufijo}}\",\r\n     \"first_name\": \"Ana\",\r\n     \"last_name\": \"Paz\",\r\n     \"email\": \"{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{base_url}}/docentes/",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "docentes",
-            ""
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "6 Contraseña corta",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "   pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "   {\r\n     \"username\": \"x3\",\r\n     \"first_name\": \"Ana\",\r\n     \"last_name\": \"Paz\",\r\n     \"email\": \"x3@prueba.edu.pe\",\r\n     \"password\": \"123\"\r\n   }",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{base_url}}/docentes/",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "docentes",
-            ""
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "7 Listar docentes",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "   pm.test(\"200 OK\", () => pm.response.to.have.status(200));\r\n   pm.test(\"Ningún docente expone la contraseña\", () => {\r\n     pm.response.json().forEach(d => pm.expect(d).to.not.have.property(\"password\"));\r\n   });"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/docentes/",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "docentes",
-            ""
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "8 Listar sin token",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "   pm.test(\"401 Unauthorized\", () => pm.response.to.have.status(401));"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "noauth"
-        },
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/docentes/",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "docentes",
-            ""
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "9a Login Docente",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "   pm.test(\"Login docente (200)\", () => pm.response.to.have.status(200));\r\n   pm.collectionVariables.set(\"token_docente\", pm.response.json().access);"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "bearer"
-        },
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "   { \"username\": \"{{docente_user}}\", \"password\": \"Clave12345\" }",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{base_url}}/auth/login/",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "auth",
-            "login",
-            ""
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "9 Docente no puede crear",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "   pm.test(\"403 Forbidden\", () => pm.response.to.have.status(403));"
-            ]
-          }
-        },
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "   const docentes = [\r\n     [\"Rosa\", \"Quispe\"], [\"Jorge\", \"Mamani\"], [\"Lucia\", \"Condori\"],\r\n     [\"Ana\", \"Huaman\"], [\"Pedro\", \"Ccama\"], [\"Maria\", \"Apaza\"],\r\n   ];\r\n   const [nombre, apellido] = docentes[Math.floor(Math.random() * docentes.length)];\r\n   const numero = String(Date.now()).slice(-4);\r\n   pm.collectionVariables.set(\"nombre\", nombre);\r\n   pm.collectionVariables.set(\"apellido\", apellido);\r\n   pm.collectionVariables.set(\"sufijo\", `${nombre[0]}${apellido}${numero}`.toLowerCase());"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
+          "name": "Login admin",
+          "event": [
             {
-              "key": "token",
-              "value": "{{token_docente}}",
-              "type": "string"
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "   pm.test(\"Login correcto (200)\", () => pm.response.to.have.status(200));\r\n   pm.collectionVariables.set(\"token\", pm.response.json().access);"
+                ]
+              }
             }
-          ]
-        },
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "     {\r\n     \"username\": \"{{sufijo}}\",\r\n     \"first_name\": \"{{nombre}}\",\r\n     \"last_name\": \"{{apellido}}\",\r\n     \"email\": \"{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{base_url}}/docentes/",
-          "host": [
-            "{{base_url}}"
           ],
-          "path": [
-            "docentes",
-            ""
-          ]
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "   { \"username\": \"Daniela\", \"password\": \"{{admin_password}}\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2 Crear docente valido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "   pm.test(\"201 Created\", () => pm.response.to.have.status(201));\r\n   pm.test(\"No expone la contraseña\", () => pm.expect(pm.response.json()).to.not.have.property(\"password\"));\r\n   pm.collectionVariables.set(\"docente_user\", pm.response.json().username);"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "   const docentes = [\r\n     [\"Rosa\", \"Quispe\"], [\"Jorge\", \"Mamani\"], [\"Lucia\", \"Condori\"],\r\n     [\"Ana\", \"Huaman\"], [\"Pedro\", \"Ccama\"], [\"Maria\", \"Apaza\"],\r\n   ];\r\n   const [nombre, apellido] = docentes[Math.floor(Math.random() * docentes.length)];\r\n   const numero = String(Date.now()).slice(-4);\r\n   pm.collectionVariables.set(\"nombre\", nombre);\r\n   pm.collectionVariables.set(\"apellido\", apellido);\r\n   pm.collectionVariables.set(\"sufijo\", `${nombre[0]}${apellido}${numero}`.toLowerCase());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "   {\r\n     \"username\": \"{{sufijo}}\",\r\n     \"first_name\": \"{{nombre}}\",\r\n     \"last_name\": \"{{apellido}}\",\r\n     \"email\": \"{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/docentes/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "docentes",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3 Falta apellido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "   pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "   {\r\n     \"username\": \"x1\",\r\n     \"first_name\": \"Ana\",\r\n     \"email\": \"x1@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/docentes/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "docentes",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4 Correo invalido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "   pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "   {\r\n     \"username\": \"x2\",\r\n     \"first_name\": \"Ana\",\r\n     \"last_name\": \"Paz\",\r\n     \"email\": \"abc\",\r\n     \"password\": \"Clave12345\"\r\n   }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/docentes/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "docentes",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5 Correo repetido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "   pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "   {\r\n     \"username\": \"otro{{sufijo}}\",\r\n     \"first_name\": \"Ana\",\r\n     \"last_name\": \"Paz\",\r\n     \"email\": \"{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/docentes/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "docentes",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6 Contraseña corta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "   pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "   {\r\n     \"username\": \"x3\",\r\n     \"first_name\": \"Ana\",\r\n     \"last_name\": \"Paz\",\r\n     \"email\": \"x3@prueba.edu.pe\",\r\n     \"password\": \"123\"\r\n   }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/docentes/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "docentes",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "7 Listar docentes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "   pm.test(\"200 OK\", () => pm.response.to.have.status(200));\r\n   pm.test(\"Ningún docente expone la contraseña\", () => {\r\n     pm.response.json().forEach(d => pm.expect(d).to.not.have.property(\"password\"));\r\n   });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/docentes/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "docentes",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "8 Listar sin token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "   pm.test(\"401 Unauthorized\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/docentes/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "docentes",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "9a Login Docente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "   pm.test(\"Login docente (200)\", () => pm.response.to.have.status(200));\r\n   pm.collectionVariables.set(\"token_docente\", pm.response.json().access);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "   { \"username\": \"{{docente_user}}\", \"password\": \"Clave12345\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "9 Docente no puede crear",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "   pm.test(\"403 Forbidden\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "   const docentes = [\r\n     [\"Rosa\", \"Quispe\"], [\"Jorge\", \"Mamani\"], [\"Lucia\", \"Condori\"],\r\n     [\"Ana\", \"Huaman\"], [\"Pedro\", \"Ccama\"], [\"Maria\", \"Apaza\"],\r\n   ];\r\n   const [nombre, apellido] = docentes[Math.floor(Math.random() * docentes.length)];\r\n   const numero = String(Date.now()).slice(-4);\r\n   pm.collectionVariables.set(\"nombre\", nombre);\r\n   pm.collectionVariables.set(\"apellido\", apellido);\r\n   pm.collectionVariables.set(\"sufijo\", `${nombre[0]}${apellido}${numero}`.toLowerCase());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "     {\r\n     \"username\": \"{{sufijo}}\",\r\n     \"first_name\": \"{{nombre}}\",\r\n     \"last_name\": \"{{apellido}}\",\r\n     \"email\": \"{{sufijo}}@prueba.edu.pe\",\r\n     \"password\": \"Clave12345\"\r\n   }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/docentes/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "docentes",
+                ""
+              ]
+            }
+          },
+          "response": []
         }
-      },
-      "response": []
+      ]
     },
     {
-      "name": "Colegios",
+      "name": "2 Colegios",
       "description": "US-44: registro de colegios y asignación de docentes. Ejecutar después de \"Login admin\" y \"2 Crear docente valido\".",
       "item": [
         {
@@ -932,7 +938,7 @@
       ]
     },
     {
-      "name": "Roles y permisos",
+      "name": "3 Roles y permisos",
       "description": "US-45: roles, permisos y cambio de rol. Ejecutar después de \"Login admin\", \"2 Crear docente valido\" y \"9a Login Docente\".",
       "item": [
         {
@@ -1179,6 +1185,796 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "4 Catálogo",
+      "item": [
+        {
+          "name": "Listar lecturas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/lecturas/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear lectura válida",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/lecturas/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"El cóndor y el zorro (Postman)\",\n  \"texto\": \"Había una vez un cóndor que vivía en lo alto de la montaña.\",\n  \"tipo_reto\": \"lectura\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('lectura_id', pm.response.json().id);\npm.test('Guarda quién la creó', () => pm.expect(pm.response.json().creado_por).to.not.be.null);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar por título",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/lecturas/?search=cóndor",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtrar por tipo de reto",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/lecturas/?tipo_reto=lectura",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Solo devuelve lecturas', () => pm.response.json().forEach(l => pm.expect(l.tipo_reto).to.eql('lectura')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear con campos vacíos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/lecturas/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"\",\n  \"texto\": \"\",\n  \"tipo_reto\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear con texto corto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/lecturas/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Corta\",\n  \"texto\": \"corto\",\n  \"tipo_reto\": \"lectura\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear con tipo de reto inválido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/lecturas/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Prueba\",\n  \"texto\": \"Había una vez un cóndor que vivía en lo alto de la montaña.\",\n  \"tipo_reto\": \"canto\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Docente lista lecturas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/lecturas/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Docente intenta crear (sin permiso)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/lecturas/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"No debería crearse\",\n  \"texto\": \"Había una vez un cóndor que vivía en lo alto de la montaña.\",\n  \"tipo_reto\": \"lectura\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar sin token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/lecturas/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 Usuarios",
+      "item": [
+        {
+          "name": "Mi perfil (guarda mi id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/auth/me/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('admin_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar al docente (guarda su id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/usuarios/?search={{docente_user}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const u = pm.response.json().find(x => x.username === pm.collectionVariables.get('docente_user'));",
+                  "pm.test('Encuentra al docente', () => pm.expect(u).to.not.be.undefined);",
+                  "pm.collectionVariables.set('docente_id', u.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar al docente",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/usuarios/{{docente_id}}/estado/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Queda inactivo', () => pm.expect(pm.response.json().is_active).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del docente desactivado (bloqueado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/auth/login/",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{docente_user}}\",\n  \"password\": \"Clave12345\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Mensaje de cuenta desactivada', () => pm.expect(pm.response.json().detail).to.include('desactivada'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivar al docente",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/usuarios/{{docente_id}}/estado/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Queda activo', () => pm.expect(pm.response.json().is_active).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del docente reactivado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/auth/login/",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{docente_user}}\",\n  \"password\": \"Clave12345\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('token_docente', pm.response.json().access);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar mi propia cuenta (no permitido)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/usuarios/{{admin_id}}/estado/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Mensaje claro', () => pm.expect(JSON.stringify(pm.response.json())).to.include('propia cuenta'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Docente intenta desactivar (sin permiso)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/usuarios/{{admin_id}}/estado/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_docente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Usuario que no existe",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/usuarios/999999/estado/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin token",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/usuarios/{{docente_id}}/estado/",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "auth": {
@@ -1194,7 +1990,7 @@
   "variable": [
     {
       "key": "base_url",
-      "value": ""
+      "value": "http://127.0.0.1:8000/api"
     },
     {
       "key": "admin_password",
@@ -1218,8 +2014,7 @@
     },
     {
       "key": "docente_user",
-      "value": "",
-      "disabled": true
+      "value": ""
     },
     {
       "key": "token_docente",
@@ -1255,6 +2050,14 @@
     },
     {
       "key": "usuario_id",
+      "value": ""
+    },
+    {
+      "key": "lectura_id",
+      "value": ""
+    },
+    {
+      "key": "admin_id",
       "value": ""
     }
   ]

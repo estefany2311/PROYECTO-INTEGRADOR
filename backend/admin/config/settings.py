@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'drf_spectacular',
     'corsheaders',
     'usuarios',
     'instituciones',
@@ -156,10 +157,17 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Plataforma Educativa — API del módulo Admin',
+    'DESCRIPTION': 'Docentes, colegios, roles y permisos, usuarios y catálogo de lecturas.',
+    'VERSION': '1.0.0',
 }
 
