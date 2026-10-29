@@ -51,6 +51,28 @@ public class ManejadorErrores {
         return respuesta(HttpStatus.UNAUTHORIZED, e.getMessage());
     }
 
+    // T-214 · 401: el token no existe, venció o se cerró con "Salir"
+    @ExceptionHandler(SesionVencidaException.class)
+    public ResponseEntity<Map<String, Object>> sesionVencida(SesionVencidaException e) {
+        return respuesta(HttpStatus.UNAUTHORIZED, e.getMessage());
+    }
+
+    // T-214 · 403: nivel bloqueado. Incluye qué nivel terminar antes, para el mensaje de la tablet
+    @ExceptionHandler(NivelBloqueadoException.class)
+    public ResponseEntity<Map<String, Object>> nivelBloqueado(NivelBloqueadoException e) {
+        Map<String, Object> cuerpo = cuerpo(e.getMessage());
+        if (e.getNivelAnterior() != null) {
+            cuerpo.put("nivelAnterior", e.getNivelAnterior());
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(cuerpo);
+    }
+
+    // T-214 · 404: el nivel no existe o está desactivado
+    @ExceptionHandler(NivelNoEncontradoException.class)
+    public ResponseEntity<Map<String, Object>> nivelNoEncontrado(NivelNoEncontradoException e) {
+        return respuesta(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> validacion(MethodArgumentNotValidException e) {
         String mensaje = e.getBindingResult().getFieldErrors().stream()
