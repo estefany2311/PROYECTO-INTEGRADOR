@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -36,7 +37,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -60,6 +64,7 @@ import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.viewmodel.MapaUiState
 import com.proyecto.movil.viewmodel.MapaViewModel
+import kotlinx.coroutines.delay
 
 // Inicio después del PIN: barra del alumno + mapa de aventura (T-210, US-05)
 @Composable
@@ -69,6 +74,7 @@ fun PantallaMapa(
 ) {
     val sesion = viewModel.sesion
     val estado by viewModel.uiState.collectAsState()
+    val aviso by viewModel.aviso.collectAsState()
 
     // T-237: "Salir" primero pregunta; rememberSaveable lo mantiene abierto si se gira la tablet
     var preguntandoSalir by rememberSaveable { mutableStateOf(false) }
@@ -78,13 +84,34 @@ fun PantallaMapa(
     // Se pide el mapa una vez al abrir la pantalla
     LaunchedEffect(Unit) { viewModel.cargarMapa() }
 
-    Column(Modifier.fillMaxSize().background(ColoresAventura.pasto)) {
-        BarraEstudiante(
-            nombre = sesion?.nombre ?: "",
-            avatarUrl = sesion?.avatarUrl ?: "",
-            onSalir = { if (!saliendo) preguntandoSalir = true }
-        )
-        ContenidoMapa(estado = estado, onReintentar = { viewModel.cargarMapa() })
+    // T-240: el mensaje del nivel bloqueado se oculta solo (si se toca otro, el tiempo empieza de nuevo)
+    LaunchedEffect(aviso) {
+        if (aviso != null) {
+            delay(MapaViewModel.DURACION_AVISO_MS)
+            viewModel.cerrarAviso()
+        }
+    }
+
+    Box(Modifier.fillMaxSize().background(ColoresAventura.pasto)) {
+        Column(Modifier.fillMaxSize()) {
+            BarraEstudiante(
+                nombre = sesion?.nombre ?: "",
+                avatarUrl = sesion?.avatarUrl ?: "",
+                onSalir = { if (!saliendo) preguntandoSalir = true }
+            )
+            ContenidoMapa(
+                estado = estado,
+                onReintentar = { viewModel.cargarMapa() },
+                onNivelTocado = viewModel::tocarNivel
+            )
+        }
+        aviso?.let { mensaje ->
+            AvisoNivelBloqueado(
+                mensaje = mensaje,
+                onCerrar = viewModel::cerrarAviso,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
     }
 
     if (preguntandoSalir) {
@@ -197,13 +224,17 @@ private val PADDING_BOTON = PaddingValues(horizontal = 12.dp)
 
 // Separado de PantallaMapa para poder verlo en Preview y probarlo sin ViewModel (T-212)
 @Composable
-fun ContenidoMapa(estado: MapaUiState, onReintentar: () -> Unit) {
+fun ContenidoMapa(
+    estado: MapaUiState,
+    onReintentar: () -> Unit,
+    onNivelTocado: (NivelMapa) -> Unit = {}
+) {
     when (estado) {
         is MapaUiState.Cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(Modifier.size(64.dp).testTag("cargando_mapa"))
         }
         is MapaUiState.Error -> ErrorMapa(estado.mensaje, onReintentar)
-        is MapaUiState.Exito -> RecorridoNiveles(estado.mapa)
+        is MapaUiState.Exito -> RecorridoNiveles(estado.mapa, onNivelTocado)
     }
 }
 
@@ -255,7 +286,7 @@ private val POSICIONES_X = listOf(0.25f, 0.5f, 0.75f, 0.5f)
 
 // T-210/T-211: resumen de avance arriba y los niveles unidos por un camino que serpentea
 @Composable
-fun RecorridoNiveles(mapa: MapaRespuesta) {
+fun RecorridoNiveles(mapa: MapaRespuesta, onNivelTocado: (NivelMapa) -> Unit = {}) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val medidas = if (maxWidth >= ANCHO_TABLET) MedidasMapa.TABLET else MedidasMapa.TELEFONO
         Column(
@@ -268,7 +299,7 @@ fun RecorridoNiveles(mapa: MapaRespuesta) {
             Column(Modifier.widthIn(max = ANCHO_MAXIMO_MAPA).fillMaxWidth()) {
                 ResumenAvance(mapa.completados, mapa.totalNiveles, mapa.puntos)
                 Spacer(Modifier.height(24.dp))
-                CaminoDeNiveles(mapa.niveles.sortedBy { it.orden }, medidas)
+                CaminoDeNiveles(mapa.niveles.sortedBy { it.orden }, medidas, onNivelTocado)
             }
         }
     }
@@ -280,7 +311,11 @@ fun RecorridoNiveles(mapa: MapaRespuesta) {
  * Cada círculo se coloca justo sobre su punto del camino.
  */
 @Composable
-private fun CaminoDeNiveles(niveles: List<NivelMapa>, medidas: MedidasMapa) {
+private fun CaminoDeNiveles(
+    niveles: List<NivelMapa>,
+    medidas: MedidasMapa,
+    onNivelTocado: (NivelMapa) -> Unit
+) {
     BoxWithConstraints(
         Modifier
             .fillMaxWidth()
@@ -321,6 +356,7 @@ private fun CaminoDeNiveles(niveles: List<NivelMapa>, medidas: MedidasMapa) {
             NodoNivel(
                 nivel = nivel,
                 medidas = medidas,
+                onClick = { onNivelTocado(nivel) },
                 modifier = Modifier
                     .offset(x = centroX(i) - medidas.anchoEtiqueta / 2, y = medidas.alturaFila * i)
                     .width(medidas.anchoEtiqueta)
@@ -374,13 +410,20 @@ private fun ResumenAvance(completados: Int, total: Int, puntos: Int) {
  * y el nombre se ve más suave. Así el niño distingue de un vistazo qué puede jugar.
  */
 @Composable
-private fun NodoNivel(nivel: NivelMapa, medidas: MedidasMapa, modifier: Modifier = Modifier) {
+private fun NodoNivel(
+    nivel: NivelMapa,
+    medidas: MedidasMapa,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val bloqueado = nivel.bloqueado
     val color = if (bloqueado) ColoresAventura.Gris else colorDelReto(nivel.reto)
     val colorTexto = if (bloqueado) ColoresAventura.TextoOscuro.copy(alpha = 0.55f) else ColoresAventura.TextoOscuro
     Column(
         modifier
             .testTag("nivel_${nivel.orden}")
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(role = Role.Button, onClick = onClick)   // T-240
             .semantics {
                 contentDescription = "Nivel ${nivel.orden}: ${nivel.nombre}"
                 // TalkBack lee además el estado: "bloqueado", "disponible" o "completado"
@@ -436,6 +479,45 @@ private fun NodoNivel(nivel: NivelMapa, medidas: MedidasMapa, modifier: Modifier
             overflow = TextOverflow.Ellipsis,
             color = colorTexto
         )
+    }
+}
+
+/**
+ * T-240 (US-06): tarjeta abajo de la pantalla con el candado y el mensaje.
+ * Se oculta sola a los 4 s o al tocarla. liveRegion: TalkBack la lee apenas aparece.
+ */
+@Composable
+private fun AvisoNivelBloqueado(mensaje: String, onCerrar: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .padding(16.dp)
+            .widthIn(max = 560.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.White)
+            .border(3.dp, ColoresAventura.Gris, RoundedCornerShape(20.dp))
+            .clickable(onClick = onCerrar)
+            .padding(horizontal = 16.dp, vertical = 14.dp)
+            .testTag("aviso_nivel")
+            .semantics { liveRegion = LiveRegionMode.Polite }
+    ) {
+        Box(
+            Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(ColoresAventura.Gris),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painterResource(R.drawable.ic_candado),
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(26.dp)
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Text(mensaje, fontSize = 20.sp, color = ColoresAventura.TextoOscuro)
     }
 }
 
@@ -513,6 +595,14 @@ fun BarraEstudiantePreview() {
 fun DialogoSalirPreview() {
     AppMovilTheme(dynamicColor = false) {
         DialogoSalir(nombre = "Ana", avatarUrl = "", onConfirmar = {}, onCancelar = {})
+    }
+}
+
+@Preview(widthDp = 400, heightDp = 200, showBackground = true)
+@Composable
+fun AvisoNivelBloqueadoPreview() {
+    AppMovilTheme(dynamicColor = false) {
+        AvisoNivelBloqueado(MapaViewModel.mensajeNivelBloqueado("Primeros pasos"), onCerrar = {})
     }
 }
 

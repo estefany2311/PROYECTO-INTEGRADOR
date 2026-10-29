@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.proyecto.movil.Dependencias
 import com.proyecto.movil.model.MapaRespuesta
+import com.proyecto.movil.model.NivelMapa
 import com.proyecto.movil.model.local.IAlmacenSesion
 import com.proyecto.movil.model.local.SesionGuardada
 import com.proyecto.movil.model.repository.IMapaRepository
@@ -33,6 +34,27 @@ class MapaViewModel(
 
     private val _uiState = MutableStateFlow<MapaUiState>(MapaUiState.Cargando)
     val uiState: StateFlow<MapaUiState> = _uiState
+
+    // T-240: mensaje que aparece al tocar un nivel bloqueado (null = no hay mensaje)
+    private val _aviso = MutableStateFlow<String?>(null)
+    val aviso: StateFlow<String?> = _aviso
+
+    /**
+     * T-240 (US-06): el niño tocó un nivel del mapa.
+     * Si está bloqueado se le explica, con cariño, qué nivel tiene que terminar antes.
+     * Los niveles disponibles todavía no abren nada: los retos llegan en otro sprint.
+     */
+    fun tocarNivel(nivel: NivelMapa) {
+        if (!nivel.bloqueado) return
+        val niveles = (_uiState.value as? MapaUiState.Exito)?.mapa?.niveles.orEmpty()
+        // El nivel que va justo antes en el camino
+        val anterior = niveles.filter { it.orden < nivel.orden }.maxByOrNull { it.orden }
+        _aviso.value = mensajeNivelBloqueado(anterior?.nombre)
+    }
+
+    fun cerrarAviso() {
+        _aviso.value = null
+    }
 
     // T-210: pide al backend docente los niveles del alumno que tiene la sesión.
     // El backend sabe quién es por el token; sin sesión guardada no hay a quién pedirle el mapa.
@@ -70,5 +92,13 @@ class MapaViewModel(
 
         // T-236: lo máximo que "Salir" espera al backend antes de cerrar igual en la tablet
         const val ESPERA_CIERRE_MS = 3_000L
+
+        // T-240: tiempo que se ve el mensaje del nivel bloqueado antes de ocultarse solo
+        const val DURACION_AVISO_MS = 4_000L
+
+        // T-240: texto amable, sin palabras como "error" o "prohibido"
+        fun mensajeNivelBloqueado(nivelAnterior: String?): String =
+            if (nivelAnterior == null) "¡Todavía no! Este nivel se abre pronto."
+            else "¡Todavía no! Termina «$nivelAnterior» para abrir este nivel."
     }
 }
