@@ -1,0 +1,946 @@
+{
+  "info": {
+    "_postman_id": "c2dcfc99-6ae9-4d1c-a72a-300d45a2a426",
+    "name": "Docente - Sprint 2",
+    "description": "Colección unificada del módulo Docente. Incluye las pruebas de US-23 (aulas) y US-24 (alumnos), más ejemplos de US-35 (catálogo), US-36 (asignación individual), US-37 (grupos) y acceso del alumno. Ajusta las variables de la colección (aulaId, estudianteId, lecturaId, grupoId, avatarId) con datos reales antes de ejecutarla.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "docenteId",
+      "value": "1"
+    },
+    {
+      "key": "otroDocenteId",
+      "value": "2"
+    },
+    {
+      "key": "aulaId",
+      "value": "5"
+    },
+    {
+      "key": "estudianteId",
+      "value": "1"
+    },
+    {
+      "key": "lecturaId",
+      "value": "5"
+    },
+    {
+      "key": "grupoId",
+      "value": "1"
+    },
+    {
+      "key": "avatarId",
+      "value": "1"
+    },
+    {
+      "key": "nombresDuplicado",
+      "value": "NOEMI"
+    },
+    {
+      "key": "apellidosDuplicado",
+      "value": "DE LA CRUZ"
+    },
+    {
+      "key": "gradoDuplicado",
+      "value": "1"
+    },
+    {
+      "key": "gradoAjeno",
+      "value": "6"
+    }
+  ],
+  "item": [
+    {
+      "name": "US-23 · Aulas",
+      "description": "Creación y listado de aulas del docente.",
+      "item": [
+        {
+          "name": "nombre repetido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"nombre\": \"Aula Norte\",\r\n  \"gradoIds\": [1, 2]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "docente",
+                "aulas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "nombre vacío",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"nombre\": \"\",\r\n  \"gradoIds\": [1]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "docente",
+                "aulas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "sin grados",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"nombre\": \"Aula B\",\r\n  \"gradoIds\": []\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "docente",
+                "aulas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "grado que no existe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"nombre\": \"Aula C\",\r\n  \"gradoIds\": [99]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "docente",
+                "aulas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar aulas - docente 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "docente",
+                "aulas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar aulas - docente sin aulas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{otroDocenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "docente",
+                "aulas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar aulas - sin header",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "docente",
+                "aulas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar grados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/grados",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "docente",
+                "grados"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Registrar aula correcta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"nombre\": \"Prueba Noemi 1\",\r\n  \"gradoIds\": [1, 2]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "docente",
+                "aulas"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "US-24 · Alumnos",
+      "description": "Alumnos: aula ajena (403), duplicado (409) y grado inválido (400).",
+      "item": [
+        {
+          "name": "Aula ajena - 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// T-227: el aula existe pero es de otro docente",
+                  "pm.test('aula de otro docente devuelve 403', () => {",
+                  "  pm.response.to.have.status(403);",
+                  "  pm.expect(pm.response.json().mensaje).to.eql('El aula no pertenece al docente');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Docente-Id",
+                "value": "{{otroDocenteId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Ana\",\n  \"apellidos\": \"Quispe\",\n  \"gradoId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "estudiantes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Alumno duplicado - 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// T-227: ya hay un alumno con esos nombres y apellidos en el aula",
+                  "pm.test('alumno duplicado devuelve 409', () => {",
+                  "  pm.response.to.have.status(409);",
+                  "  pm.expect(pm.response.json().mensaje).to.eql('Ya existe un alumno con ese nombre en esta aula');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"{{nombresDuplicado}}\",\n  \"apellidos\": \"{{apellidosDuplicado}}\",\n  \"gradoId\": {{gradoDuplicado}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "estudiantes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Grado inválido - 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// T-227: el grado no es uno de los que atiende el aula",
+                  "pm.test('grado que el aula no atiende devuelve 400', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().mensaje).to.eql('El grado no corresponde a esta aula');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Ana\",\n  \"apellidos\": \"Quispe\",\n  \"gradoId\": {{gradoAjeno}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "estudiantes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar alumnos - 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// control: el aula del docente sí responde y trae sus alumnos",
+                  "pm.test('lista de alumnos devuelve 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "estudiantes"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "US-35 · Catálogo",
+      "description": "Catálogo de lecturas filtrado por los grados del aula.",
+      "item": [
+        {
+          "name": "Listar lecturas del aula - 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/lecturas?gradoId=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "lecturas"
+              ],
+              "query": [
+                {
+                  "key": "gradoId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "US-36 · Asignación individual",
+      "description": "Asignación de una lectura a un alumno del aula.",
+      "item": [
+        {
+          "name": "Asignar lectura a un alumno - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/asignaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "asignaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lecturaId\": {{lecturaId}},\n  \"estudianteId\": {{estudianteId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "US-37 · Grupos",
+      "description": "Creación de grupos y asignación de una lectura a todo el grupo.",
+      "item": [
+        {
+          "name": "Listar grupos - 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/grupos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "grupos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear grupo - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/grupos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "grupos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Grupo Postman\",\n  \"descripcion\": \"Grupo de prueba\",\n  \"estudiantesIds\": [{{estudianteId}}]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Asignar lectura al grupo - 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/grupos/{{grupoId}}/asignaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "grupos",
+                "{{grupoId}}",
+                "asignaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lecturaId\": {{lecturaId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Acceso del alumno",
+      "description": "Avatares y PIN del alumno.",
+      "item": [
+        {
+          "name": "Listar avatares - 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/avatares",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "avatares"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Asignar avatar - 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes/{{estudianteId}}/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "estudiantes",
+                "{{estudianteId}}",
+                "avatar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"avatarId\": {{avatarId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generar PIN - 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes/{{estudianteId}}/pin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "estudiantes",
+                "{{estudianteId}}",
+                "pin"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.have.property('pin');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
