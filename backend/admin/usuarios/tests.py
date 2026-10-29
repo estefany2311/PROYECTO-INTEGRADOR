@@ -329,3 +329,74 @@ class AccesoDenegadoPorRolTests(BaseApiTest):
                     "/api/permisos/", "/api/usuarios/"):
             with self.subTest(url=url):
                self.assertEqual(self.client.get(url).status_code, 200)
+
+class EstadoUsuarioTests(BaseApiTest):
+    """Activar y desactivar cuentas"""
+
+    def setUp(self):
+        super().setUp()
+        self.client.force_authenticate(self.admin)
+
+    def url_estado(self, usuario):
+        return f"/api/usuarios/{usuario.id}/estado/"
+
+    def test_admin_desactiva_un_docente(self):
+        resp = self.client.patch(self.url_estado(self.docente), {"is_active": False}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.data["is_active"])
+        self.docente.refresh_from_db()
+        self.assertFalse(self.docente.is_active)
+
+    def test_admin_reactiva_un_docente(self):
+        self.docente.is_active = False
+        self.docente.save()
+        resp = self.client.patch(self.url_estado(self.docente), {"is_active": True}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.docente.refresh_from_db()
+        self.assertTrue(self.docente.is_active)
+
+    def test_docente_desactivado_no_puede_iniciar_sesion_y_reactivado_si(self):
+        self.client.patch(self.url_estado(self.docente), {"is_active": False}, format="json")
+        login = {"username": "docente_test", "password": "Docente12345"}
+        self.assertEqual(self.client.post(URL_LOGIN, login, format="json").status_code, 401)
+
+        self.client.patch(self.url_estado(self.docente), {"is_active": True}, format="json")
+        self.assertEqual(self.client.post(URL_LOGIN, login, format="json").status_code, 200)
+
+    def test_no_puede_desactivar_su_propia_cuenta(self):
+        resp = self.client.patch(self.url_estado(self.admin), {"is_active": False}, format="json")
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("No puedes desactivar tu propia cuenta.", resp.data["is_active"])
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.is_active)
+
+    def test_puede_desactivar_un_admin_si_quedan_otros(self):
+        otro_admin = Usuario.objects.create_user(
+            username="admin_dos", email="admin_dos@correo.com", password="Admin12345",
+            rol=Rol.objects.get(nombre="ADMIN"),
+        )
+        resp = self.client.patch(self.url_estado(otro_admin), {"is_active": False}, format="json")
+        self.assertEqual(resp.status_code, 200)
+
+    def test_no_se_puede_desactivar_al_ultimo_admin(self):
+        # Un docente con permiso de desactivar intenta desactivar al único admin
+        rol_docente = Rol.objects.get(nombre="DOCENTE")
+        RolPermiso.objects.create(rol=rol_docente, permiso=Permiso.objects.get(codigo="usuarios.desactivar"))
+        self.client.force_authenticate(self.docente)
+        resp = self.client.patch(self.url_estado(self.admin), {"is_active": False}, format="json")
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("Debe quedar al menos un administrador activo.", resp.data["is_active"])
+
+    def test_sin_dato_is_active_devuelve_400(self):
+        resp = self.client.patch(self.url_estado(self.docente), {}, format="json")
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("is_active", resp.data)
+
+    def test_usuario_inexistente_devuelve_404(self):
+        resp = self.client.patch("/api/usuarios/999999/estado/", {"is_active": False}, format="json")
+        self.assertEqual(resp.status_code, 404)
+
+    def test_sin_token_devuelve_401(self):
+        self.client.force_authenticate(None)
+        resp = self.client.patch(self.url_estado(self.docente), {"is_active": False}, format="json")
+        self.assertEqual(resp.status_code, 401)
