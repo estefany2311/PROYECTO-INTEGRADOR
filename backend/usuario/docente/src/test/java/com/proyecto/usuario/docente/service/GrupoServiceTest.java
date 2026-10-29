@@ -26,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -44,7 +45,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * T-195 (US-37): creación de grupos, listado y asignación a todo el grupo.
- * Los casos límite (grupo vacío, alumno repetido) se cubren en T-232.
+ * T-232 añade los casos límite: grupo vacío, alumno repetido y asignación a todo el grupo.
  */
 @ExtendWith(MockitoExtension.class)
 class GrupoServiceTest {
@@ -239,6 +240,77 @@ class GrupoServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, ex.getEstado());
         assertEquals("La lectura no está activa", ex.getMessage());
         verify(asignacionRepository, never()).saveAllAndFlush(any());
+    }
+
+    // T-232: un grupo sin alumnos no puede recibir una lectura
+    @Test
+    void rechazaAsignarLecturaAGrupoVacio() {
+        Grupo grupo = mock(Grupo.class);
+        Lectura lectura = lecturaActiva();
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(grupoRepository.findByIdAndAulaId(3L, 10L)).thenReturn(Optional.of(grupo));
+        when(lecturaRepository.findById(7L)).thenReturn(Optional.of(lectura));
+        when(grupo.estaVacio()).thenReturn(true);
+
+        ReglaNegocioException ex = assertThrows(ReglaNegocioException.class,
+                () -> service.asignar(1L, 10L, 3L, new AsignarGrupoRequest(7L)));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getEstado());
+        assertEquals("El grupo no tiene alumnos", ex.getMessage());
+        verify(asignacionRepository, never()).saveAllAndFlush(any());
+    }
+
+    // T-232: si el docente repite un id, el alumno se guarda una sola vez
+    @Test
+    @SuppressWarnings("unchecked")
+    void creaGrupoSinDuplicarAlumnosRepetidos() {
+        Estudiante ana = alumno("Ana", "Quispe");
+        Estudiante luis = alumno("Luis", "Mamani");
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(grupoRepository.existsByAulaIdAndNombreIgnoreCase(10L, "Los exploradores"))
+                .thenReturn(false);
+        when(estudianteRepository.findByIdInAndAulaId(any(), eq(10L)))
+                .thenReturn(List.of(ana, luis));
+        when(grupoRepository.save(any(Grupo.class)))
+                .thenAnswer(i -> i.getArgument(0));
+
+        GrupoResponse resp = service.crear(1L, 10L,
+                new GrupoRequest("Los exploradores", null, List.of(5L, 5L, 6L)));
+
+        assertEquals(2, resp.alumnos().size());
+        ArgumentCaptor<Collection<Long>> captor = ArgumentCaptor.forClass(Collection.class);
+        verify(estudianteRepository).findByIdInAndAulaId(captor.capture(), eq(10L));
+        assertEquals(List.of(5L, 6L), List.copyOf(captor.getValue()));
+    }
+
+    // T-232: la lectura se crea para cada alumno del grupo, no solo para el primero
+    @Test
+    @SuppressWarnings("unchecked")
+    void asignaLaLecturaACadaAlumnoDelGrupo() {
+        Estudiante ana = alumnoConId(5L);
+        Estudiante luis = alumnoConId(6L);
+        Estudiante eva = alumnoConId(8L);
+        Grupo grupo = grupoConAlumnos(3L, ana, luis, eva);
+        Lectura lectura = lecturaActiva();
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(grupoRepository.findByIdAndAulaId(3L, 10L)).thenReturn(Optional.of(grupo));
+        when(lecturaRepository.findById(7L)).thenReturn(Optional.of(lectura));
+        when(asignacionRepository.existsByEstudianteIdAndLecturaId(5L, 7L)).thenReturn(false);
+        when(asignacionRepository.existsByEstudianteIdAndLecturaId(6L, 7L)).thenReturn(false);
+        when(asignacionRepository.existsByEstudianteIdAndLecturaId(8L, 7L)).thenReturn(false);
+
+        AsignacionGrupoResponse resp = service.asignar(1L, 10L, 3L,
+                new AsignarGrupoRequest(7L));
+
+        assertEquals(3, resp.asignados());
+        assertEquals(0, resp.yaTenían());
+        ArgumentCaptor<List<Asignacion>> captor = ArgumentCaptor.forClass(List.class);
+        verify(asignacionRepository).saveAllAndFlush(captor.capture());
+        List<Long> ids = captor.getValue().stream()
+                .map(a -> a.getEstudiante().getId())
+                .toList();
+        assertEquals(3, ids.size());
+        assertTrue(ids.containsAll(List.of(5L, 6L, 8L)));
     }
 
     private Estudiante alumno(String nombres, String apellidos) {
