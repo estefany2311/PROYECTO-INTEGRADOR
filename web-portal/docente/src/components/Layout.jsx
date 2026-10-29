@@ -6,6 +6,7 @@ const MENU = [
     items: [
       { ruta: "/aulas", icono: "bi-mortarboard", texto: "Mis aulas" },
       { ruta: "/alumnos", icono: "bi-people", texto: "Alumnos" },
+      { ruta: "/grupos", icono: "bi-collection", texto: "Grupos" },
       { ruta: "/catalogo", icono: "bi-book", texto: "Catálogo" },
     ],
   },

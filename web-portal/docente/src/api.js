@@ -69,3 +69,20 @@ export const asignarLectura = (aulaId, datos) =>
     method: "POST",
     body: JSON.stringify(datos),
   });
+
+// T-196: grupos del aula y asignación de una lectura a todo el grupo.
+// El backend es T-195: GET/POST .../grupos y POST .../grupos/{id}/asignaciones
+export const listarGrupos = (aulaId) =>
+  pedir(`/api/docente/aulas/${aulaId}/grupos`);
+
+export const crearGrupo = (aulaId, datos) =>
+  pedir(`/api/docente/aulas/${aulaId}/grupos`, {
+    method: "POST",
+    body: JSON.stringify(datos),
+  });
+
+export const asignarLecturaAGrupo = (aulaId, grupoId, datos) =>
+  pedir(`/api/docente/aulas/${aulaId}/grupos/${grupoId}/asignaciones`, {
+    method: "POST",
+    body: JSON.stringify(datos),
+  });
