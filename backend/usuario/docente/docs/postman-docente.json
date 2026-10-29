@@ -1,0 +1,280 @@
+{
+  "info": {
+    "_postman_id": "e2070478-259d-4a26-ae0e-f1728a6c1c69",
+    "name": "Docente - US-23",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "57979844",
+    "_collection_link": "https://go.postman.co/collection/57979844-e2070478-259d-4a26-ae0e-f1728a6c1c69?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "nombre repetido",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Docente-Id",
+            "value": "1"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"nombre\": \"Aula Norte\",\r\n  \"gradoIds\": [1, 2]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8081/api/docente/aulas",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8081",
+          "path": [
+            "api",
+            "docente",
+            "aulas"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "nombre vacío",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Docente-Id",
+            "value": "1"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"nombre\": \"\",\r\n  \"gradoIds\": [1]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8081/api/docente/aulas",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8081",
+          "path": [
+            "api",
+            "docente",
+            "aulas"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "sin grados",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Docente-Id",
+            "value": "1"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"nombre\": \"Aula B\",\r\n  \"gradoIds\": []\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8081/api/docente/aulas",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8081",
+          "path": [
+            "api",
+            "docente",
+            "aulas"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "grado que no existe",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Docente-Id",
+            "value": "1"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"nombre\": \"Aula C\",\r\n  \"gradoIds\": [99]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8081/api/docente/aulas",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8081",
+          "path": [
+            "api",
+            "docente",
+            "aulas"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Listar aulas - docente 1",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Docente-Id",
+            "value": "1"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8081/api/docente/aulas",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8081",
+          "path": [
+            "api",
+            "docente",
+            "aulas"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Listar aulas - docente sin aulas",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Docente-Id",
+            "value": "2"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8081/api/docente/aulas",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8081",
+          "path": [
+            "api",
+            "docente",
+            "aulas"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Listar aulas - sin header",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8081/api/docente/aulas",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8081",
+          "path": [
+            "api",
+            "docente",
+            "aulas"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Listar grados",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8081/api/docente/grados",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8081",
+          "path": [
+            "api",
+            "docente",
+            "grados"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Registrar aula correcta",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Docente-Id",
+            "value": "1"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"nombre\": \"Prueba Noemi 1\",\r\n  \"gradoIds\": [1, 2]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8081/api/docente/aulas",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8081",
+          "path": [
+            "api",
+            "docente",
+            "aulas"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
