@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,6 +52,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.proyecto.movil.R
+import com.proyecto.movil.model.EstadoNivel
 import com.proyecto.movil.model.MapaRespuesta
 import com.proyecto.movil.model.NivelMapa
 import com.proyecto.movil.model.TipoReto
@@ -368,15 +370,22 @@ private fun ResumenAvance(completados: Int, total: Int, puntos: Int) {
 /**
  * Un nivel: círculo del color de su reto con el ícono del reto,
  * el número en una insignia arriba a la izquierda y el nombre debajo.
- * Los estilos por estado (candado y gris) se agregan en T-239.
+ * T-239 (US-06): si está bloqueado, el círculo es gris, lleva un candado en lugar del ícono
+ * y el nombre se ve más suave. Así el niño distingue de un vistazo qué puede jugar.
  */
 @Composable
 private fun NodoNivel(nivel: NivelMapa, medidas: MedidasMapa, modifier: Modifier = Modifier) {
-    val color = colorDelReto(nivel.reto)
+    val bloqueado = nivel.bloqueado
+    val color = if (bloqueado) ColoresAventura.Gris else colorDelReto(nivel.reto)
+    val colorTexto = if (bloqueado) ColoresAventura.TextoOscuro.copy(alpha = 0.55f) else ColoresAventura.TextoOscuro
     Column(
         modifier
             .testTag("nivel_${nivel.orden}")
-            .semantics { contentDescription = "Nivel ${nivel.orden}: ${nivel.nombre}" },
+            .semantics {
+                contentDescription = "Nivel ${nivel.orden}: ${nivel.nombre}"
+                // TalkBack lee además el estado: "bloqueado", "disponible" o "completado"
+                stateDescription = textoEstado(nivel.estadoNivel)
+            },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(Modifier.size(medidas.nodo)) {
@@ -388,7 +397,8 @@ private fun NodoNivel(nivel: NivelMapa, medidas: MedidasMapa, modifier: Modifier
                     .border(5.dp, Color.White, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                val icono = iconoDelReto(nivel.reto)
+                // T-239: candado en los bloqueados; el ícono del reto en los demás
+                val icono = if (bloqueado) R.drawable.ic_candado else iconoDelReto(nivel.reto)
                 if (icono != null) {
                     Icon(
                         painterResource(icono),
@@ -412,7 +422,7 @@ private fun NodoNivel(nivel: NivelMapa, medidas: MedidasMapa, modifier: Modifier
                     "${nivel.orden}",
                     fontSize = medidas.numero,
                     fontWeight = FontWeight.Bold,
-                    color = ColoresAventura.TextoOscuro
+                    color = colorTexto
                 )
             }
         }
@@ -424,9 +434,16 @@ private fun NodoNivel(nivel: NivelMapa, medidas: MedidasMapa, modifier: Modifier
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            color = ColoresAventura.TextoOscuro
+            color = colorTexto
         )
     }
+}
+
+// T-239: lo que lee TalkBack después del nombre del nivel
+private fun textoEstado(estado: EstadoNivel): String = when (estado) {
+    EstadoNivel.BLOQUEADO -> "bloqueado"
+    EstadoNivel.DESBLOQUEADO -> "disponible"
+    EstadoNivel.COMPLETADO -> "completado"
 }
 
 // T-211: ícono de cada reto (vectores en res/drawable). Si el reto es desconocido no se pone ícono
@@ -505,11 +522,13 @@ fun DialogoSalirPreview() {
 fun RecorridoNivelesPreview() {
     val tipos = listOf("lectura", "escritura", "oralidad")
     val niveles = (1..6).map { n ->
-        NivelMapa(n, n, "Nivel $n", tipos[(n - 1) % 3], null, if (n == 1) "desbloqueado" else "bloqueado")
+        // 1 completado, 2 disponible, 3 a 6 bloqueados (T-239)
+        val estado = when (n) { 1 -> "completado"; 2 -> "desbloqueado"; else -> "bloqueado" }
+        NivelMapa(n, n, "Nivel $n", tipos[(n - 1) % 3], null, estado)
     }
     AppMovilTheme(dynamicColor = false) {
         Box(Modifier.background(ColoresAventura.pasto)) {
-            RecorridoNiveles(MapaRespuesta(1, "Ana", "Pérez", 6, 0, 0, niveles))
+            RecorridoNiveles(MapaRespuesta(1, "Ana", "Pérez", 6, 1, 10, niveles))
         }
     }
 }
