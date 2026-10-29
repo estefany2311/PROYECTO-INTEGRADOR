@@ -9,6 +9,7 @@ object ColoresAventura {
     val Cielo = Color(0xFFE3F4FF)        // fondo
     val Naranja = Color(0xFFFF9F1C)      // avatar / nivel disponible
     val Turquesa = Color(0xFF2EC4B6)     // éxito / nivel completado
+    val Azul = Color(0xFF4EA8DE)         // T-242: reto de oralidad
     val Gris = Color(0xFFB0B7C3)         // deshabilitado / nivel bloqueado
     val Rojo = Color(0xFFE63946)         // errores
     val TextoOscuro = Color(0xFF1D3557)

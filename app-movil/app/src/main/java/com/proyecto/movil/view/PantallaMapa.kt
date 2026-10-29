@@ -1,6 +1,5 @@
 package com.proyecto.movil.view
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -59,7 +58,6 @@ import com.proyecto.movil.R
 import com.proyecto.movil.model.EstadoNivel
 import com.proyecto.movil.model.MapaRespuesta
 import com.proyecto.movil.model.NivelMapa
-import com.proyecto.movil.model.TipoReto
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.viewmodel.MapaUiState
@@ -421,7 +419,7 @@ private fun NodoNivel(
     modifier: Modifier = Modifier
 ) {
     val bloqueado = nivel.bloqueado
-    val color = if (bloqueado) ColoresAventura.Gris else colorDelReto(nivel.reto)
+    val color = if (bloqueado) ColoresAventura.Gris else estiloDe(nivel.reto).color
     val colorTexto = if (bloqueado) ColoresAventura.TextoOscuro.copy(alpha = 0.55f) else ColoresAventura.TextoOscuro
     Column(
         modifier
@@ -445,7 +443,7 @@ private fun NodoNivel(
                 contentAlignment = Alignment.Center
             ) {
                 // T-239: candado en los bloqueados; el ícono del reto en los demás
-                val icono = if (bloqueado) R.drawable.ic_candado else iconoDelReto(nivel.reto)
+                val icono = if (bloqueado) R.drawable.ic_candado else estiloDe(nivel.reto).icono
                 if (icono != null) {
                     Icon(
                         painterResource(icono),
@@ -532,22 +530,8 @@ private fun textoEstado(estado: EstadoNivel): String = when (estado) {
     EstadoNivel.COMPLETADO -> "completado"
 }
 
-// T-211: ícono de cada reto (vectores en res/drawable). Si el reto es desconocido no se pone ícono
-@DrawableRes
-private fun iconoDelReto(reto: TipoReto): Int? = when (reto) {
-    TipoReto.LECTURA -> R.drawable.ic_reto_lectura
-    TipoReto.ESCRITURA -> R.drawable.ic_reto_escritura
-    TipoReto.ORALIDAD -> R.drawable.ic_reto_oralidad
-    TipoReto.DESCONOCIDO -> null
-}
 
-// Cada tipo de reto tiene su color, para que el niño los reconozca
-private fun colorDelReto(reto: TipoReto): Color = when (reto) {
-    TipoReto.LECTURA -> ColoresAventura.Turquesa
-    TipoReto.ESCRITURA -> ColoresAventura.Naranja
-    TipoReto.ORALIDAD -> Color(0xFF4EA8DE)
-    TipoReto.DESCONOCIDO -> ColoresAventura.Gris
-}
+// T-242: el ícono, el color y el nombre de cada reto están en EstiloReto.kt (compartido con el detalle)
 
 // T-208: barra de arriba con el avatar, el nombre y el botón "Salir" (US-04)
 @Composable

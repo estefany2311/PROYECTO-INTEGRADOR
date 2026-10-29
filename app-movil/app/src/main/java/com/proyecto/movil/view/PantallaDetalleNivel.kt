@@ -1,13 +1,16 @@
 package com.proyecto.movil.view
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -20,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.proyecto.movil.model.NivelDetalle
-import com.proyecto.movil.model.TipoReto
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.viewmodel.DetalleNivelUiState
@@ -114,6 +117,27 @@ private fun TarjetaDetalle(detalle: NivelDetalle, onComenzar: () -> Unit) {
             .testTag("detalle_nivel"),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        val estilo = estiloDe(detalle.reto)
+        // T-242: el mismo ícono y color que el nivel tiene en el mapa
+        Box(
+            Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .background(estilo.color)
+                .border(6.dp, Color.White, CircleShape)
+                .testTag("icono_reto"),
+            contentAlignment = Alignment.Center
+        ) {
+            estilo.icono?.let {
+                Icon(
+                    painterResource(it),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(56.dp)
+                )
+            }
+        }
+        Spacer(Modifier.height(16.dp))
         Text("Nivel ${detalle.orden}", fontSize = 22.sp, color = ColoresAventura.TextoOscuro)
         Spacer(Modifier.height(4.dp))
         Text(
@@ -124,13 +148,17 @@ private fun TarjetaDetalle(detalle: NivelDetalle, onComenzar: () -> Unit) {
             color = ColoresAventura.TextoOscuro
         )
         Spacer(Modifier.height(12.dp))
-        // T-242 agrega aquí el ícono y el color del tipo de reto
+        // T-242: etiqueta del tipo de reto con su color
         Text(
-            "Reto de ${nombreDelReto(detalle.reto)}",
+            "Reto de ${estilo.nombre}",
             fontSize = 24.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = ColoresAventura.TextoOscuro,
-            modifier = Modifier.testTag("tipo_reto")
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .background(estilo.color)
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .testTag("tipo_reto")
         )
         detalle.descripcion?.let {
             Spacer(Modifier.height(12.dp))
@@ -175,22 +203,24 @@ private fun MensajeNivel(mensaje: String, tag: String, boton: @Composable () -> 
     }
 }
 
-// Nombre del reto para el niño
-fun nombreDelReto(reto: TipoReto): String = when (reto) {
-    TipoReto.LECTURA -> "lectura"
-    TipoReto.ESCRITURA -> "escritura"
-    TipoReto.ORALIDAD -> "oralidad"
-    TipoReto.DESCONOCIDO -> "aventura"
-}
-
-@Preview(widthDp = 400, heightDp = 800, showBackground = true)
+// T-242: un preview por tipo de reto para comparar ícono y color
+@Preview(name = "Detalle · lectura", widthDp = 400, heightDp = 900, showBackground = true)
 @Composable
-fun DetalleNivelPreview() {
+fun DetalleNivelLecturaPreview() = DetalleDePrueba(1, "Primeros pasos", "lectura", "Lee palabras y oraciones cortas")
+
+@Preview(name = "Detalle · escritura", widthDp = 400, heightDp = 900, showBackground = true)
+@Composable
+fun DetalleNivelEscrituraPreview() = DetalleDePrueba(2, "Palabras nuevas", "escritura", "Escribe palabras y frases sencillas")
+
+@Preview(name = "Detalle · oralidad", widthDp = 400, heightDp = 900, showBackground = true)
+@Composable
+fun DetalleNivelOralidadPreview() = DetalleDePrueba(3, "Cuento corto", "oralidad", "Cuenta un cuento con tus palabras")
+
+@Composable
+private fun DetalleDePrueba(orden: Int, nombre: String, reto: String, descripcion: String) {
     AppMovilTheme(dynamicColor = false) {
         ContenidoDetalleNivel(
-            estado = DetalleNivelUiState.Exito(
-                NivelDetalle(1, 1, "Primeros pasos", "lectura", "Lee palabras y oraciones cortas", "desbloqueado")
-            ),
+            estado = DetalleNivelUiState.Exito(NivelDetalle(orden, orden, nombre, reto, descripcion, "desbloqueado")),
             onVolver = {}, onComenzar = {}, onReintentar = {}
         )
     }
