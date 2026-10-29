@@ -34,3 +34,6 @@ app-movil/app/build/
 .idea/
 *.log
 .DS_Store
+
+# Credenciales locales de Spring Boot (no subir nunca)
+backend/usuario/*/src/main/resources/application-local.properties

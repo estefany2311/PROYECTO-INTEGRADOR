@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- T-239: candado de los niveles bloqueados (blanco; el círculo de fondo es gris) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- arco -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:pathData="M7.5,10.5L7.5,7.5C7.5,5 9.5,3 12,3C14.5,3 16.5,5 16.5,7.5L16.5,10.5" />
+    <!-- cuerpo con el ojo de la cerradura -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M6,10L18,10C19.1,10 20,10.9 20,12L20,19C20,20.1 19.1,21 18,21L6,21C4.9,21 4,20.1 4,19L4,12C4,10.9 4.9,10 6,10ZM12,13.2C11.1,13.2 10.4,13.9 10.4,14.8C10.4,15.4 10.7,15.9 11.2,16.2L11.2,18L12.8,18L12.8,16.2C13.3,15.9 13.6,15.4 13.6,14.8C13.6,13.9 12.9,13.2 12,13.2Z" />
+</vector>
