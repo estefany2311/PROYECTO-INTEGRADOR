@@ -1,0 +1,34 @@
+/* =====================================================================
+   PANTALLA: LOGIN
+   Todo lo que cambies aquí afecta SOLO al login.
+   ===================================================================== */
+
+/* 1) PANEL DE COLORES: cambia el valor y guarda (Ctrl + S) */
+.login-pagina {
+  --login-panel: linear-gradient(150deg, #1D3557 0%, #14506A 55%, #0A8378 100%); /* lado izquierdo (koala) */
+  --login-panel-titulo: #FFFFFF;      /* título del lado izquierdo */
+  --login-fondo: #F4FAFF;             /* fondo detrás del formulario */
+  --login-tarjeta: #FFFFFF;           /* tarjeta del formulario */
+  --login-titulo: #1D3557;            /* "Iniciar sesión" */
+  --login-subtitulo: #5F6F86;         /* texto debajo del título */
+  --login-boton: #0A8378;             /* botón Ingresar */
+  --login-boton-hover: #08665E;       /* botón Ingresar al pasar el mouse */
+}
+
+/* Dónde se usa cada variable (no hace falta tocarlo) */
+.login-pagina .login-marca { background: var(--login-panel); }
+.login-pagina .login-marca-centro h2 { color: var(--login-panel-titulo); }
+.login-pagina .login-lado-form { background: var(--login-fondo); }
+.login-pagina .login-form { background: var(--login-tarjeta); }
+.login-pagina .login-form h1 { color: var(--login-titulo); }
+.login-pagina .login-subtitulo { color: var(--login-subtitulo); }
+.login-pagina .btn-primary {
+  --bs-btn-bg: var(--login-boton);
+  --bs-btn-border-color: var(--login-boton);
+  --bs-btn-hover-bg: var(--login-boton-hover);
+  --bs-btn-hover-border-color: var(--login-boton-hover);
+  --bs-btn-active-bg: var(--login-boton-hover);
+  --bs-btn-active-border-color: var(--login-boton-hover);
+}
+
+/* 2) REGLAS SOLO DEL LOGIN (empieza siempre con .login-pagina) */

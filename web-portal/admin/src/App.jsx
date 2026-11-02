@@ -10,6 +10,7 @@ import Usuarios from "./pages/Usuarios";
 import Inicio from "./pages/Inicio";
 import { obtenerMiPerfil, sesion } from "./api";
 import "./App.css";
+import "./estilos/paginas/index.css";
 
 export default function App() {
   const [autenticado, setAutenticado] = useState(Boolean(sesion.token));

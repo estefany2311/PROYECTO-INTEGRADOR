@@ -1,0 +1,12 @@
+/* Une los estilos de cada pestaña. Se importa una sola vez en App.jsx,
+   DESPUÉS de App.css, para que estos colores tengan prioridad.
+   Si se crea una pestaña nueva: se copia catalogo.css, se le cambia el
+   nombre y la clase, y se agrega su línea aquí. */
+@import "./_motor.css";
+@import "./inicio.css";
+@import "./colegios.css";
+@import "./docentes.css";
+@import "./usuarios.css";
+@import "./roles.css";
+@import "./catalogo.css";
+@import "./login.css";

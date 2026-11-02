@@ -91,7 +91,7 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
 
       {menuAbierto && <div className="sidebar-backdrop d-lg-none" onClick={() => setMenuAbierto(false)}></div>}
 
-      <div className="main">
+        <div className={`main pagina-${pagina}`}>
         <header className="topbar">
           <button
             type="button"

@@ -1,0 +1,32 @@
+/* =====================================================================
+   PESTAÑA: USUARIOS (US-46)
+   Todo lo que cambies aquí afecta SOLO a esta pestaña.
+   ===================================================================== */
+
+/* 1) PANEL DE COLORES: cambia el valor y guarda (Ctrl + S) */
+.main.pagina-usuarios {
+  --fondo: #F4FAFF;                    /* fondo de la pestaña */
+  --titulo: #1D3557;                   /* color del título grande */
+  --titulo-tamano: 22px;               /* tamaño del título grande */
+  --subtitulo: #5F6F86;                /* texto debajo del título (ruta) */
+  --etiqueta-fondo: #FFF3DD;           /* etiqueta US-xx: fondo */
+  --etiqueta-texto: #8A5300;           /* etiqueta US-xx: texto */
+  --tarjeta-fondo: #FFFFFF;            /* fondo de las tarjetas y tablas */
+  --tarjeta-borde: #E1E8F0;            /* borde de las tarjetas */
+  --tarjeta-radio: 14px;               /* qué tan redondas son las esquinas */
+  --tarjeta-titulo: #1D3557;           /* títulos dentro de las tarjetas */
+  --tarjeta-encabezado-fondo: #FFFFFF; /* franja de arriba de las tarjetas */
+  --tabla-encabezado-fondo: #FAFBFC;   /* fila de títulos de la tabla: fondo */
+  --tabla-encabezado-texto: #5F6F86;   /* fila de títulos de la tabla: texto */
+  --tabla-fila-hover: #EEF7FD;         /* color al pasar el mouse por una fila */
+  --boton: #0A8378;                    /* botones principales */
+  --boton-hover: #08665E;              /* botones principales al pasar el mouse */
+  --nota: #5F6F86;                     /* textos pequeños grises */
+}
+
+/* 2) REGLAS SOLO DE ESTA PESTAÑA
+   Si el profesor pide algo que no está en el panel, escríbelo aquí
+   empezando SIEMPRE con .pagina-usuarios para que no afecte a las demás. Ejemplo:
+   .pagina-usuarios .table td { font-size: 15px; }
+*/
+

@@ -1,0 +1,63 @@
+/* =====================================================================
+   MOTOR DE ESTILOS POR PESTAÑA  ·  ¡NO hace falta tocar este archivo!
+   ---------------------------------------------------------------------
+   Aquí se dice QUÉ parte de la pantalla usa cada variable.
+   Los VALORES (los colores) se cambian en el archivo de cada pestaña:
+   inicio.css, colegios.css, docentes.css, usuarios.css, roles.css,
+   catalogo.css y login.css.
+   Como cada pestaña tiene su propia clase (.pagina-catalogo, etc.),
+   un cambio en catalogo.css SOLO afecta a Catálogo.
+   ===================================================================== */
+
+/* Valores por defecto (los mismos colores de App.css) */
+.main {
+  --fondo: var(--body);
+  --texto: var(--text);
+  --titulo: var(--text);
+  --titulo-tamano: 22px;
+  --subtitulo: var(--muted);
+  --etiqueta-fondo: var(--accent-soft);
+  --etiqueta-texto: var(--accent-text);
+  --tarjeta-fondo: #FFFFFF;
+  --tarjeta-borde: var(--border);
+  --tarjeta-radio: 14px;
+  --tarjeta-titulo: var(--text);
+  --tarjeta-encabezado-fondo: #FFFFFF;
+  --tabla-encabezado-fondo: #FAFBFC;
+  --tabla-encabezado-texto: var(--muted);
+  --tabla-fila-hover: #EEF7FD;
+  --boton: var(--primary);
+  --boton-hover: var(--primary-dark);
+  --nota: var(--muted);
+}
+
+/* Dónde se usa cada variable */
+.main { background: var(--fondo); transition: background .3s; }
+.main .content { color: var(--texto); }
+.main .page-title h1 { color: var(--titulo); font-size: var(--titulo-tamano); }
+.main .breadcrumb { color: var(--subtitulo) !important; }
+.main .story { background: var(--etiqueta-fondo); color: var(--etiqueta-texto); }
+.main .content .card {
+  background-color: var(--tarjeta-fondo);
+  border-color: var(--tarjeta-borde);
+  border-radius: var(--tarjeta-radio);
+}
+.main .content .card-header {
+  background: var(--tarjeta-encabezado-fondo);
+  border-bottom-color: var(--tarjeta-borde);
+  border-radius: var(--tarjeta-radio) var(--tarjeta-radio) 0 0 !important;
+}
+.main .content .card-header h2 { color: var(--tarjeta-titulo); }
+.main .content .table { --bs-table-bg: var(--tarjeta-fondo); --bs-table-hover-bg: var(--tabla-fila-hover); }
+.main .content .table thead th { background: var(--tabla-encabezado-fondo); color: var(--tabla-encabezado-texto); }
+.main .content .btn-primary {
+  --bs-btn-bg: var(--boton);
+  --bs-btn-border-color: var(--boton);
+  --bs-btn-hover-bg: var(--boton-hover);
+  --bs-btn-hover-border-color: var(--boton-hover);
+  --bs-btn-active-bg: var(--boton-hover);
+  --bs-btn-active-border-color: var(--boton-hover);
+  --bs-btn-disabled-bg: var(--boton);
+  --bs-btn-disabled-border-color: var(--boton);
+}
+.main .content .note { color: var(--nota); }
