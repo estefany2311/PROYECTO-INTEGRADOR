@@ -1,10 +1,12 @@
 from rest_framework import serializers
 
 from .models import Lectura
+from .servicios import lectura_esta_asignada
 
 
 class LecturaSerializer(serializers.ModelSerializer):
     creado_por = serializers.CharField(source='creado_por.username', read_only=True, default=None)
+    asignada = serializers.SerializerMethodField()
 
     grado = serializers.IntegerField(
         default=1,
@@ -24,8 +26,11 @@ class LecturaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Lectura
-        fields = ['id', 'titulo', 'texto', 'tipo_reto', 'grado', 'dificultad', 'activo', 'creado_por', 'creado_en']
+        fields = ['id', 'titulo', 'texto', 'tipo_reto', 'grado', 'dificultad', 'activo', 'asignada', 'creado_por', 'creado_en']
         read_only_fields = ['id', 'activo', 'creado_por', 'creado_en']
+
+    def get_asignada(self, obj):
+        return lectura_esta_asignada(obj.id)
 
     def validate_titulo(self, value):
         value = value.strip()

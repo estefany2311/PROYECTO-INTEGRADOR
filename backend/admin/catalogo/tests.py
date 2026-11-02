@@ -97,12 +97,6 @@ class LecturaAPITests(APITestCase):
         resp = self.client.get(self.URL)
         self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
  
-    def test_editar_y_eliminar_no_estan_permitidos(self):
-        lectura = Lectura.objects.first()
-        url = f'{self.URL}{lectura.id}/'
-        self.assertEqual(self.client.patch(url, {'titulo': 'Otro'}, format='json').status_code,
-                         status.HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertEqual(self.client.delete(url).status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
  
     # --- Búsqueda y filtros ---
     def test_buscar_por_titulo(self):
