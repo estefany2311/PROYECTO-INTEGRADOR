@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Admin Sprint 3 (T-272)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Mockup T-272 · Sprint 3 · estilo escolar con la paleta del portal (App.css) */
+  :root{
+    --primary:#0A8378; --primary-soft:#E0F5F3; --primary-dark:#08665E; --turquesa:#0E9F92;
+    --accent:#FF9F1C; --accent-soft:#FFF3DD; --accent-text:#8A5300;
+    --navy:#1D3557; --body:#F4FAFF; --border:#E1E8F0; --text:#1D3557; --muted:#5F6F86;
+    --success:#2EC4B6; --danger:#E63946;
+    /* colores de crayola para detalles escolares */
+    --c-yellow:#FFD166; --c-red:#EF476F; --c-blue:#4EA8DE; --c-green:#06D6A0; --c-purple:#9B5DE5;
+    --bs-primary:#0A8378; --bs-primary-rgb:10,131,120; --bs-link-color:#0A8378;
+  }
+  body{
+    font-family:Nunito,system-ui,sans-serif;color:var(--text);font-size:14.5px;
+    background-color:var(--body);
+    /* fondo de cuaderno cuadriculado */
+    background-image:linear-gradient(rgba(78,168,222,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(78,168,222,.07) 1px,transparent 1px);
+    background-size:26px 26px;
+  }
+  h1,h2,h5,.baloo{font-family:'Baloo 2',Nunito,sans-serif;color:var(--text)}
+  a{color:var(--primary)}
+
+  /* Botones tipo juguete (con sombra inferior) */
+  .btn{font-weight:700;border-radius:14px;transition:transform .1s, box-shadow .1s}
+  .btn:active{transform:translateY(2px)}
+  .btn-primary{background:var(--primary)!important;border-color:var(--primary)!important;color:#fff!important;box-shadow:0 4px 0 var(--primary-dark)}
+  .btn-primary:hover{background:var(--turquesa)!important}
+  .btn-primary:active{box-shadow:0 2px 0 var(--primary-dark)}
+  .btn-primary:disabled{opacity:.5;box-shadow:none}
+  .btn-orange{background:var(--accent);color:#fff;border:0;box-shadow:0 4px 0 #d27f0c}
+  .btn-orange:hover{background:#ffad3d;color:#fff}
+  .btn-soft{background:#fff;border:2px solid var(--border);color:var(--text);box-shadow:0 3px 0 var(--border)}
+  .btn-soft:hover{border-color:var(--turquesa);color:var(--primary)}
+  .form-control,.form-select{border:2px solid var(--border);border-radius:12px}
+  .form-control:focus,.form-select:focus{border-color:var(--turquesa);box-shadow:0 0 0 .2rem rgba(14,159,146,.15)}
+  .form-check-input:checked{background-color:var(--primary);border-color:var(--primary)}
+
+  /* Menú lateral claro */
+  .sidebar{position:fixed;inset:14px auto 14px 14px;width:240px;background:#fff;border-radius:24px;border:2px solid var(--border);display:flex;flex-direction:column;z-index:1040;box-shadow:0 8px 24px rgba(29,53,87,.06);transition:transform .25s}
+  .brand{display:flex;align-items:center;gap:10px;padding:18px 18px 8px;font-family:'Baloo 2';font-weight:800;font-size:19px;line-height:1.05}
+  .brand small{display:block;font-family:Nunito;font-weight:700;font-size:11px;color:var(--accent-text)}
+  .pencil{height:8px;margin:6px 18px 6px;border-radius:4px;background:repeating-linear-gradient(90deg,var(--c-red) 0 20%,var(--c-yellow) 20% 40%,var(--c-green) 40% 60%,var(--c-blue) 60% 80%,var(--c-purple) 80% 100%)}
+  .nav-section{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:14px 20px 6px}
+  .side-link{display:flex;align-items:center;gap:10px;margin:2px 10px;padding:8px 10px;border-radius:14px;color:var(--text);text-decoration:none;font-weight:700;cursor:pointer;transition:background .15s, transform .15s}
+  .side-link:hover{background:var(--primary-soft);transform:translateX(3px)}
+  .side-link .ico{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:16px;color:#fff;flex:none}
+  .side-link .tag{margin-left:auto;font-size:10px;background:var(--body);padding:2px 7px;border-radius:10px;color:var(--muted)}
+  .side-link.active{background:var(--accent-soft);color:var(--accent-text);box-shadow:inset 0 0 0 2px var(--accent)}
+  .side-link.active .tag{background:var(--accent);color:#fff}
+  .i-cat{background:var(--c-blue)}.i-voz{background:var(--c-red)}.i-ort{background:var(--c-purple)}.i-pun{background:var(--accent)}.i-rep{background:var(--c-green)}
+  .side-koala{margin:auto 14px 14px;background:var(--primary-soft);border-radius:18px;padding:10px;display:flex;gap:8px;align-items:center;font-size:12px;font-weight:700;color:var(--primary-dark)}
+
+  .main{margin-left:268px;min-height:100vh;padding:14px 14px 30px 0}
+  .topbar{background:#fff;border:2px solid var(--border);border-radius:22px;display:flex;align-items:center;gap:14px;padding:10px 18px;position:sticky;top:14px;z-index:1030;box-shadow:0 6px 18px rgba(29,53,87,.05)}
+  .flags{display:flex;gap:4px}
+  .flags span{width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:16px solid}
+  .avatar{width:40px;height:40px;border-radius:50%;background:var(--accent-soft);color:var(--accent-text);display:grid;place-items:center;font-weight:800;border:2px solid var(--accent)}
+  .content{padding:22px 4px}
+  .page{display:none}.page.show{display:block;animation:entra .35s ease}
+  @keyframes entra{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  /* Título de página en tonos turquesa y naranja claros */
+  .hero{background:linear-gradient(120deg,#E0F5F3 0%,#FFF3DD 100%);border:2px solid var(--border);border-radius:24px;padding:16px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:18px;position:relative;overflow:hidden}
+  .hero h1{font-size:26px;font-weight:800;margin:0}
+  .hero .sub{color:var(--muted);font-weight:600}
+  .hero .doodle{position:absolute;right:-8px;bottom:-12px;font-size:70px;opacity:.12;transform:rotate(-12deg)}
+  .story{font-size:11.5px;font-weight:800;color:#fff;background:var(--accent);padding:3px 10px;border-radius:20px;vertical-align:middle;margin-left:6px;font-family:Nunito}
+
+  /* Tarjetas con cinta adhesiva */
+  .card{border:2px solid var(--border);border-radius:22px;box-shadow:0 6px 16px rgba(29,53,87,.05);position:relative}
+  .card.tape::before{content:"";position:absolute;top:-10px;left:50%;width:86px;height:20px;transform:translateX(-50%) rotate(-3deg);background:rgba(255,209,102,.75);border-radius:3px}
+  .card-header{background:#fff;border-bottom:2px dashed var(--border);padding:14px 18px;border-radius:22px 22px 0 0!important}
+  .card-header h2{font-size:17px;font-weight:700;margin:0}
+  .card-footer{background:#fff;border-top:2px dashed var(--border);border-radius:0 0 22px 22px!important}
+  .ruled{background:repeating-linear-gradient(#fff 0 31px,#e3eef9 31px 32px)}
+  .table{margin:0;--bs-table-hover-bg:#EEF7FD}
+  .table thead th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:800;background:#FAFDFF;border-bottom:2px solid var(--border);padding:12px 14px}
+  .table td{padding:11px 14px;vertical-align:middle;border-color:var(--border)}
+  .pill{font-weight:800;font-size:11.5px;padding:4px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:4px}
+  .p-ok{background:#DDF8F4;color:#08665E}.p-off{background:#FDE3E6;color:#B4232F}.p-warn{background:var(--accent-soft);color:var(--accent-text)}.p-info{background:#E3F1FB;color:#1F6FA8}.p-mut{background:#EEF2F6;color:var(--muted)}
+  .icon-btn{width:34px;height:34px;display:inline-grid;place-items:center;border-radius:11px;border:2px solid var(--border);background:#fff;color:var(--muted);transition:all .15s}
+  .icon-btn:hover{color:var(--primary);border-color:var(--turquesa);transform:translateY(-2px)}
+  .icon-btn.del:hover{color:var(--danger);border-color:var(--danger)}
+  .reto{width:30px;height:30px;border-radius:10px;display:inline-grid;place-items:center;color:#fff;margin-right:8px}
+  .r-lec{background:var(--c-blue)}.r-esc{background:var(--c-purple)}.r-ora{background:var(--c-red)}
+  .seg{display:inline-flex;background:var(--body);border:2px solid var(--border);border-radius:14px;padding:3px}
+  .seg button{border:0;background:none;padding:5px 12px;border-radius:10px;font-weight:800;color:var(--muted);font-size:13px}
+  .seg button.on{background:var(--primary);color:#fff;box-shadow:0 2px 0 var(--primary-dark)}
+
+  /* Notas adhesivas (indicadores) */
+  .sticky{border-radius:6px 6px 18px 6px;padding:14px 16px;box-shadow:0 6px 12px rgba(29,53,87,.08);transition:transform .2s}
+  .sticky:hover{transform:rotate(0) scale(1.03)!important}
+  .sticky .v{font-family:'Baloo 2';font-size:30px;font-weight:800;line-height:1}
+  .sticky .l{font-weight:700;font-size:13px;opacity:.85}
+  .sticky i{font-size:22px}
+  .s1{background:#FFF0B8;transform:rotate(-1.5deg)}.s2{background:#D3F5EC;transform:rotate(1deg)}.s3{background:#DCEBFF;transform:rotate(-.8deg)}.s4{background:#FFDDE4;transform:rotate(1.4deg)}
+
+  .bar-row{display:grid;grid-template-columns:100px 1fr 50px;align-items:center;gap:10px;margin-bottom:14px;font-weight:700}
+  .bar{height:18px;border-radius:10px;background:#EEF2F6;overflow:hidden}
+  .bar>span{display:block;height:100%;border-radius:10px;width:0;transition:width 1s cubic-bezier(.2,.8,.2,1);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.25) 0 8px,transparent 8px 16px)}
+  .sem{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+  .sem-v{background:#06D6A0}.sem-a{background:#FFD166}.sem-r{background:#EF476F}
+  .nowrap{white-space:nowrap}
+  .tab-btn{border:0;background:none;padding:6px 14px;border-radius:12px;color:var(--muted);font-weight:800}
+  .tab-btn.on{background:var(--accent-soft);color:var(--accent-text)}
+
+  .num{max-width:92px;text-align:center;font-weight:700}
+  .chip{display:inline-flex;align-items:center;gap:6px;border-radius:20px;padding:5px 12px;font-weight:800;font-size:13px;margin:0 6px 8px 0;animation:pop .25s}
+  .chip i{cursor:pointer;opacity:.7}.chip i:hover{opacity:1}
+  @keyframes pop{from{transform:scale(.6)}to{transform:scale(1)}}
+  .lvl{font-weight:800;font-size:12px;padding:3px 10px;border-radius:20px}
+  .form-range::-webkit-slider-thumb{background:var(--accent)}
+  .form-range::-moz-range-thumb{background:var(--accent)}
+  .stars{color:#FFC233;letter-spacing:2px;font-size:28px;text-shadow:0 2px 0 #e0a100}
+  .stars .off{color:#E1E8F0;text-shadow:none}
+  .preview{background:var(--accent-soft);border:2px dashed var(--accent);border-radius:18px;padding:14px}
+  .hist li{border-left:4px solid var(--c-yellow);padding:6px 10px;margin-bottom:8px;background:#FFFDF4;border-radius:0 10px 10px 0;list-style:none;animation:pop .25s}
+
+  /* Aviso tipo globo con el koala */
+  .toast-k{position:fixed;right:22px;bottom:22px;display:flex;align-items:flex-end;gap:6px;z-index:2000;transform:translateY(140%);transition:transform .35s cubic-bezier(.2,.9,.3,1.3)}
+  .toast-k.on{transform:none}
+  .toast-k .bubble{background:#fff;border:2px solid var(--turquesa);border-radius:18px 18px 4px 18px;padding:10px 14px;font-weight:800;max-width:260px;box-shadow:0 8px 20px rgba(29,53,87,.12)}
+  .modal-content{border:0;border-radius:24px}
+  .modal-header{border-bottom:2px dashed var(--border)}
+  .modal-footer{border-top:2px dashed var(--border)}
+  .big-ico{width:64px;height:64px;border-radius:20px;display:grid;place-items:center;font-size:30px;margin:0 auto 10px}
+
+  @media (max-width: 991px){
+    .sidebar{transform:translateX(-120%)} .sidebar.open{transform:none}
+    .main{margin-left:0;padding:10px} .flags{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- Koala de la marca (mismo dibujo que components/Koala.jsx) -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="koala" viewBox="0 0 200 200">
+    <circle cx="48" cy="62" r="34" fill="#9AA6B2"/><circle cx="48" cy="62" r="20" fill="#F6C6D0"/>
+    <circle cx="152" cy="62" r="34" fill="#9AA6B2"/><circle cx="152" cy="62" r="20" fill="#F6C6D0"/>
+    <ellipse cx="100" cy="168" rx="52" ry="34" fill="#9AA6B2"/><ellipse cx="100" cy="172" rx="32" ry="22" fill="#D9DFE5"/>
+    <ellipse cx="100" cy="98" rx="60" ry="54" fill="#AEB8C2"/>
+    <circle cx="76" cy="92" r="8" fill="#1D3557"/><circle cx="124" cy="92" r="8" fill="#1D3557"/>
+    <circle cx="79" cy="89" r="3" fill="#fff"/><circle cx="127" cy="89" r="3" fill="#fff"/>
+    <ellipse cx="100" cy="112" rx="15" ry="18" fill="#3B4A5C"/><ellipse cx="95" cy="104" rx="4" ry="5" fill="#5A6B7F"/>
+    <path d="M90 134 Q100 142 110 134" stroke="#3B4A5C" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <circle cx="62" cy="118" r="9" fill="#F6A9B8" opacity=".7"/><circle cx="138" cy="118" r="9" fill="#F6A9B8" opacity=".7"/>
+    <path d="M100 160 L58 150 L58 186 L100 196 Z" fill="#0E9F92"/><path d="M100 160 L142 150 L142 186 L100 196 Z" fill="#0A8378"/>
+    <path d="M100 162 L64 154 L64 182 L100 190 Z" fill="#fff"/><path d="M100 162 L136 154 L136 182 L100 190 Z" fill="#F4FAFF"/>
+    <path d="M72 162 L94 167 M72 170 L94 175 M106 167 L128 162 M106 175 L128 170" stroke="#B8C4D6" stroke-width="2" stroke-linecap="round"/>
+    <ellipse cx="60" cy="166" rx="11" ry="9" fill="#9AA6B2"/><ellipse cx="140" cy="166" rx="11" ry="9" fill="#9AA6B2"/>
+    <path d="M170 30 L174 40 L185 41 L177 48 L179 59 L170 53 L161 59 L163 48 L155 41 L166 40 Z" fill="#FF9F1C"/>
+  </symbol>
+</svg>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand"><svg width="44" height="44"><use href="#koala"/></svg><div>Plataforma<br>Educativa<small>Panel del administrador</small></div></div>
+  <div class="pencil"></div>
+  <div class="nav-section">Contenido</div>
+  <a class="side-link" data-p="catalogo"><span class="ico i-cat"><i class="bi bi-journal-bookmark-fill"></i></span>Catálogo<span class="tag">US-41</span></a>
+  <div class="nav-section">Configuración IA</div>
+  <a class="side-link" data-p="voz"><span class="ico i-voz"><i class="bi bi-mic-fill"></i></span>Voz y fluidez<span class="tag">US-51</span></a>
+  <a class="side-link" data-p="ortografia"><span class="ico i-ort"><i class="bi bi-spellcheck"></i></span>Ortografía<span class="tag">US-52</span></a>
+  <a class="side-link" data-p="puntuacion"><span class="ico i-pun"><i class="bi bi-star-fill"></i></span>Estrellas<span class="tag">US-53</span></a>
+  <div class="nav-section">Análisis</div>
+  <a class="side-link" data-p="reportes"><span class="ico i-rep"><i class="bi bi-bar-chart-fill"></i></span>Reportes<span class="tag">US-47</span></a>
+  <div class="side-koala"><svg width="38" height="38" style="flex:none"><use href="#koala"/></svg><span id="tip">¡Tip! Haz clic en los botones: el mockup responde.</span></div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="btn btn-soft btn-sm d-lg-none" onclick="sidebar.classList.toggle('open')"><i class="bi bi-list"></i></button>
+    <div class="baloo fw-bold fs-5">¡Hola, Daniela! <span class="d-none d-md-inline">👋</span></div>
+    <div class="flags ms-3">
+      <span style="border-top-color:var(--c-red)"></span><span style="border-top-color:var(--c-yellow)"></span><span style="border-top-color:var(--c-green)"></span><span style="border-top-color:var(--c-blue)"></span><span style="border-top-color:var(--c-purple)"></span><span style="border-top-color:var(--accent)"></span>
+    </div>
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <span class="pill p-warn d-none d-sm-inline-flex"><i class="bi bi-calendar-heart"></i>Sprint 3</span>
+      <div class="avatar">DV</div>
+      <div class="lh-sm d-none d-sm-block"><div class="fw-bold">Daniela Vila</div><div class="small text-secondary">Administradora</div></div>
+    </div>
+  </header>
+
+  <main class="content">
+
+  <!-- ===== CATÁLOGO US-41 ===== -->
+  <section id="p-catalogo" class="page">
+    <div class="hero">
+      <div><h1>Catálogo de lecturas <span class="story">US-41</span></h1><div class="sub">Edita las lecturas o desactívalas cuando ya no se usen.</div></div>
+      <button class="btn btn-orange ms-auto" onclick="toast('La pantalla «Nueva lectura» ya existe (US-39) 📚')"><i class="bi bi-plus-lg me-1"></i>Nueva lectura</button>
+      <i class="bi bi-book doodle"></i>
+    </div>
+    <div class="card tape">
+      <div class="card-header d-flex flex-wrap gap-2 align-items-center">
+        <div class="position-relative"><i class="bi bi-search position-absolute" style="left:12px;top:9px;color:var(--muted)"></i><input id="buscar" class="form-control ps-5" style="max-width:240px" placeholder="Buscar por título"></div>
+        <div class="seg ms-auto" id="segEstado">
+          <button class="on" data-f="activa">✅ Activas</button><button data-f="inactiva">💤 Desactivadas</button><button data-f="todas">Todas</button>
+        </div>
+      </div>
+      <div class="table-responsive"><table class="table table-hover">
+        <thead><tr><th>Lectura</th><th>Grado</th><th>Dificultad</th><th>Uso</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+        <tbody id="tbLecturas"></tbody></table></div>
+      <div id="vacio" class="text-center py-4 d-none"><svg width="70" height="70"><use href="#koala"/></svg><div class="fw-bold mt-1">No hay lecturas aquí todavía</div></div>
+      <div class="card-footer small text-secondary"><i class="bi bi-lightbulb me-1" style="color:var(--accent)"></i>Eliminar = desactivar (la lectura se guarda). Una lectura asignada a alumnos no se puede eliminar.</div>
+    </div>
+  </section>
+
+  <!-- ===== VOZ Y FLUIDEZ US-51 ===== -->
+  <section id="p-voz" class="page">
+    <div class="hero">
+      <div><h1>Rigor de la evaluación de voz <span class="story">US-51</span></h1><div class="sub">Qué tan exigente es la IA al escuchar leer a cada grado.</div></div>
+      <div class="ms-auto d-flex gap-2"><button class="btn btn-soft" onclick="vozDefecto()"><i class="bi bi-arrow-counterclockwise me-1"></i>Por defecto</button><button class="btn btn-primary" id="btnVoz" onclick="vozGuardar()"><i class="bi bi-check2 me-1"></i>Guardar</button></div>
+      <i class="bi bi-mic doodle"></i>
+    </div>
+    <div class="row g-3">
+      <div class="col-xl-8"><div class="card tape">
+        <div class="card-header d-flex flex-wrap justify-content-between gap-2"><h2>Parámetros por grado</h2><span class="small text-secondary">El motor de IA (Spring Boot) lee esta configuración</span></div>
+        <div class="table-responsive"><table class="table">
+          <thead><tr><th>Grado</th><th>Precisión mínima (%)</th><th>Pausas toleradas (s)</th><th>Palabras por minuto</th></tr></thead>
+          <tbody id="tbVoz"></tbody></table></div>
+      </div></div>
+      <div class="col-xl-4"><div class="card ruled h-100">
+        <div class="card-header"><h2>📝 Historial de cambios</h2></div>
+        <ul class="hist p-3 m-0" id="hist">
+          <li><b>Valores iniciales cargados</b><div class="small text-secondary">02/11/2026</div></li>
+        </ul>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ===== ORTOGRAFÍA US-52 ===== -->
+  <section id="p-ortografia" class="page">
+    <div class="hero">
+      <div><h1>Validación ortográfica <span class="story">US-52</span></h1><div class="sub">Calibra cómo la IA marca los errores al escribir.</div></div>
+      <button class="btn btn-primary ms-auto" onclick="toast('Configuración ortográfica guardada ✏️')"><i class="bi bi-check2 me-1"></i>Guardar</button>
+      <i class="bi bi-pencil doodle"></i>
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-6"><div class="card tape h-100">
+        <div class="card-header"><h2>Sensibilidad por grado</h2></div>
+        <div class="card-body" id="sens"></div>
+        <div class="card-body pt-0">
+          <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" checked id="t1"><label class="form-check-label fw-semibold" for="t1">No marcar tildes como error en 1.° y 2.° grado</label></div>
+          <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="t2"><label class="form-check-label fw-semibold" for="t2">Marcar mayúscula al inicio de oración desde 3.°</label></div>
+        </div>
+      </div></div>
+      <div class="col-lg-6"><div class="card ruled h-100">
+        <div class="card-header d-flex justify-content-between"><h2>Palabras permitidas</h2><span class="pill p-info" id="nPal">0 palabras</span></div>
+        <div class="card-body">
+          <div class="input-group mb-3"><input id="nuevaPal" class="form-control" placeholder="Escribe una palabra y presiona Enter"><button class="btn btn-orange" onclick="addPal()"><i class="bi bi-plus-lg"></i></button></div>
+          <div id="chips"></div>
+          <div class="small text-secondary mt-2">Palabras quechuas o de la zona que no deben marcarse como error.</div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ===== PUNTOS Y ESTRELLAS US-53 ===== -->
+  <section id="p-puntuacion" class="page">
+    <div class="hero">
+      <div><h1>Puntos y estrellas <span class="story">US-53</span></h1><div class="sub">Las reglas que motivan a los niños en el mapa de aventura.</div></div>
+      <button class="btn btn-primary ms-auto" id="btnPun" onclick="toast('¡Reglas guardadas! ⭐⭐⭐')"><i class="bi bi-check2 me-1"></i>Guardar reglas</button>
+      <i class="bi bi-stars doodle"></i>
+    </div>
+    <div class="row g-3">
+      <div class="col-xl-8"><div class="card tape">
+        <div class="card-header"><h2>Reglas por tipo de reto</h2></div>
+        <div class="table-responsive"><table class="table">
+          <thead><tr><th>Tipo de reto</th><th>Puntos</th><th><span class="stars" style="font-size:15px">★</span> desde %</th><th><span class="stars" style="font-size:15px">★★</span> desde %</th><th><span class="stars" style="font-size:15px">★★★</span> desde %</th></tr></thead>
+          <tbody id="tbPun"></tbody></table></div>
+        <div class="card-footer small text-secondary"><i class="bi bi-info-circle me-1"></i>Los umbrales deben subir: 1 ★ &lt; 2 ★ &lt; 3 ★.</div>
+      </div></div>
+      <div class="col-xl-4"><div class="card h-100">
+        <div class="card-header"><h2>🎮 Prueba las reglas</h2></div>
+        <div class="card-body">
+          <label class="fw-bold mb-1">Tipo de reto</label>
+          <select class="form-select mb-3" id="simTipo"></select>
+          <label class="fw-bold d-flex justify-content-between">Puntaje del alumno <span id="simVal">75 %</span></label>
+          <input type="range" class="form-range mb-3" id="simRango" min="0" max="100" value="75">
+          <div class="preview text-center">
+            <svg width="60" height="60"><use href="#koala"/></svg>
+            <div class="stars" id="simStars"></div>
+            <div class="fw-bold" id="simTxt"></div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ===== REPORTES US-47 ===== -->
+  <section id="p-reportes" class="page">
+    <div class="hero">
+      <div><h1>Reportes consolidados <span class="story">US-47</span></h1><div class="sub">¿Cómo van aprendiendo los colegios?</div></div>
+      <select class="form-select ms-auto" style="max-width:230px" id="selColegio"></select>
+      <i class="bi bi-graph-up-arrow doodle"></i>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-xl-3"><div class="sticky s1"><i class="bi bi-people-fill"></i><div class="v" id="k1">0</div><div class="l">Alumnos evaluados</div></div></div>
+      <div class="col-6 col-xl-3"><div class="sticky s2"><i class="bi bi-trophy-fill"></i><div class="v" id="k2">0</div><div class="l">Retos completados</div></div></div>
+      <div class="col-6 col-xl-3"><div class="sticky s3"><i class="bi bi-emoji-smile-fill"></i><div class="v" id="k3">0</div><div class="l">Promedio general</div></div></div>
+      <div class="col-6 col-xl-3"><div class="sticky s4"><i class="bi bi-heart-pulse-fill"></i><div class="v" id="k4">0</div><div class="l">Necesitan refuerzo</div></div></div>
+    </div>
+    <div class="row g-3">
+      <div class="col-xl-7"><div class="card tape h-100">
+        <div class="card-header d-flex gap-1"><button class="tab-btn on" data-t="colegio">🏫 Por colegio</button><button class="tab-btn" data-t="aula">🎒 Por aula</button></div>
+        <div class="table-responsive"><table class="table table-hover">
+          <thead id="thRep"></thead><tbody id="tbRep"></tbody></table></div>
+      </div></div>
+      <div class="col-xl-5"><div class="card ruled h-100">
+        <div class="card-header"><h2>Promedio por competencia</h2></div>
+        <div class="card-body pt-4">
+          <div class="bar-row"><span>📖 Lectura</span><div class="bar"><span id="b1" style="background-color:var(--c-blue)"></span></div><b id="t1v">0 %</b></div>
+          <div class="bar-row"><span>✏️ Escritura</span><div class="bar"><span id="b2" style="background-color:var(--c-purple)"></span></div><b id="t2v">0 %</b></div>
+          <div class="bar-row"><span>🎤 Oralidad</span><div class="bar"><span id="b3" style="background-color:var(--c-red)"></span></div><b id="t3v">0 %</b></div>
+          <div class="small text-secondary mt-3"><span class="sem sem-v"></span>verde ≥ 75 % · <span class="sem sem-a"></span>amarillo 50–74 % · <span class="sem sem-r"></span>rojo &lt; 50 %</div>
+          <div class="small text-secondary mt-1">Datos de ejemplo (los reales vienen de T-264 a T-270).</div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<!-- ================= MODALES ================= -->
+<div class="modal fade" id="mEditar" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title fw-bold">✏️ Editar lectura</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body row g-3">
+    <div class="col-md-8"><label class="form-label fw-bold">Título *</label><input class="form-control" id="eTitulo"><div class="invalid-feedback">El título es obligatorio.</div></div>
+    <div class="col-md-4"><label class="form-label fw-bold">Tipo de reto *</label><select class="form-select" id="eTipo"><option value="lec">📖 Lectura</option><option value="esc">✏️ Escritura</option><option value="ora">🎤 Oralidad</option></select></div>
+    <div class="col-md-6"><label class="form-label fw-bold">Grado *</label><select class="form-select" id="eGrado"></select></div>
+    <div class="col-md-6"><label class="form-label fw-bold">Dificultad *</label><select class="form-select" id="eDif"><option>Básica</option><option>Intermedia</option><option>Avanzada</option></select></div>
+    <div class="col-12"><label class="form-label fw-bold">Texto de la lectura *</label><textarea class="form-control" rows="4" id="eTexto"></textarea><div class="d-flex justify-content-between"><div class="invalid-feedback d-block" id="eTextoErr"></div><span class="small text-secondary" id="eCount"></span></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-soft" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" onclick="guardarEdicion()">Guardar cambios</button></div>
+</div></div></div>
+
+<div class="modal fade" id="mBorrar" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content text-center p-4">
+  <div class="big-ico p-off"><i class="bi bi-trash3"></i></div>
+  <h5 class="fw-bold" id="bTitulo"></h5>
+  <p class="text-secondary small">La lectura se desactiva y deja de aparecer para los docentes. La verás en «Desactivadas».</p>
+  <div class="d-flex gap-2"><button class="btn btn-soft w-50" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-danger w-50" onclick="confirmarBorrar()" style="box-shadow:0 4px 0 #a51d28">Eliminar</button></div>
+</div></div></div>
+
+<div class="modal fade" id="mNoBorrar" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content text-center p-4">
+  <svg width="80" height="80" class="mx-auto"><use href="#koala"/></svg>
+  <h5 class="fw-bold mt-2">¡Uy! No se puede eliminar</h5>
+  <p class="text-secondary small" id="nbTxt"></p>
+  <button class="btn btn-primary w-100" data-bs-dismiss="modal">Entendido</button>
+</div></div></div>
+
+<div class="toast-k" id="toast"><div class="bubble" id="toastTxt"></div><svg width="70" height="70"><use href="#koala"/></svg></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ---------- utilidades ---------- */
+const $ = s => document.querySelector(s), $$ = s => document.querySelectorAll(s);
+let tt;
+function toast(msg){ $('#toastTxt').textContent = msg; $('#toast').classList.add('on'); clearTimeout(tt); tt = setTimeout(()=>$('#toast').classList.remove('on'), 2600); }
+const modal = id => bootstrap.Modal.getOrCreateInstance(document.getElementById(id));
+const TIPOS = {lec:['r-lec','bi-book-fill','Lectura'], esc:['r-esc','bi-pencil-fill','Escritura'], ora:['r-ora','bi-mic-fill','Oralidad']};
+const DIF = {'Básica':'p-ok','Intermedia':'p-warn','Avanzada':'p-off'};
+
+/* ---------- navegación ---------- */
+const TIPS = {catalogo:'Prueba eliminar «El cóndor y el zorro»: está asignada 😉', voz:'Escribe 120 en precisión y mira qué pasa.', ortografia:'Agrega una palabra como «quinua».', puntuacion:'Mueve el puntaje del alumno y mira sus estrellas ⭐', reportes:'Cambia de colegio o de pestaña.'};
+function go(p){
+  $$('main .page').forEach(s => s.classList.toggle('show', s.id === 'p-' + p));
+  $$('.side-link[data-p]').forEach(a => a.classList.toggle('active', a.dataset.p === p));
+  $('#tip').textContent = TIPS[p]; sidebar.classList.remove('open');
+  if (location.hash !== '#' + p) history.replaceState(null, '', '#' + p);
+  if (p === 'reportes') pintarReporte();
+  window.scrollTo(0, 0);
+}
+$$('.side-link[data-p]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); go(a.dataset.p); }));
+
+/* ---------- catálogo (US-41) ---------- */
+const lecturas = [
+  {id:1, titulo:'El cóndor y el zorro', tipo:'lec', grado:2, dif:'Básica', asignada:true, activa:true, texto:'Había una vez un cóndor que vivía en lo alto de la montaña y un zorro muy astuto que lo quería engañar.'},
+  {id:2, titulo:'Mi chacra en la mañana', tipo:'esc', grado:4, dif:'Intermedia', asignada:false, activa:true, texto:'Cuenta cómo es tu chacra cuando sale el sol y qué animales ves.'},
+  {id:3, titulo:'Las papas de mi abuela', tipo:'ora', grado:3, dif:'Básica', asignada:false, activa:true, texto:'Mi abuela siembra muchas clases de papas: amarillas, moradas y huayro.'},
+  {id:4, titulo:'La fiesta del Inti Raymi', tipo:'lec', grado:6, dif:'Avanzada', asignada:true, activa:true, texto:'Cada 24 de junio en Cusco se celebra la gran fiesta del Sol con danzas y música.'},
+  {id:5, titulo:'El picaflor viajero', tipo:'lec', grado:1, dif:'Básica', asignada:false, activa:false, texto:'Un picaflor pequeñito voló desde el río hasta la cima del cerro.'},
+];
+let filtro = 'activa', actual = null;
+function pintarLecturas(){
+  const q = $('#buscar').value.trim().toLowerCase();
+  const lista = lecturas.filter(l => (filtro === 'todas' || (filtro === 'activa') === l.activa) && l.titulo.toLowerCase().includes(q));
+  $('#tbLecturas').innerHTML = lista.map(l => {
+    const [c, i, n] = TIPOS[l.tipo];
+    return `<tr class="${l.activa ? '' : 'opacity-75'}">
+      <td class="nowrap"><span class="reto ${c}"><i class="bi ${i}"></i></span><b>${l.titulo}</b><div class="small text-secondary" style="margin-left:38px">${n}</div></td>
+      <td><span class="pill p-info nowrap">${l.grado}.° grado</span></td>
+      <td><span class="pill ${DIF[l.dif]}">${l.dif}</span></td>
+      <td>${l.asignada ? '<span class="pill p-warn"><i class="bi bi-people-fill"></i>Asignada</span>' : '<span class="pill p-mut nowrap">Sin asignar</span>'}</td>
+      <td>${l.activa ? '<span class="pill p-ok">● Activa</span>' : '<span class="pill p-off">● Desactivada</span>'}</td>
+      <td class="text-end nowrap">
+        <button class="icon-btn" title="Editar" onclick="editar(${l.id})"><i class="bi bi-pencil-fill"></i></button>
+        ${l.activa ? `<button class="icon-btn del" title="Eliminar" onclick="borrar(${l.id})"><i class="bi bi-trash3-fill"></i></button>`
+                   : `<button class="icon-btn" title="Reactivar" onclick="reactivar(${l.id})"><i class="bi bi-arrow-counterclockwise"></i></button>`}
+      </td></tr>`;
+  }).join('');
+  $('#vacio').classList.toggle('d-none', lista.length > 0);
+}
+$$('#segEstado button').forEach(b => b.onclick = () => { $$('#segEstado button').forEach(x => x.classList.remove('on')); b.classList.add('on'); filtro = b.dataset.f; pintarLecturas(); });
+$('#buscar').oninput = pintarLecturas;
+$('#eGrado').innerHTML = [1,2,3,4,5,6].map(g => `<option value="${g}">${g}.° grado</option>`).join('');
+function contar(){ const n = $('#eTexto').value.trim().length; $('#eCount').textContent = n + ' caracteres'; $('#eTextoErr').textContent = n < 20 ? 'Mínimo 20 caracteres.' : ''; return n >= 20; }
+$('#eTexto').oninput = contar;
+function editar(id){
+  actual = lecturas.find(l => l.id === id);
+  $('#eTitulo').value = actual.titulo; $('#eTipo').value = actual.tipo; $('#eGrado').value = actual.grado; $('#eDif').value = actual.dif; $('#eTexto').value = actual.texto;
+  $('#eTitulo').classList.remove('is-invalid'); contar(); modal('mEditar').show();
+}
+function guardarEdicion(){
+  const t = $('#eTitulo').value.trim(); $('#eTitulo').classList.toggle('is-invalid', !t);
+  if (!t || !contar()) return;
+  Object.assign(actual, {titulo:t, tipo:$('#eTipo').value, grado:+$('#eGrado').value, dif:$('#eDif').value, texto:$('#eTexto').value.trim()});
+  modal('mEditar').hide(); pintarLecturas(); toast('¡Lectura actualizada! 📚');
+}
+function borrar(id){
+  actual = lecturas.find(l => l.id === id);
+  if (actual.asignada){ $('#nbTxt').textContent = `«${actual.titulo}» está asignada a alumnos: no se puede eliminar, solo desactivar.`; modal('mNoBorrar').show(); return; }
+  $('#bTitulo').textContent = `¿Eliminar «${actual.titulo}»?`; modal('mBorrar').show();
+}
+function confirmarBorrar(){ actual.activa = false; modal('mBorrar').hide(); pintarLecturas(); toast('Lectura desactivada 💤'); }
+function reactivar(id){ lecturas.find(l => l.id === id).activa = true; pintarLecturas(); toast('¡Lectura activa otra vez! ✅'); }
+
+/* ---------- voz (US-51) ---------- */
+const VOZ_DEF = [[60,3.0,30],[65,2.5,45],[70,2.0,60],[75,2.0,75],[80,1.5,85],[85,1.5,95]];
+const LIMITES = [[0,100,'Debe estar entre 0 y 100 %.'],[0,10,'Entre 0 y 10 segundos.'],[10,200,'Entre 10 y 200 palabras.']];
+let vozGuardada = VOZ_DEF.map(r => [...r]);
+function pintarVoz(datos){
+  $('#tbVoz').innerHTML = datos.map((r, g) => `<tr><td><span class="pill p-info nowrap">${g+1}.° grado</span></td>` +
+    r.map((v, k) => `<td><input class="form-control form-control-sm num" data-g="${g}" data-k="${k}" value="${v}"><div class="invalid-feedback">${LIMITES[k][2]}</div></td>`).join('') + '</tr>').join('');
+  $$('#tbVoz input').forEach(i => i.oninput = validarVoz); validarVoz();
+}
+function validarVoz(){
+  let ok = true;
+  $$('#tbVoz input').forEach(i => { const [a, b] = LIMITES[i.dataset.k]; const v = parseFloat(i.value); const bien = !isNaN(v) && v >= a && v <= b; i.classList.toggle('is-invalid', !bien); ok = ok && bien; });
+  $('#btnVoz').disabled = !ok; return ok;
+}
+function vozGuardar(){
+  if (!validarVoz()) return;
+  const CAMPOS = ['precisión','pausas','palabras/min'], cambios = [];
+  $$('#tbVoz input').forEach(i => { const g = +i.dataset.g, k = +i.dataset.k, v = parseFloat(i.value); if (v !== vozGuardada[g][k]) { cambios.push(`${g+1}.° · ${CAMPOS[k]} ${vozGuardada[g][k]} → ${v}`); vozGuardada[g][k] = v; } });
+  if (!cambios.length) return toast('No hay cambios que guardar 🙂');
+  const hora = new Date().toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'});
+  cambios.forEach(c => $('#hist').insertAdjacentHTML('afterbegin', `<li><b>dvila cambió ${c}</b><div class="small text-secondary">Hoy, ${hora}</div></li>`));
+  toast('Configuración de voz guardada 🎤');
+}
+function vozDefecto(){ pintarVoz(VOZ_DEF); toast('Valores por defecto cargados (falta guardar)'); }
+
+/* ---------- ortografía (US-52) ---------- */
+const NIV = [['Suave','p-ok'],['Media','p-warn'],['Estricta','p-off']];
+$('#sens').innerHTML = [['1.° y 2.° grado',1],['3.° y 4.° grado',2],['5.° y 6.° grado',3]].map(([n, v], k) =>
+  `<label class="fw-bold d-flex justify-content-between mb-1">${n}<span class="lvl ${NIV[v-1][1]}" id="lv${k}">${NIV[v-1][0]}</span></label>
+   <input type="range" class="form-range mb-3" min="1" max="3" value="${v}" data-k="${k}">`).join('');
+$$('#sens input').forEach(r => r.oninput = () => { const x = NIV[r.value - 1], el = $('#lv' + r.dataset.k); el.textContent = x[0]; el.className = 'lvl ' + x[1]; });
+const COLS = ['#DCEBFF','#FFF0B8','#D3F5EC','#FFDDE4','#EADCFB','#FFE8CC'];
+let palabras = ['chacra','wawa','apu','ayllu','choclo','Inti Raymi'];
+function pintarPal(){
+  $('#chips').innerHTML = palabras.map((p, i) => `<span class="chip" style="background:${COLS[i % COLS.length]}">${p}<i class="bi bi-x-circle-fill" onclick="quitarPal(${i})"></i></span>`).join('');
+  $('#nPal').textContent = palabras.length + ' palabras';
+}
+function addPal(){
+  const p = $('#nuevaPal').value.trim(); if (!p) return;
+  if (palabras.some(x => x.toLowerCase() === p.toLowerCase())) return toast('Esa palabra ya está en la lista');
+  palabras.push(p); $('#nuevaPal').value = ''; pintarPal(); toast(`«${p}» agregada ✏️`);
+}
+function quitarPal(i){ palabras.splice(i, 1); pintarPal(); }
+$('#nuevaPal').onkeydown = e => { if (e.key === 'Enter') addPal(); };
+
+/* ---------- puntos y estrellas (US-53) ---------- */
+const reglas = {lec:[10,50,70,90], esc:[15,50,70,90], ora:[15,55,75,90]};
+$('#tbPun').innerHTML = Object.keys(reglas).map(t => { const [c, i, n] = TIPOS[t];
+  return `<tr><td class="nowrap"><span class="reto ${c}"><i class="bi ${i}"></i></span><b>${n}</b></td>` +
+    reglas[t].map((v, k) => `<td><input class="form-control form-control-sm num" data-t="${t}" data-k="${k}" value="${v}"><div class="invalid-feedback">${k ? 'Debe ser mayor que el anterior.' : 'Mínimo 1 punto.'}</div></td>`).join('') + '</tr>'; }).join('');
+$('#simTipo').innerHTML = Object.keys(reglas).map(t => `<option value="${t}">${TIPOS[t][2]}</option>`).join('');
+function validarPun(){
+  let ok = true;
+  $$('#tbPun input').forEach(i => { const t = i.dataset.t, k = +i.dataset.k, v = parseInt(i.value); reglas[t][k] = v;
+    const bien = !isNaN(v) && (k === 0 ? v >= 1 : v > (k === 1 ? 0 : reglas[t][k-1]) && v <= 100); i.classList.toggle('is-invalid', !bien); ok = ok && bien; });
+  $('#btnPun').disabled = !ok; simular();
+}
+function simular(){
+  const [pts, e1, e2, e3] = reglas[$('#simTipo').value], v = +$('#simRango').value;
+  const n = v >= e3 ? 3 : v >= e2 ? 2 : v >= e1 ? 1 : 0;
+  $('#simVal').textContent = v + ' %';
+  $('#simStars').innerHTML = [1,2,3].map(k => `<span class="${k <= n ? '' : 'off'}">★</span>`).join('');
+  $('#simTxt').textContent = n ? `¡Gana ${pts} puntos y ${n} estrella${n > 1 ? 's' : ''}!` : `¡Sigue intentando! Gana ${pts} puntos por participar.`;
+}
+$$('#tbPun input').forEach(i => i.oninput = validarPun);
+$('#simTipo').onchange = simular; $('#simRango').oninput = simular;
+
+/* ---------- reportes (US-47) ---------- */
+const COLEGIOS = [
+  {n:'IE N° 50123 Ccollpa', a:148, r:470, c:[78,69,74], s:[102,33,13], aulas:[['Aula 1.°–2.°',52,[80,66,75]],['Aula 3.°–4.°',49,[77,70,73]],['Aula 5.°–6.°',47,[76,71,74]]]},
+  {n:'IE N° 54210 Huaccana', a:131, r:402, c:[72,63,70], s:[81,38,12], aulas:[['Aula 1.°–3.°',68,[70,60,69]],['Aula 4.°–6.°',63,[74,46,71]]]},
+  {n:'IE N° 70345 Chucuito', a:133, r:414, c:[70,61,66], s:[76,45,12], aulas:[['Aula 1.°–2.°',41,[68,48,63]],['Aula 3.°–4.°',45,[71,60,67]],['Aula 5.°–6.°',47,[71,64,68]]]},
+];
+let tab = 'colegio';
+$('#selColegio').innerHTML = '<option value="-1">🏫 Todos los colegios</option>' + COLEGIOS.map((c, i) => `<option value="${i}">${c.n}</option>`).join('');
+const prom = a => Math.round(a.reduce((x, y) => x + y, 0) / a.length);
+const pc = v => `<span class="sem ${v >= 75 ? 'sem-v' : v >= 50 ? 'sem-a' : 'sem-r'}"></span>${v} %`;
+function animar(el, fin, suf = ''){ const t0 = performance.now(); (function paso(t){ const k = Math.min(1, (t - t0) / 700); el.textContent = Math.round(fin * k).toLocaleString('es-PE') + suf; if (k < 1) requestAnimationFrame(paso); })(t0); }
+function pintarReporte(){
+  const i = +$('#selColegio').value, sel = i < 0 ? COLEGIOS : [COLEGIOS[i]];
+  const alumnos = sel.reduce((x, c) => x + c.a, 0), comp = [0,1,2].map(k => Math.round(sel.reduce((x, c) => x + c.c[k] * c.a, 0) / alumnos));
+  animar($('#k1'), alumnos); animar($('#k2'), sel.reduce((x, c) => x + c.r, 0)); animar($('#k3'), prom(comp), ' %'); animar($('#k4'), sel.reduce((x, c) => x + c.s[2], 0));
+  comp.forEach((v, k) => { const b = $('#b' + (k+1)); b.style.width = '0'; setTimeout(() => b.style.width = v + '%', 60); $('#t' + (k+1) + 'v').textContent = v + ' %'; });
+  if (tab === 'colegio'){
+    $('#thRep').innerHTML = '<tr><th>Colegio</th><th>Alumnos</th><th>📖</th><th>✏️</th><th>🎤</th><th>Semáforo</th></tr>';
+    $('#tbRep').innerHTML = sel.map(c => `<tr><td class="fw-bold">${c.n}</td><td>${c.a}</td>${c.c.map(v => `<td class="nowrap">${pc(v)}</td>`).join('')}<td class="nowrap"><span class="sem sem-v"></span>${c.s[0]} <span class="sem sem-a ms-1"></span>${c.s[1]} <span class="sem sem-r ms-1"></span>${c.s[2]}</td></tr>`).join('');
+  } else {
+    $('#thRep').innerHTML = '<tr><th>Aula</th><th>Colegio</th><th>Alumnos</th><th>📖</th><th>✏️</th><th>🎤</th></tr>';
+    $('#tbRep').innerHTML = sel.flatMap(c => c.aulas.map(a => `<tr><td class="fw-bold nowrap">${a[0]}</td><td class="small text-secondary">${c.n}</td><td>${a[1]}</td>${a[2].map(v => `<td class="nowrap">${pc(v)}</td>`).join('')}</tr>`)).join('');
+  }
+}
+$('#selColegio').onchange = pintarReporte;
+$$('.tab-btn').forEach(b => b.onclick = () => { $$('.tab-btn').forEach(x => x.classList.remove('on')); b.classList.add('on'); tab = b.dataset.t; pintarReporte(); });
+
+/* ---------- inicio ---------- */
+pintarLecturas(); pintarVoz(VOZ_DEF); pintarPal(); validarPun();
+go(location.hash.slice(1) || 'catalogo');
+</script>
+</body>
+</html>
