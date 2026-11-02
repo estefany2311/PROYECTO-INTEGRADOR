@@ -72,7 +72,7 @@ class MapaViewModel(
     }
 
     /**
-     * T-208: borra el token del dispositivo y devuelve el código del aula,
+      * T-208: borra el token del dispositivo y devuelve el código del aula,
      * para volver a "¿Quién eres?" del mismo salón y que entre otro compañero.
      * T-236: antes avisa al backend para que el token deje de servir. Si no hay conexión
      * se espera como máximo [ESPERA_CIERRE_MS]: el niño nunca se queda atrapado en su sesión.

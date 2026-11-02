@@ -1,6 +1,8 @@
 package com.proyecto.movil.view
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,13 +21,23 @@ import com.proyecto.movil.ui.theme.TextoOscuro
 fun PantallaCodigoAula(onContinuar: (String) -> Unit) {
     var codigo by remember { mutableStateOf("") }
 
+    // Con el koala la pantalla es más alta: se puede deslizar si no cabe (móvil horizontal),
+    // y si cabe queda centrada (heightIn = alto de la pantalla)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .heightIn(min = maxHeight)
+            .fillMaxWidth()
             .padding(28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // Mascota de la plataforma (el koala del portal Admin) dando la bienvenida
+        KoalaSaludando("¡Hola! Qué gusto verte", tamano = 170.dp)
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         // Título más grande y amigable para primaria
         Text(
             text = "Ingresa el código de tu aula",
@@ -90,9 +102,10 @@ fun PantallaCodigoAula(onContinuar: (String) -> Unit) {
             )
         }
     }
+    }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, widthDp = 400, heightDp = 800)
 @Composable
 fun PantallaCodigoAulaPreview() {
     AppMovilTheme { PantallaCodigoAula(onContinuar = {}) }

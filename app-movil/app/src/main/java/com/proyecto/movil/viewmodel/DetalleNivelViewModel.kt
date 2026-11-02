@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-// T-215: lo que muestra la pantalla de detalle del nivel
+//  lo que muestra la pantalla de detalle del nivel
 sealed class DetalleNivelUiState {
     object Cargando : DetalleNivelUiState()
     data class Exito(val detalle: NivelDetalle) : DetalleNivelUiState()
