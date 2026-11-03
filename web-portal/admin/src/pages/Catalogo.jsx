@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { crearLectura, listarLecturas } from "../api";
+import { crearLectura, eliminarLectura, listarLecturas } from "../api";
 
 const TIPOS_RETO = [
   { valor: "lectura", texto: "Lectura", icono: "bi-book" },
@@ -151,6 +151,53 @@ function ModalLectura({ onCerrar, onGuardado, onNoAutorizado }) {
   );
 }
 
+// T-175: confirmación antes de eliminar (borrado lógico)
+function ModalEliminar({ lectura, onCerrar, onEliminada, onNoAutorizado }) {
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState(lectura.asignada
+    ? "La lectura está asignada a alumnos: no se puede eliminar, solo desactivar."
+    : "");
+
+  const confirmar = async () => {
+    setEnviando(true);
+    try {
+      await eliminarLectura(lectura.id);
+      onEliminada(`«${lectura.titulo}» se desactivó correctamente.`);
+    } catch (err) {
+      if (err.estado === 401) onNoAutorizado();
+      else setError(err.datos?.detail ?? err.mensaje ?? "No se pudo eliminar la lectura.");
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="modal d-block" tabIndex="-1" role="dialog" aria-modal="true" onClick={onCerrar}>
+        <div className="modal-dialog modal-dialog-centered modal-sm" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content text-center p-3">
+            <div className="mx-auto mb-2 fs-2 text-danger"><i className={`bi ${error ? "bi-exclamation-triangle" : "bi-trash3"}`}></i></div>
+            <h5 className="fw-semibold">{error ? "No se puede eliminar" : `¿Eliminar «${lectura.titulo}»?`}</h5>
+            {error && <p className="note">{error}</p>}
+            <div className="d-flex gap-2">
+              <button type="button" className={`btn btn-light ${error ? "w-100" : "w-50"}`} onClick={onCerrar}>
+                {error ? "Entendido" : "Cancelar"}
+              </button>
+              {!error && (
+                <button type="button" className="btn btn-danger w-50" onClick={confirmar} disabled={enviando}>
+                  {enviando ? "Eliminando..." : "Eliminar"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="modal-backdrop show"></div>
+    </>
+  );
+}
+
+
 const sinFiltros = { search: "", tipo_reto: "", grado: "", dificultad: "" };
 
 export default function Catalogo({ onNoAutorizado, puede = () => true }) {
@@ -161,6 +208,7 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
   const [exito, setExito] = useState("");
   const [recarga, setRecarga] = useState(0);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [porEliminar, setPorEliminar] = useState(null);
 
   const hayFiltros = Object.values(filtros).some((v) => v);
 
@@ -202,6 +250,13 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
 
   const alGuardar = (_lectura, mensaje) => {
     setModalAbierto(false);
+    setExito(mensaje);
+    setRecarga((n) => n + 1);
+  };
+
+  
+  const alEliminar = (mensaje) => {
+    setPorEliminar(null);
     setExito(mensaje);
     setRecarga((n) => n + 1);
   };
@@ -275,6 +330,7 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
                   <th>Dificultad</th>
                   <th>Estado</th>
                   <th>Registrada por</th>
+                  <th className="text-end">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -291,6 +347,14 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
                         <span className={`badge-soft ${l.activo ? "bs-ok" : "bs-off"}`}>{l.activo ? "Activa" : "Inactiva"}</span>
                       </td>
                       <td className="note">{l.creado_por ?? "—"}</td>
+                      <td className="text-end text-nowrap">
+                          {l.asignada && <span className="badge-soft bs-info me-2" title="Asignada a alumnos">Asignada</span>}
+                          {puede("catalogo.desactivar") && l.activo && (
+                            <button type="button" className="icon-btn" title="Eliminar" onClick={() => setPorEliminar(l)}>
+                              <i className="bi bi-trash3"></i>
+                            </button>
+                          )}
+                        </td>
                     </tr>
                   );
                 })}
@@ -299,6 +363,15 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
           </div>
         )}
       </div>
+
+      {porEliminar && (
+        <ModalEliminar
+          lectura={porEliminar}
+          onCerrar={() => setPorEliminar(null)}
+          onEliminada={alEliminar}
+          onNoAutorizado={onNoAutorizado}
+        />
+      )}
 
       {modalAbierto && (
         <ModalLectura

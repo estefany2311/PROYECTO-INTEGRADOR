@@ -85,5 +85,9 @@ export const listarLecturas = (params = {}) => {
 export const crearLectura = (datos) =>
   pedir("/lecturas/", { method: "POST", body: JSON.stringify(datos) });
 
+
+export const eliminarLectura = (id) =>
+  pedir(`/lecturas/${id}/`, { method: "DELETE" });
+
 export const cambiarEstadoUsuario = (id, isActive) =>
   pedir(`/usuarios/${id}/estado/`, { method: "PATCH", body: JSON.stringify({ is_active: isActive }) });
