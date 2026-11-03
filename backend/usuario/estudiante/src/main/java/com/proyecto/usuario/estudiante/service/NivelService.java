@@ -5,6 +5,7 @@ import com.proyecto.usuario.estudiante.dto.NivelDetalleResponse;
 import com.proyecto.usuario.estudiante.exception.NivelBloqueadoException;
 import com.proyecto.usuario.estudiante.exception.NivelNoEncontradoException;
 import com.proyecto.usuario.estudiante.model.Nivel;
+import com.proyecto.usuario.estudiante.repository.IntentoRetoRepository;
 import com.proyecto.usuario.estudiante.repository.NivelRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,10 +30,12 @@ public class NivelService {
     public static final String COMPLETADO = "completado";
 
     private final NivelRepository niveles;
+    private final IntentoRetoRepository intentos;
     private final Clock reloj;
 
-    public NivelService(NivelRepository niveles, Clock reloj) {
+    public NivelService(NivelRepository niveles, IntentoRetoRepository intentos, Clock reloj) {
         this.niveles = niveles;
+        this.intentos = intentos;
         this.reloj = reloj;
     }
 
@@ -56,14 +59,17 @@ public class NivelService {
     /**
      * T-198 (US-08): el alumno terminó el reto del nivel.
      * Solo se puede completar un nivel abierto para él (el mismo control que el detalle: 403 si está bloqueado).
+     * T-308: primero registra el intento (fecha y puntaje), siempre, aunque luego no se desbloquee nada.
      * Deja el nivel completado y desbloquea el siguiente del recorrido, todo en una sola transacción.
-     * Las reglas finas llegan después: mínimo de estrellas (T-309), registro del intento (T-308)
-     * y repetir un reto sin perder lo ganado (T-310).
+     * Las reglas finas llegan después: mínimo de estrellas (T-309) y repetir un reto sin perder lo ganado (T-310).
      */
     @Transactional
     public CompletarNivelResponse completar(long estudianteId, int nivelId, int puntos) {
         NivelDetalleResponse nivel = detalle(estudianteId, nivelId);    // 404 si no existe, 403 si está bloqueado
         LocalDateTime ahora = LocalDateTime.now(reloj);
+
+        // T-308: queda en el historial. Las estrellas llegan desde la tablet en T-309 (por ahora 0)
+        intentos.registrar(estudianteId, nivelId, puntos, 0, ahora);
 
         niveles.marcarCompletado(estudianteId, nivelId, puntos, ahora);
 
