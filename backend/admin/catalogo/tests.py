@@ -1,5 +1,8 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
+from unittest import mock
+
+from django.db import connection
  
 from usuarios.models import Rol, Usuario
 from .models import Lectura
@@ -183,3 +186,98 @@ class LecturaAPITests(APITestCase):
     def test_filtros_vacios_devuelven_todas(self):
         self.crear_lecturas_de_filtro()
         self.assertEqual(len(self.titulos({'grado': '', 'dificultad': ''})), 5)
+
+
+
+class LecturaEdicionYBorradoTests(APITestCase):
+    """T-246 (US-41): editar y borrado lógico; una lectura asignada no se elimina."""
+    URL = '/api/lecturas/'
+    TEXTO = 'Había una vez un cóndor que vivía en lo alto de la montaña.'
+
+    def setUp(self):
+        rol_admin, _ = Rol.objects.get_or_create(nombre='ADMIN')
+        rol_docente, _ = Rol.objects.get_or_create(nombre='DOCENTE')
+        self.admin = Usuario.objects.create_user(
+            username='admin', email='admin@test.pe', password='clave-segura-1', rol=rol_admin)
+        self.docente = Usuario.objects.create_user(
+            username='rquispe', email='rquispe@test.pe', password='clave-segura-1', rol=rol_docente)
+        self.lectura = Lectura.objects.create(
+            titulo='El cóndor y el zorro', texto=self.TEXTO, tipo_reto='lectura', grado=2)
+        self.url = f'{self.URL}{self.lectura.id}/'
+        self.client.force_authenticate(self.admin)
+
+    # --- Editar ---
+    def test_admin_edita_el_titulo_con_patch(self):
+        resp = self.client.patch(self.url, {'titulo': 'El cóndor sabio'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.lectura.refresh_from_db()
+        self.assertEqual(self.lectura.titulo, 'El cóndor sabio')
+
+    def test_admin_edita_todos_los_campos_con_put(self):
+        datos = {'titulo': 'La llama viajera', 'texto': self.TEXTO, 'tipo_reto': 'oralidad',
+                 'grado': 4, 'dificultad': 'intermedia'}
+        resp = self.client.put(self.url, datos, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.lectura.refresh_from_db()
+        self.assertEqual((self.lectura.grado, self.lectura.dificultad), (4, 'intermedia'))
+
+    def test_editar_con_texto_corto_devuelve_400(self):
+        resp = self.client.patch(self.url, {'texto': 'Muy corto'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('texto', resp.data)
+
+    def test_docente_no_puede_editar(self):
+        self.client.force_authenticate(self.docente)
+        resp = self.client.patch(self.url, {'titulo': 'Otro'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    # --- Borrado lógico ---
+    def test_eliminar_desactiva_sin_borrar_de_la_base(self):
+        resp = self.client.delete(self.url)
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertTrue(Lectura.objects.filter(id=self.lectura.id).exists())
+        self.lectura.refresh_from_db()
+        self.assertFalse(self.lectura.activo)
+
+    @mock.patch('catalogo.views.lectura_esta_asignada', return_value=True)
+    def test_lectura_asignada_no_se_elimina(self, _asignada):
+        resp = self.client.delete(self.url)
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('asignada a alumnos', resp.data['detail'])
+        self.lectura.refresh_from_db()
+        self.assertTrue(self.lectura.activo)
+
+    def test_docente_no_puede_eliminar(self):
+        self.client.force_authenticate(self.docente)
+        resp = self.client.delete(self.url)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.lectura.refresh_from_db()
+        self.assertTrue(self.lectura.activo)
+
+    # --- Filtro activo y campo asignada ---
+    def test_filtro_activo_true_y_false(self):
+        Lectura.objects.create(titulo='Lectura vieja', texto=self.TEXTO, tipo_reto='lectura', activo=False)
+        activas = [l['titulo'] for l in self.client.get(self.URL, {'activo': 'true'}).data]
+        inactivas = [l['titulo'] for l in self.client.get(self.URL, {'activo': 'false'}).data]
+        self.assertEqual(activas, ['El cóndor y el zorro'])
+        self.assertEqual(inactivas, ['Lectura vieja'])
+
+    def test_filtro_activo_invalido_devuelve_400(self):
+        resp = self.client.get(self.URL, {'activo': 'hola'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_respuesta_incluye_el_campo_asignada(self):
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertFalse(resp.data['asignada'])
+
+    def test_servicio_detecta_una_lectura_en_la_tabla_asignacion(self):
+        from .servicios import lectura_esta_asignada
+        if 'asignacion' not in connection.introspection.table_names():
+            with connection.cursor() as cursor:
+                cursor.execute('CREATE TABLE asignacion (id INTEGER PRIMARY KEY, lectura_id INTEGER)')
+        with connection.cursor() as cursor:
+            cursor.execute('INSERT INTO asignacion (id, lectura_id) VALUES (%s, %s)', [1, self.lectura.id])
+        self.assertTrue(lectura_esta_asignada(self.lectura.id))
+        otra = Lectura.objects.create(titulo='Sin asignar', texto=self.TEXTO, tipo_reto='lectura')
+        self.assertFalse(lectura_esta_asignada(otra.id))
