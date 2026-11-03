@@ -11,6 +11,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,7 +37,8 @@ class NivelServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new NivelService(niveles);
+        // T-198: el servicio ahora recibe un reloj (para la fecha del progreso)
+        service = new NivelService(niveles, Clock.fixed(Instant.parse("2026-11-02T15:00:00Z"), ZoneId.of("America/Lima")));
     }
 
     @Test
