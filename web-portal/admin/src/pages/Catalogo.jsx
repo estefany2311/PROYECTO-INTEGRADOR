@@ -211,7 +211,14 @@ function ModalEliminar({ lectura, onCerrar, onEliminada, onNoAutorizado }) {
 }
 
 
-const sinFiltros = { search: "", tipo_reto: "", grado: "", dificultad: "" };
+const sinFiltros = { search: "", tipo_reto: "", grado: "", dificultad: "", activo: "" };
+
+// T-245: filtro por estado ("" = todas, "true" = activas, "false" = desactivadas)
+const ESTADOS = [
+  { valor: "", texto: "Todas" },
+  { valor: "true", texto: "Activas" },
+  { valor: "false", texto: "Desactivadas" },
+];
 
 export default function Catalogo({ onNoAutorizado, puede = () => true }) {
   const [lecturas, setLecturas] = useState([]);
@@ -300,21 +307,33 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
         <div className="card-header d-flex flex-wrap gap-2 align-items-center">
           <input name="search" className="form-control" style={{ maxWidth: 240 }} placeholder="Buscar por título"
             aria-label="Buscar por título" value={filtros.search} onChange={cambiarFiltro} />
-          <select name="tipo_reto" className="form-select" style={{ maxWidth: 170 }} aria-label="Tipo de reto"
+          <select name="tipo_reto" className="form-select" style={{ maxWidth: 200 }} aria-label="Tipo de reto"
             value={filtros.tipo_reto} onChange={cambiarFiltro}>
             <option value="">Todo tipo de reto</option>
             {TIPOS_RETO.map((t) => <option key={t.valor} value={t.valor}>{t.texto}</option>)}
           </select>
-          <select name="grado" className="form-select" style={{ maxWidth: 150 }} aria-label="Grado"
+          <select name="grado" className="form-select" style={{ maxWidth: 185 }} aria-label="Grado"
             value={filtros.grado} onChange={cambiarFiltro}>
             <option value="">Todos los grados</option>
             {GRADOS.map((g) => <option key={g} value={g}>{g}.° grado</option>)}
           </select>
-          <select name="dificultad" className="form-select" style={{ maxWidth: 160 }} aria-label="Dificultad"
+        <select name="dificultad" className="form-select" style={{ maxWidth: 185 }} aria-label="Dificultad"
             value={filtros.dificultad} onChange={cambiarFiltro}>
             <option value="">Toda dificultad</option>
             {DIFICULTADES.map((d) => <option key={d.valor} value={d.valor}>{d.texto}</option>)}
           </select>
+            <div className="filtro-estado" role="group" aria-label="Estado">
+            {ESTADOS.map((e) => (
+              <button
+                key={e.valor || "todas"}
+                type="button"
+                className={filtros.activo === e.valor ? "activo" : ""}
+                onClick={() => setFiltros({ ...filtros, activo: e.valor })}
+              >
+                {e.texto}
+              </button>
+            ))}
+          </div>
           {hayFiltros && (
             <button type="button" className="btn btn-sm btn-light" onClick={() => setFiltros(sinFiltros)}>
               <i className="bi bi-x-lg me-1"></i>Limpiar filtros

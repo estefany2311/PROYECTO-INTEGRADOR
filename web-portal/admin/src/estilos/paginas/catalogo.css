@@ -29,4 +29,27 @@
    empezando SIEMPRE con .pagina-catalogo para que no afecte a las demás. Ejemplo:
    .pagina-catalogo .table td { font-size: 15px; }
 */
-
+/* T-245: botones Todas / Activas / Desactivadas, misma altura que los filtros */
+.pagina-catalogo .filtro-estado {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: #F4FAFF;
+  border: 1px solid #DEE2E6;
+  border-radius: 10px;
+}
+.pagina-catalogo .filtro-estado button {
+  border: 0;
+  background: transparent;
+  color: #5F6F86;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: 7px;
+  transition: background .15s, color .15s;
+}
+.pagina-catalogo .filtro-estado button:hover { color: #0A8378; }
+.pagina-catalogo .filtro-estado button.activo {
+  background: #0A8378;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(10, 131, 120, .35);
+}
