@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { crearLectura, eliminarLectura, listarLecturas } from "../api";
+import { actualizarLectura, crearLectura, eliminarLectura, listarLecturas } from "../api";
 
 const TIPOS_RETO = [
   { valor: "lectura", texto: "Lectura", icono: "bi-book" },
@@ -55,8 +55,20 @@ function Modal({ titulo, onCerrar, children, pie }) {
   );
 }
 
-function ModalLectura({ onCerrar, onGuardado, onNoAutorizado }) {
-  const [datos, setDatos] = useState(vacio);
+// Si recibe "lectura", el formulario edita esa lectura (T-244); si no, crea una nueva
+function ModalLectura({ lectura = null, onCerrar, onGuardado, onNoAutorizado }) {
+  const editando = Boolean(lectura);
+  const [datos, setDatos] = useState(
+    editando
+      ? {
+          titulo: lectura.titulo,
+          tipo_reto: lectura.tipo_reto,
+          grado: String(lectura.grado),
+          dificultad: lectura.dificultad,
+          texto: lectura.texto,
+        }
+      : vacio
+  );
   const [errores, setErrores] = useState({});
   const [enviando, setEnviando] = useState(false);
 
@@ -78,8 +90,9 @@ function ModalLectura({ onCerrar, onGuardado, onNoAutorizado }) {
 
     setEnviando(true);
     try {
-      const guardada = await crearLectura({ ...datos, grado: Number(datos.grado) });
-      onGuardado(guardada, "Lectura registrada correctamente.");
+            const enviar = { ...datos, grado: Number(datos.grado) };
+      const guardada = editando ? await actualizarLectura(lectura.id, enviar) : await crearLectura(enviar);
+      onGuardado(guardada, editando ? "Lectura actualizada correctamente." : "Lectura registrada correctamente.");
     } catch (err) {
       if (err.estado === 401) onNoAutorizado();
       else if (err.estado === 400) setErrores(erroresDeServidor(err.datos));
@@ -94,13 +107,13 @@ function ModalLectura({ onCerrar, onGuardado, onNoAutorizado }) {
 
   return (
     <Modal
-      titulo="Nueva lectura"
+      titulo={editando ? "Editar lectura" : "Nueva lectura"}
       onCerrar={onCerrar}
       pie={
         <>
           <button type="button" className="btn btn-light" onClick={onCerrar}>Cancelar</button>
           <button type="submit" form="form-lectura" className="btn btn-primary" disabled={enviando}>
-            {enviando ? "Guardando..." : "Guardar lectura"}
+            {enviando ? "Guardando..." : editando ? "Guardar cambios" : "Guardar lectura"}
           </button>
         </>
       }
@@ -209,6 +222,7 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
   const [recarga, setRecarga] = useState(0);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [porEliminar, setPorEliminar] = useState(null);
+  const [porEditar, setPorEditar] = useState(null);
 
   const hayFiltros = Object.values(filtros).some((v) => v);
 
@@ -250,6 +264,7 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
 
   const alGuardar = (_lectura, mensaje) => {
     setModalAbierto(false);
+    setPorEditar(null);
     setExito(mensaje);
     setRecarga((n) => n + 1);
   };
@@ -349,6 +364,11 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
                       <td className="note">{l.creado_por ?? "—"}</td>
                       <td className="text-end text-nowrap">
                           {l.asignada && <span className="badge-soft bs-info me-2" title="Asignada a alumnos">Asignada</span>}
+                            {puede("catalogo.editar") && (
+                            <button type="button" className="icon-btn me-1" title="Editar" onClick={() => setPorEditar(l)}>
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                          )}
                           {puede("catalogo.desactivar") && l.activo && (
                             <button type="button" className="icon-btn" title="Eliminar" onClick={() => setPorEliminar(l)}>
                               <i className="bi bi-trash3"></i>
@@ -373,9 +393,10 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
         />
       )}
 
-      {modalAbierto && (
+        {(modalAbierto || porEditar) && (
         <ModalLectura
-          onCerrar={() => setModalAbierto(false)}
+          lectura={porEditar}
+          onCerrar={() => { setModalAbierto(false); setPorEditar(null); }}
           onGuardado={alGuardar}
           onNoAutorizado={onNoAutorizado}
         />

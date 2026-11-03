@@ -89,5 +89,9 @@ export const crearLectura = (datos) =>
 export const eliminarLectura = (id) =>
   pedir(`/lecturas/${id}/`, { method: "DELETE" });
 
+
+export const actualizarLectura = (id, datos) =>
+  pedir(`/lecturas/${id}/`, { method: "PATCH", body: JSON.stringify(datos) });
+
 export const cambiarEstadoUsuario = (id, isActive) =>
   pedir(`/usuarios/${id}/estado/`, { method: "PATCH", body: JSON.stringify({ is_active: isActive }) });
