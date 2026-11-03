@@ -263,7 +263,7 @@ export default function RolesPermisos({ onNoAutorizado }) {
     <section>
       <div className="page-title d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
         <div>
-          <h1>Roles y permisos <span className="story">US-45</span></h1>
+      <h1>Roles y permisos</h1>
           <div className="breadcrumb text-secondary">Seguridad / Roles y permisos</div>
         </div>
         <button type="button" className="btn btn-primary" onClick={guardar} disabled={!hayCambios || guardando}>

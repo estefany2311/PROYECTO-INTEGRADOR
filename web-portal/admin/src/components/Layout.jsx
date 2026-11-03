@@ -74,7 +74,6 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
                   >
                     <i className={`bi ${enlace.icono}`}></i>
                     {enlace.texto}
-                    {enlace.etiqueta && <span className="tag">{enlace.etiqueta}</span>}
                   </button>
                 ) : (
                   <span key={enlace.id} className="side-link disabled" aria-disabled="true">

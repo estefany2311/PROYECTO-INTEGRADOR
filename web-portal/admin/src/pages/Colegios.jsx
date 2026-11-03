@@ -290,7 +290,7 @@ function ModalAsignar({ colegio, onCerrar, onGuardado, onNoAutorizado }) {
     <section>
       <div className="page-title d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
         <div>
-          <h1>Colegios <span className="story">US-44</span></h1>
+          <h1>Colegios</h1>
           <div className="breadcrumb text-secondary">Instituciones / Colegios</div>
         </div>
                 {puede("colegios.crear") && (

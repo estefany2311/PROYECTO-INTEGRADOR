@@ -118,7 +118,7 @@ export default function App() {
         <section>
           <div className="page-title mb-4">
             <h1>
-              Docentes <span className="story">US-43</span>
+              Docentes
             </h1>
             <div className="breadcrumb text-secondary">Instituciones / Docentes</div>
           </div>
