@@ -57,6 +57,7 @@ El color se decide con el promedio ya redondeado: 79.5 pasa a 80 (verde) y 59.5 
 | T-278 | El endpoint del dashboard devuelve promedio y color. |
 | T-279 | Tarjetas por estudiante en el dashboard. |
 | T-280 | Leyenda accesible: color + ícono + texto. |
+| T-281 | Pruebas unitarias de límites, redondeo y casos sin evaluaciones. |
 
 El color nunca debe ser la única señal: siempre va acompañado de ícono y texto (T-280).
 

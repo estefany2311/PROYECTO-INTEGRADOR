@@ -53,5 +53,6 @@ npm run preview -- --port 4173
 | Leyenda del semáforo en `/dashboard` | 4 estados visibles · color + ícono + texto |
 | Build de producción con `npm run preview` | 200 |
 | CORS desde `http://localhost:5173` | 200 · `Access-Control-Allow-Origin` correcto |
-| Backend `clean test` | 145/145 |
+| Backend `SemaforoServiceTest` | 8/8 · límites, redondeo y sin evaluaciones |
+| Backend `test` | 153/153 |
 | Frontend `test`, `lint`, `build` | 49/49 · OK · OK |
