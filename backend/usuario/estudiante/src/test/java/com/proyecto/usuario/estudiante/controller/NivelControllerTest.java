@@ -1,5 +1,6 @@
 package com.proyecto.usuario.estudiante.controller;
 
+import com.proyecto.usuario.estudiante.dto.CompletarNivelResponse;
 import com.proyecto.usuario.estudiante.dto.NivelDetalleResponse;
 import com.proyecto.usuario.estudiante.exception.ManejadorErrores;
 import com.proyecto.usuario.estudiante.exception.NivelBloqueadoException;
@@ -10,6 +11,7 @@ import com.proyecto.usuario.estudiante.service.LecturaService;
 import com.proyecto.usuario.estudiante.service.NivelService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -17,6 +19,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -93,5 +96,56 @@ class NivelControllerTest {
                 .andExpect(jsonPath("$.mensaje").value("Tu sesión terminó. Vuelve a escribir tu PIN"));
 
         verify(service, never()).detalle(anyLong(), anyInt());
+    }
+
+    // ---------- T-217 (US-08): POST /api/estudiante/niveles/{id}/completar ----------
+
+    private static final String COMPLETAR = "/api/estudiante/niveles/1/completar";
+
+    @Test
+    void completarConEstrellasRespondeElDesbloqueo() throws Exception {
+        when(service.completar(1L, 1, 10, 2)).thenReturn(
+                new CompletarNivelResponse(1, "completado", 10, 10, 2, true, 1, 2, "Palabras nuevas", true));
+
+        mvc.perform(post(COMPLETAR).header("Authorization", TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"puntos\": 10, \"estrellas\": 2}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.aprobado").value(true))
+                .andExpect(jsonPath("$.siguienteNivelId").value(2))
+                .andExpect(jsonPath("$.siguienteRecienDesbloqueado").value(true))
+                .andExpect(jsonPath("$.mejoresPuntos").value(10));
+    }
+
+    // Sin cuerpo cuenta como 0 puntos y 0 estrellas (no se desbloquea nada sin prueba)
+    @Test
+    void completarSinCuerpoCuentaComoCero() throws Exception {
+        when(service.completar(1L, 1, 0, 0)).thenReturn(
+                new CompletarNivelResponse(1, "desbloqueado", 0, 0, 0, false, 1, null, null, false));
+
+        mvc.perform(post(COMPLETAR).header("Authorization", TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.aprobado").value(false));
+
+        verify(service).completar(1L, 1, 0, 0);
+    }
+
+    @Test
+    void estrellasFueraDeRangoResponden400SinTocarElProgreso() throws Exception {
+        mvc.perform(post(COMPLETAR).header("Authorization", TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"puntos\": 10, \"estrellas\": 5}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("Las estrellas van de 0 a 3"));
+
+        verify(service, never()).completar(anyLong(), anyInt(), anyInt(), anyInt());
+    }
+
+    @Test
+    void completarUnNivelBloqueadoResponde403() throws Exception {
+        when(service.completar(1L, 2, 10, 2)).thenThrow(new NivelBloqueadoException("Primeros pasos"));
+
+        mvc.perform(post("/api/estudiante/niveles/2/completar").header("Authorization", TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"puntos\": 10, \"estrellas\": 2}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.nivelAnterior").value("Primeros pasos"));
     }
 }
