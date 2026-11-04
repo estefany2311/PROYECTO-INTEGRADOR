@@ -6,6 +6,7 @@ import com.proyecto.usuario.estudiante.exception.NivelBloqueadoException;
 import com.proyecto.usuario.estudiante.exception.NivelNoEncontradoException;
 import com.proyecto.usuario.estudiante.exception.SesionVencidaException;
 import com.proyecto.usuario.estudiante.service.AutenticadorTablet;
+import com.proyecto.usuario.estudiante.service.LecturaService;
 import com.proyecto.usuario.estudiante.service.NivelService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,7 @@ class NivelControllerTest {
     void preparar() {
         autenticador = mock(AutenticadorTablet.class);
         service = mock(NivelService.class);
-        mvc = MockMvcBuilders.standaloneSetup(new NivelController(autenticador, service))
+        mvc = MockMvcBuilders.standaloneSetup(new NivelController(autenticador, service, mock(LecturaService.class)))
                 .setControllerAdvice(new ManejadorErrores())
                 .build();
         when(autenticador.estudianteDe(TOKEN)).thenReturn(1L);

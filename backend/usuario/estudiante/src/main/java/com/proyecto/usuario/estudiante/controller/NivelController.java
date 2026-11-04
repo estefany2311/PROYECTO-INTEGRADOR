@@ -2,8 +2,10 @@ package com.proyecto.usuario.estudiante.controller;
 
 import com.proyecto.usuario.estudiante.dto.CompletarNivelRequest;
 import com.proyecto.usuario.estudiante.dto.CompletarNivelResponse;
+import com.proyecto.usuario.estudiante.dto.LecturaNivelResponse;
 import com.proyecto.usuario.estudiante.dto.NivelDetalleResponse;
 import com.proyecto.usuario.estudiante.service.AutenticadorTablet;
+import com.proyecto.usuario.estudiante.service.LecturaService;
 import com.proyecto.usuario.estudiante.service.NivelService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -23,10 +25,12 @@ public class NivelController {
 
     private final AutenticadorTablet autenticador;
     private final NivelService nivelService;
+    private final LecturaService lecturaService;
 
-    public NivelController(AutenticadorTablet autenticador, NivelService nivelService) {
+    public NivelController(AutenticadorTablet autenticador, NivelService nivelService, LecturaService lecturaService) {
         this.autenticador = autenticador;
         this.nivelService = nivelService;
+        this.lecturaService = lecturaService;
     }
 
     @GetMapping("/{nivelId}")
@@ -35,6 +39,19 @@ public class NivelController {
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         long estudianteId = autenticador.estudianteDe(authorization);
         return nivelService.detalle(estudianteId, nivelId);
+    }
+
+    /**
+     * T-218 (US-10): GET /api/estudiante/niveles/{nivelId}/lectura con el token.
+     *   200 el texto que el alumno va a leer (asignado por su docente o del catálogo de su grado)
+     *   401 sin sesión · 403 nivel bloqueado · 404 el nivel no existe o todavía no tiene lectura
+     */
+    @GetMapping("/{nivelId}/lectura")
+    public LecturaNivelResponse lectura(
+            @PathVariable int nivelId,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+        long estudianteId = autenticador.estudianteDe(authorization);
+        return lecturaService.lecturaDelNivel(estudianteId, nivelId);
     }
 
     /**

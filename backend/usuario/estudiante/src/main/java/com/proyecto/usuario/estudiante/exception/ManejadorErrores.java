@@ -73,6 +73,12 @@ public class ManejadorErrores {
         return respuesta(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
+    // T-218 · 404: el nivel está abierto pero todavía no hay lectura para el grado del alumno
+    @ExceptionHandler(LecturaNoDisponibleException.class)
+    public ResponseEntity<Map<String, Object>> lecturaNoDisponible(LecturaNoDisponibleException e) {
+        return respuesta(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> validacion(MethodArgumentNotValidException e) {
         String mensaje = e.getBindingResult().getFieldErrors().stream()
