@@ -1234,6 +1234,81 @@ legend {
   font-size: 0.76rem;
 }
 
+.dashboard-refuerzo {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px solid #FECDD3;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 92% 18%, rgba(244, 63, 94, 0.10), transparent 32%),
+    linear-gradient(135deg, #FFF1F2, #FFF7F7 60%, #FFFDFD);
+  box-shadow: 0 8px 24px rgba(190, 18, 60, 0.06);
+}
+
+.refuerzo-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #FFE4E6;
+  color: #BE123C;
+  font-size: 1rem;
+}
+
+.refuerzo-contenido {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.refuerzo-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.refuerzo-titulo {
+  margin: 0;
+  color: #9F1239;
+  font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.refuerzo-contador {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #F43F5E;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.refuerzo-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  color: #6B7280;
+  font-size: 0.8rem;
+}
+
+.refuerzo-item {
+  line-height: 1.45;
+}
+
 .leyenda-semaforo {
   display: flex;
   align-items: center;
@@ -1650,6 +1725,15 @@ legend {
 
   .dashboard-refresh {
     justify-content: center;
+  }
+
+  .dashboard-refuerzo {
+    padding: 14px;
+  }
+
+  .refuerzo-lista {
+    flex-direction: column;
+    gap: 4px;
   }
 
   .alumno-promedio-line {

@@ -151,6 +151,9 @@ export default function Dashboard() {
     sinEvaluaciones: 0,
   };
   const estudiantes = dashboard?.estudiantes || [];
+  const estudiantesRefuerzo = estudiantes.filter(
+    (estudiante) => estudiante.color === "rojo"
+  );
   const promediosAula = dashboard?.promediosPorCompetencia || [];
   const colorGeneral = dashboard?.colorGeneral || "gris";
   const aulaNombre = dashboard?.aulaNombre || aula?.nombre || "";
@@ -305,6 +308,8 @@ export default function Dashboard() {
             </p>
           )}
 
+          <SeccionRefuerzo estudiantes={estudiantesRefuerzo} />
+
           <LeyendaSemaforo />
 
           {estudiantes.length === 0 ? (
@@ -356,6 +361,39 @@ function LeyendaSemaforo() {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+function SeccionRefuerzo({ estudiantes }) {
+  if (estudiantes.length === 0) return null;
+
+  return (
+    <section className="dashboard-refuerzo" aria-labelledby="refuerzo-titulo">
+      <span className="refuerzo-icono" aria-hidden="true">
+        <i className={`bi ${SEMAFORO.rojo.icono}`} />
+      </span>
+      <div className="refuerzo-contenido">
+        <div className="refuerzo-head">
+          <h2 id="refuerzo-titulo" className="refuerzo-titulo">
+            Necesitan refuerzo
+          </h2>
+          <span
+            className="refuerzo-contador"
+            aria-label={`${textoAlumnos(estudiantes.length)} en rojo`}
+          >
+            {estudiantes.length}
+          </span>
+        </div>
+        <ul className="refuerzo-lista">
+          {estudiantes.map((estudiante) => (
+            <li className="refuerzo-item" key={estudiante.id}>
+              {nombreCompleto(estudiante)} · {estudiante.gradoNombre || "Sin grado"} · Promedio{" "}
+              {promedioVisible(estudiante.promedio)}/100
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }

@@ -59,6 +59,7 @@ El color se decide con el promedio ya redondeado: 79.5 pasa a 80 (verde) y 59.5 
 | T-280 | Leyenda accesible: color + ícono + texto. |
 | T-281 | Pruebas unitarias de límites, redondeo y casos sin evaluaciones. |
 | T-282 | Parámetro `soloRojo` del endpoint: filtra las tarjetas rojas. |
+| T-283 | Sección destacada con los alumnos en rojo. |
 
 El parámetro `soloRojo=true` del endpoint (T-282) filtra solo la lista de tarjetas;
 el resumen y los promedios del aula siguen calculándose con todos los alumnos activos.
@@ -76,3 +77,10 @@ El color nunca debe ser la única señal: siempre va acompañado de ícono y tex
 La pantalla `/dashboard` muestra una leyenda visible con los cuatro estados. Cada estado
 combina color, ícono y texto; los íconos son decorativos (`aria-hidden`) y el texto visible
 es la señal principal. La leyenda se anuncia como la región **Leyenda del semáforo**.
+
+## 9. Sección "Necesitan refuerzo" (T-283)
+
+Cuando el aula tiene alumnos en rojo, el dashboard muestra un aviso destacado debajo del
+resumen. Incluye el conteo de alumnos, sus nombres, grados y promedios. Si no hay alumnos
+en rojo, la sección no se muestra. La sección se alimenta de los estudiantes que ya devuelve
+el dashboard, sin duplicar la consulta al endpoint.
