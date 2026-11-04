@@ -1,8 +1,10 @@
 package com.proyecto.movil.model.remote
 
+import com.proyecto.movil.model.CompletarNivelRequest
 import com.proyecto.movil.model.InicioSesionRequest
 import com.proyecto.movil.model.NivelDetalle
 import com.proyecto.movil.model.Perfil
+import com.proyecto.movil.model.ResultadoReto
 import com.proyecto.movil.model.SesionRespuesta
 import retrofit2.Response
 import retrofit2.http.Body
@@ -27,4 +29,11 @@ interface ApiService {
     // T-215: detalle de un nivel (T-214). Response<> para leer el 403 de un nivel bloqueado
     @GET("api/estudiante/niveles/{nivelId}")
     suspend fun obtenerNivel(@Path("nivelId") nivelId: Int): Response<NivelDetalle>
+
+    // T-216: terminar un reto (T-198/T-309). Al volver, el mapa se refresca y anima lo desbloqueado
+    @POST("api/estudiante/niveles/{nivelId}/completar")
+    suspend fun completarNivel(
+        @Path("nivelId") nivelId: Int,
+        @Body request: CompletarNivelRequest
+    ): Response<ResultadoReto>
 }

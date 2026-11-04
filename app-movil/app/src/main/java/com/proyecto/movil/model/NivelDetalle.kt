@@ -28,3 +28,18 @@ sealed class ResultadoNivel {
     object NoEncontrado : ResultadoNivel()                                 // 404
     object ErrorConexion : ResultadoNivel()
 }
+
+// T-216: lo que la tablet envía al terminar un reto (POST /api/estudiante/niveles/{id}/completar, T-198/T-309)
+data class CompletarNivelRequest(val puntos: Int, val estrellas: Int)
+
+// T-216: respuesta del backend. aprobado = sacó las estrellas mínimas y se desbloqueó el siguiente
+data class ResultadoReto(
+    val nivelId: Int,
+    val estado: String,
+    val puntos: Int,
+    val estrellas: Int,
+    val aprobado: Boolean,
+    val estrellasMinimas: Int,
+    val siguienteNivelId: Int?,
+    val siguienteNivelNombre: String?
+)
