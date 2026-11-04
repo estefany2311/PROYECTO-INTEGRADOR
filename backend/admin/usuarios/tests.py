@@ -177,7 +177,9 @@ class PermisosTests(TestCase):
 
     def test_existen_permisos_y_admin_tiene_todos(self):
         total = Permiso.objects.count()
-        self.assertEqual(total, 29)  # 7 módulos x 4 acciones + reportes.ver
+        self.assertEqual(total, 31)  # 7 módulos x 4 acciones + reportes.ver + configuracion.ver/editar
+        self.assertTrue(self.admin.tiene_permiso("configuracion.editar"))
+        self.assertFalse(self.docente.tiene_permiso("configuracion.ver"))
         self.assertEqual(self.admin.permisos_asignados.count(), total)
         self.assertTrue(self.admin.tiene_permiso("colegios.crear"))
         self.assertTrue(self.admin.tiene_permiso("reportes.ver"))
