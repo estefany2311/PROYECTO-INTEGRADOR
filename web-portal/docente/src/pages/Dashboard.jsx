@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listarAulas, listarDashboardAula } from "../api";
+import {
+  refrescarAulaSeleccionada,
+  seleccionarAula,
+} from "../aulaSeleccionada";
 
 // T-279 (US-27): dashboard del aula con tarjetas por estudiante.
 // Consume el endpoint de T-278 y reutiliza la regla del semáforo de T-277.
@@ -82,6 +86,11 @@ export default function Dashboard() {
 
   const aula = aulas.find((a) => String(a.id) === String(aulaId));
 
+  // T-284: comparte el aula activa para que el menú muestre su contador en rojo.
+  useEffect(() => {
+    if (aulaId) seleccionarAula(aulaId);
+  }, [aulaId]);
+
   // Al abrir la pantalla se cargan las aulas y se elige la primera.
   useEffect(() => {
     let vigente = true;
@@ -130,6 +139,7 @@ export default function Dashboard() {
   }, [aulaId, recarga]);
 
   const actualizar = () => {
+    refrescarAulaSeleccionada();
     setDashboard(null);
     setCargando(true);
     setError(null);

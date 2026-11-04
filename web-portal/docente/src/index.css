@@ -452,6 +452,26 @@ h6 {
   color: var(--texto);
 }
 
+.menu-texto {
+  flex: 1 1 auto;
+}
+
+.menu-contador {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: #F43F5E;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .menu-item:focus-visible {
   outline: 2px solid var(--naranja);
   outline-offset: 2px;
@@ -466,6 +486,11 @@ h6 {
 .menu-item.active .menu-ico {
   background: rgba(255, 255, 255, 0.22);
   color: #fff;
+}
+
+.menu-item.active .menu-contador {
+  background: #fff;
+  color: #BE123C;
 }
 
 .menu-ico {

@@ -60,6 +60,7 @@ El color se decide con el promedio ya redondeado: 79.5 pasa a 80 (verde) y 59.5 
 | T-281 | Pruebas unitarias de límites, redondeo y casos sin evaluaciones. |
 | T-282 | Parámetro `soloRojo` del endpoint: filtra las tarjetas rojas. |
 | T-283 | Sección destacada con los alumnos en rojo. |
+| T-284 | Contador de alumnos en rojo en el menú. |
 
 El parámetro `soloRojo=true` del endpoint (T-282) filtra solo la lista de tarjetas;
 el resumen y los promedios del aula siguen calculándose con todos los alumnos activos.
@@ -84,3 +85,10 @@ Cuando el aula tiene alumnos en rojo, el dashboard muestra un aviso destacado de
 resumen. Incluye el conteo de alumnos, sus nombres, grados y promedios. Si no hay alumnos
 en rojo, la sección no se muestra. La sección se alimenta de los estudiantes que ya devuelve
 el dashboard, sin duplicar la consulta al endpoint.
+
+## 10. Contador en el menú (T-284)
+
+El menú lateral muestra un contador junto a **Dashboard** con la cantidad de alumnos en rojo
+del aula activa. Usa el parámetro `soloRojo=true` de T-282 y se oculta cuando el contador es
+cero. La selección de aula se comparte entre el dashboard y el menú; si todavía no hay una
+selección, se usa la primera aula del docente.

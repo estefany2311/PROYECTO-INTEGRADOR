@@ -1,4 +1,13 @@
+import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { listarAulas, listarDashboardAula } from "../api";
+import {
+  obtenerAulaSeleccionada,
+  seleccionarAula,
+  suscribirAulaSeleccionada,
+} from "../aulaSeleccionada";
+
+const textoContador = (n) => `${n} ${n === 1 ? "alumno" : "alumnos"} en rojo`;
 
 const MENU = [
   {
@@ -29,6 +38,58 @@ const MENU = [
 ];
 
 export default function Layout() {
+  const [alumnosEnRojo, setAlumnosEnRojo] = useState(0);
+
+  // T-284: contador del aula activa usando el filtro soloRojo de T-282.
+  useEffect(() => {
+    let vigente = true;
+
+    const cargarContador = (aulaId) => {
+      if (!aulaId) {
+        setAlumnosEnRojo(0);
+        return;
+      }
+
+      listarDashboardAula(aulaId, { soloRojo: true })
+        .then((data) => {
+          if (!vigente) return;
+          const totalRojo =
+            data?.resumen?.necesitanRefuerzo ??
+            (data?.estudiantes || []).filter((e) => e.color === "rojo").length;
+          setAlumnosEnRojo(Number(totalRojo) || 0);
+        })
+        .catch(() => {
+          if (vigente) setAlumnosEnRojo(0);
+        });
+    };
+
+    const desuscribir = suscribirAulaSeleccionada(cargarContador);
+    const aulaActual = obtenerAulaSeleccionada();
+
+    if (aulaActual) {
+      cargarContador(aulaActual);
+    } else {
+      listarAulas()
+        .then((aulas) => {
+          if (!vigente || obtenerAulaSeleccionada()) return;
+          const primera = aulas[0]?.id;
+          if (primera) {
+            seleccionarAula(String(primera));
+          } else {
+            setAlumnosEnRojo(0);
+          }
+        })
+        .catch(() => {
+          if (vigente) setAlumnosEnRojo(0);
+        });
+    }
+
+    return () => {
+      vigente = false;
+      desuscribir();
+    };
+  }, []);
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -89,7 +150,16 @@ export default function Layout() {
                     <span className={`menu-ico ${item.color}`}>
                       <i className={`bi ${item.icono}`} />
                     </span>
-                    {item.texto}
+                    <span className="menu-texto">{item.texto}</span>
+                    {item.ruta === "/dashboard" && alumnosEnRojo > 0 && (
+                      <span
+                        className="menu-contador"
+                        aria-label={textoContador(alumnosEnRojo)}
+                        title={textoContador(alumnosEnRojo)}
+                      >
+                        {alumnosEnRojo}
+                      </span>
+                    )}
                   </NavLink>
                 ))}
               </div>
