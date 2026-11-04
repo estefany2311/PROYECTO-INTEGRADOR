@@ -65,3 +65,9 @@ El color nunca debe ser la única señal: siempre va acompañado de ícono y tex
 - Umbrales configurables por el administrador: en este sprint quedan fijos.
 - Semáforo por competencia en el detalle del estudiante (US-29): reutiliza esta misma
   regla, pero se implementa en T-292.
+
+## 8. Implementación de la leyenda (T-280)
+
+La pantalla `/dashboard` muestra una leyenda visible con los cuatro estados. Cada estado
+combina color, ícono y texto; los íconos son decorativos (`aria-hidden`) y el texto visible
+es la señal principal. La leyenda se anuncia como la región **Leyenda del semáforo**.

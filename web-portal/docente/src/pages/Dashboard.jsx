@@ -33,6 +33,11 @@ const SEMAFORO = {
   },
 };
 
+const LEYENDA = ["verde", "amarillo", "rojo", "gris"].map((color) => ({
+  color,
+  ...SEMAFORO[color],
+}));
+
 const COLORES_AVATAR = ["#8B5CF6", "#2FC5F6", "#F59E0B", "#EC4899", "#10B981", "#6366F1"];
 
 const datosSemaforo = (color) => SEMAFORO[color] || SEMAFORO.gris;
@@ -301,6 +306,8 @@ export default function Dashboard() {
             </p>
           )}
 
+          <LeyendaSemaforo />
+
           {estudiantes.length === 0 ? (
             <div className="panel text-center py-5">
               <p className="mb-1 fw-semibold">Aún no hay alumnos activos en esta aula.</p>
@@ -331,6 +338,26 @@ export default function Dashboard() {
         </>
       ) : null}
     </div>
+  );
+}
+
+function LeyendaSemaforo() {
+  return (
+    <section className="leyenda-semaforo" aria-labelledby="leyenda-semaforo-titulo">
+      <h2 id="leyenda-semaforo-titulo" className="leyenda-titulo">
+        Leyenda del semáforo
+      </h2>
+      <ul className="leyenda-lista">
+        {LEYENDA.map(({ color, texto, icono }) => (
+          <li className="leyenda-item" key={color}>
+            <span className={`semaforo-badge ${color}`}>
+              <i className={`bi ${icono}`} aria-hidden="true" />
+              {texto}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

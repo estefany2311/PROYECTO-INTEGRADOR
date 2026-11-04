@@ -1248,6 +1248,44 @@ legend {
   font-size: 0.76rem;
 }
 
+.leyenda-semaforo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: rgba(255, 253, 248, 0.82);
+}
+
+.leyenda-titulo {
+  margin: 0;
+  color: var(--muted);
+  font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.leyenda-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.leyenda-item {
+  display: inline-flex;
+}
+
+.leyenda-item .semaforo-badge {
+  padding: 4px 8px;
+}
+
 .dashboard-alumnos {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1658,5 +1696,9 @@ legend {
 
   .aula-barra-line {
     grid-template-columns: 72px minmax(0, 1fr) 50px;
+  }
+
+  .leyenda-titulo {
+    flex-basis: 100%;
   }
 }

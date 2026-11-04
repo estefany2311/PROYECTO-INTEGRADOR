@@ -191,6 +191,22 @@ describe("Pantalla del dashboard (T-279)", () => {
     expect(within(panelAula).getByText("73")).toBeInTheDocument();
   });
 
+  it("muestra la leyenda accesible del semáforo", async () => {
+    api.listarDashboardAula.mockResolvedValue(DASHBOARD);
+    mostrar();
+
+    const leyenda = await screen.findByRole("region", {
+      name: "Leyenda del semáforo",
+    });
+
+    expect(within(leyenda).getAllByRole("listitem")).toHaveLength(4);
+    expect(within(leyenda).getByText("En nivel esperado")).toBeInTheDocument();
+    expect(within(leyenda).getByText("En proceso")).toBeInTheDocument();
+    expect(within(leyenda).getByText("Necesita refuerzo")).toBeInTheDocument();
+    expect(within(leyenda).getByText("Sin evaluaciones")).toBeInTheDocument();
+    expect(leyenda.querySelectorAll(".leyenda-item .bi")).toHaveLength(4);
+  });
+
   it("muestra en gris a los alumnos sin evaluaciones", async () => {
     api.listarDashboardAula.mockResolvedValue(DASHBOARD_GRIS);
     mostrar();
