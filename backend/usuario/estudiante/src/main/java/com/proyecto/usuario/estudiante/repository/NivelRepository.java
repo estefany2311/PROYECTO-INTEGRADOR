@@ -62,27 +62,37 @@ public class NivelRepository {
                 .optional();
     }
 
-    // T-198: deja el nivel completado con sus puntos (crea la fila si el alumno no tenía progreso)
-    public void marcarCompletado(long estudianteId, int nivelId, int puntos, LocalDateTime ahora) {
-        jdbc.sql("""
+    /**
+     * T-198: deja el nivel completado (crea la fila si el alumno no tenía progreso).
+     * T-310: al repetir un reto se conserva el MEJOR puntaje: si esta vez sacó menos, no pierde lo ganado.
+     * Devuelve el puntaje que queda guardado.
+     */
+    public int marcarCompletado(long estudianteId, int nivelId, int puntos, LocalDateTime ahora) {
+        return jdbc.sql("""
                         INSERT INTO progreso (estudiante_id, nivel_id, estado, puntos, actualizado_en)
                         VALUES (:e, :n, 'completado', :puntos, :ahora)
                         ON CONFLICT (estudiante_id, nivel_id)
-                        DO UPDATE SET estado = 'completado', puntos = EXCLUDED.puntos, actualizado_en = EXCLUDED.actualizado_en
+                        DO UPDATE SET estado = 'completado',
+                                      puntos = GREATEST(progreso.puntos, EXCLUDED.puntos),
+                                      actualizado_en = EXCLUDED.actualizado_en
+                        RETURNING puntos
                         """)
                 .param("e", estudianteId)
                 .param("n", nivelId)
                 .param("puntos", puntos)
                 .param("ahora", ahora)
-                .update();
+                .query(Integer.class)
+                .single();
     }
 
     /**
      * T-198: desbloquea un nivel para el alumno. Si ya tenía fila (por ejemplo, ya lo completó),
      * no se toca: un nivel completado nunca vuelve a quedar solo "desbloqueado".
+     * T-310: devuelve true solo si se desbloqueó AHORA (al repetir un reto, el siguiente ya estaba abierto).
+     * ON CONFLICT DO NOTHING también evita filas repetidas si llegan dos toques seguidos al mismo tiempo.
      */
-    public void desbloquear(long estudianteId, int nivelId, LocalDateTime ahora) {
-        jdbc.sql("""
+    public boolean desbloquear(long estudianteId, int nivelId, LocalDateTime ahora) {
+        return jdbc.sql("""
                         INSERT INTO progreso (estudiante_id, nivel_id, estado, puntos, actualizado_en)
                         VALUES (:e, :n, 'desbloqueado', 0, :ahora)
                         ON CONFLICT (estudiante_id, nivel_id) DO NOTHING
@@ -90,7 +100,7 @@ public class NivelRepository {
                 .param("e", estudianteId)
                 .param("n", nivelId)
                 .param("ahora", ahora)
-                .update();
+                .update() > 0;
     }
 
     public Optional<Progreso> progreso(long estudianteId, int nivelId) {

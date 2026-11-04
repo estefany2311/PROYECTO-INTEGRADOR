@@ -41,5 +41,7 @@ data class ResultadoReto(
     val aprobado: Boolean,
     val estrellasMinimas: Int,
     val siguienteNivelId: Int?,
-    val siguienteNivelNombre: String?
+    val siguienteNivelNombre: String?,
+    val mejoresPuntos: Int = 0,                      // T-310: el mejor puntaje guardado
+    val siguienteRecienDesbloqueado: Boolean = false // T-310: true solo la primera vez
 )

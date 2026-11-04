@@ -65,7 +65,8 @@ public class NivelService {
      * T-308: primero registra el intento (fecha, puntos y estrellas), siempre.
      * T-309: si sacó las estrellas mínimas (por defecto 1), el nivel queda completado y se desbloquea
      * el siguiente. Si no, solo queda el intento: puede volver a intentarlo.
-     * Todo en una sola transacción. Repetir un reto sin perder lo ganado llega en T-310.
+     * T-310: repetir un reto no desbloquea dos veces ni hace perder lo ganado (se guarda el mejor puntaje).
+     * Todo en una sola transacción.
      */
     @Transactional
     public CompletarNivelResponse completar(long estudianteId, int nivelId, int puntos, int estrellas) {
@@ -74,20 +75,25 @@ public class NivelService {
 
         intentos.registrar(estudianteId, nivelId, puntos, estrellas, ahora);
 
-        // T-309: sin las estrellas mínimas no se completa ni se desbloquea nada
+        // T-309: sin las estrellas mínimas no se completa ni se desbloquea nada.
+        // T-310: si ya lo había completado antes, sigue completado y con su mejor puntaje.
         if (!reglas.aprueba(estrellas)) {
-            return new CompletarNivelResponse(nivelId, nivel.estado(), puntos, estrellas, false,
-                    reglas.estrellasMinimas(), null, null);
+            int guardados = niveles.progreso(estudianteId, nivelId).map(NivelRepository.Progreso::puntos).orElse(0);
+            return new CompletarNivelResponse(nivelId, nivel.estado(), puntos, guardados, estrellas, false,
+                    reglas.estrellasMinimas(), null, null, false);
         }
 
-        niveles.marcarCompletado(estudianteId, nivelId, puntos, ahora);
+        int mejoresPuntos = niveles.marcarCompletado(estudianteId, nivelId, puntos, ahora);
 
         Optional<Nivel> siguiente = niveles.siguiente(nivel.orden());
-        siguiente.ifPresent(s -> niveles.desbloquear(estudianteId, s.id(), ahora));
+        // T-310: al repetir un reto el siguiente ya estaba abierto; solo es "nuevo" la primera vez
+        boolean recienDesbloqueado = siguiente.map(s -> niveles.desbloquear(estudianteId, s.id(), ahora)).orElse(false);
 
-        return new CompletarNivelResponse(nivelId, COMPLETADO, puntos, estrellas, true, reglas.estrellasMinimas(),
+        return new CompletarNivelResponse(nivelId, COMPLETADO, puntos, mejoresPuntos, estrellas, true,
+                reglas.estrellasMinimas(),
                 siguiente.map(Nivel::id).orElse(null),
-                siguiente.map(Nivel::nombre).orElse(null));
+                siguiente.map(Nivel::nombre).orElse(null),
+                recienDesbloqueado);
     }
 
     private String estadoSinProgreso(long estudianteId, Optional<Nivel> anterior) {
