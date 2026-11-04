@@ -10,6 +10,18 @@ const MENU = [
     ],
   },
   {
+    seccion: "EVALUACIÓN",
+    items: [
+      {
+        ruta: "/dashboard",
+        icono: "bi-speedometer2",
+        color: "ico-naranja",
+        texto: "Dashboard",
+        etiqueta: "US-27",
+      },
+    ],
+  },
+  {
     seccion: "CONTENIDO",
     items: [
       { ruta: "/catalogo", icono: "bi-book-fill", color: "ico-rosa", texto: "Catálogo" },
@@ -79,6 +91,9 @@ export default function Layout() {
                       <i className={`bi ${item.icono}`} />
                     </span>
                     {item.texto}
+                    {item.etiqueta && (
+                      <span className="menu-badge">{item.etiqueta}</span>
+                    )}
                   </NavLink>
                 ))}
               </div>
@@ -94,7 +109,7 @@ export default function Layout() {
             <div className="sprint-bar">
               <span />
             </div>
-            <small>Dashboard y evidencias en camino</small>
+            <small>Dashboard disponible · evidencias en camino</small>
           </div>
 
           <div className="sidebar-note">

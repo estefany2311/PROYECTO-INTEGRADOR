@@ -17,6 +17,9 @@ async function pedir(ruta, opciones = {}) {
 
 export const listarGrados = () => pedir("/api/docente/grados");
 export const listarAulas = () => pedir("/api/docente/aulas");
+// T-279: dashboard del aula (endpoint de T-278)
+export const listarDashboardAula = (aulaId) =>
+  pedir(`/api/docente/aulas/${aulaId}/dashboard`);
 export const crearAula = (datos) =>
   pedir("/api/docente/aulas", { method: "POST", body: JSON.stringify(datos) });
 

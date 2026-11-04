@@ -49,8 +49,8 @@ npm run preview -- --port 4173
 | `GET /api/docente/aulas/5/grupos` | 200 |
 | `GET /v3/api-docs` | 200 · `API Docente` 1.0.0 · 14 rutas |
 | `GET /swagger-ui.html` | 200 |
-| Frontend `/`, `/alumnos`, `/grupos`, `/catalogo` | 200 y sin errores de consola |
+| Frontend `/`, `/alumnos`, `/grupos`, `/catalogo`, `/dashboard` | 200 y sin errores de consola |
 | Build de producción con `npm run preview` | 200 |
 | CORS desde `http://localhost:5173` | 200 · `Access-Control-Allow-Origin` correcto |
 | Backend `clean test` | 145/145 |
-| Frontend `test`, `lint`, `build` | 43/43 · OK · OK |
+| Frontend `test`, `lint`, `build` | 48/48 · OK · OK |
