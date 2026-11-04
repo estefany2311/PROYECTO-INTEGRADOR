@@ -1,5 +1,6 @@
 package com.proyecto.usuario.estudiante.service;
 
+import com.proyecto.usuario.estudiante.config.ReglasReto;
 import com.proyecto.usuario.estudiante.dto.NivelDetalleResponse;
 import com.proyecto.usuario.estudiante.exception.NivelBloqueadoException;
 import com.proyecto.usuario.estudiante.exception.NivelNoEncontradoException;
@@ -42,7 +43,7 @@ class NivelServiceTest {
     @BeforeEach
     void setUp() {
         // T-198: el servicio ahora recibe un reloj (para la fecha del progreso)
-        service = new NivelService(niveles, intentos, Clock.fixed(Instant.parse("2026-11-02T15:00:00Z"), ZoneId.of("America/Lima")));
+        service = new NivelService(niveles, intentos, new ReglasReto(1), Clock.fixed(Instant.parse("2026-11-02T15:00:00Z"), ZoneId.of("America/Lima")));
     }
 
     @Test

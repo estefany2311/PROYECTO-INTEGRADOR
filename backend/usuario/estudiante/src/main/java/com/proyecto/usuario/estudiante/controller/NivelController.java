@@ -38,10 +38,11 @@ public class NivelController {
     }
 
     /**
-     * T-198 (US-08): POST /api/estudiante/niveles/{nivelId}/completar con el token y {"puntos": 10}.
-     *   200 nivel completado y siguiente desbloqueado
+     * T-198 (US-08): POST /api/estudiante/niveles/{nivelId}/completar con el token y {"puntos": 10, "estrellas": 2}.
+     *   200 con "aprobado": true si sacó las estrellas mínimas (nivel completado y siguiente desbloqueado, T-309),
+     *       o "aprobado": false si no (solo queda el intento)
      *   400 puntos fuera de rango · 401 sin sesión · 403 nivel bloqueado · 404 no existe
-     * El cuerpo es opcional: sin él cuenta como 0 puntos.
+     * El cuerpo es opcional: sin él cuenta como 0 puntos y 0 estrellas.
      */
     @PostMapping("/{nivelId}/completar")
     public CompletarNivelResponse completar(
@@ -50,6 +51,7 @@ public class NivelController {
             @Valid @RequestBody(required = false) CompletarNivelRequest request) {
         long estudianteId = autenticador.estudianteDe(authorization);
         int puntos = request == null ? 0 : request.puntosOCero();
-        return nivelService.completar(estudianteId, nivelId, puntos);
+        int estrellas = request == null ? 0 : request.estrellasOCero();
+        return nivelService.completar(estudianteId, nivelId, puntos, estrellas);
     }
 }

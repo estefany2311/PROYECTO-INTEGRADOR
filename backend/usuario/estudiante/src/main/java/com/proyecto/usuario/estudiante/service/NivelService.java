@@ -1,5 +1,6 @@
 package com.proyecto.usuario.estudiante.service;
 
+import com.proyecto.usuario.estudiante.config.ReglasReto;
 import com.proyecto.usuario.estudiante.dto.CompletarNivelResponse;
 import com.proyecto.usuario.estudiante.dto.NivelDetalleResponse;
 import com.proyecto.usuario.estudiante.exception.NivelBloqueadoException;
@@ -31,11 +32,13 @@ public class NivelService {
 
     private final NivelRepository niveles;
     private final IntentoRetoRepository intentos;
+    private final ReglasReto reglas;
     private final Clock reloj;
 
-    public NivelService(NivelRepository niveles, IntentoRetoRepository intentos, Clock reloj) {
+    public NivelService(NivelRepository niveles, IntentoRetoRepository intentos, ReglasReto reglas, Clock reloj) {
         this.niveles = niveles;
         this.intentos = intentos;
+        this.reglas = reglas;
         this.reloj = reloj;
     }
 
@@ -58,25 +61,31 @@ public class NivelService {
 
     /**
      * T-198 (US-08): el alumno terminó el reto del nivel.
-     * Solo se puede completar un nivel abierto para él (el mismo control que el detalle: 403 si está bloqueado).
-     * T-308: primero registra el intento (fecha y puntaje), siempre, aunque luego no se desbloquee nada.
-     * Deja el nivel completado y desbloquea el siguiente del recorrido, todo en una sola transacción.
-     * Las reglas finas llegan después: mínimo de estrellas (T-309) y repetir un reto sin perder lo ganado (T-310).
+     * Solo se puede terminar un nivel abierto para él (el mismo control que el detalle: 403 si está bloqueado).
+     * T-308: primero registra el intento (fecha, puntos y estrellas), siempre.
+     * T-309: si sacó las estrellas mínimas (por defecto 1), el nivel queda completado y se desbloquea
+     * el siguiente. Si no, solo queda el intento: puede volver a intentarlo.
+     * Todo en una sola transacción. Repetir un reto sin perder lo ganado llega en T-310.
      */
     @Transactional
-    public CompletarNivelResponse completar(long estudianteId, int nivelId, int puntos) {
+    public CompletarNivelResponse completar(long estudianteId, int nivelId, int puntos, int estrellas) {
         NivelDetalleResponse nivel = detalle(estudianteId, nivelId);    // 404 si no existe, 403 si está bloqueado
         LocalDateTime ahora = LocalDateTime.now(reloj);
 
-        // T-308: queda en el historial. Las estrellas llegan desde la tablet en T-309 (por ahora 0)
-        intentos.registrar(estudianteId, nivelId, puntos, 0, ahora);
+        intentos.registrar(estudianteId, nivelId, puntos, estrellas, ahora);
+
+        // T-309: sin las estrellas mínimas no se completa ni se desbloquea nada
+        if (!reglas.aprueba(estrellas)) {
+            return new CompletarNivelResponse(nivelId, nivel.estado(), puntos, estrellas, false,
+                    reglas.estrellasMinimas(), null, null);
+        }
 
         niveles.marcarCompletado(estudianteId, nivelId, puntos, ahora);
 
         Optional<Nivel> siguiente = niveles.siguiente(nivel.orden());
         siguiente.ifPresent(s -> niveles.desbloquear(estudianteId, s.id(), ahora));
 
-        return new CompletarNivelResponse(nivelId, COMPLETADO, puntos,
+        return new CompletarNivelResponse(nivelId, COMPLETADO, puntos, estrellas, true, reglas.estrellasMinimas(),
                 siguiente.map(Nivel::id).orElse(null),
                 siguiente.map(Nivel::nombre).orElse(null));
     }
