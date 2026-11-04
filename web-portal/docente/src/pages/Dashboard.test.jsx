@@ -87,6 +87,32 @@ const DASHBOARD = {
   colorGeneral: "amarillo",
 };
 
+const DASHBOARD_DOS_ROJOS = {
+  ...DASHBOARD,
+  resumen: {
+    ...DASHBOARD.resumen,
+    totalEstudiantes: 4,
+    necesitanRefuerzo: 2,
+  },
+  estudiantes: [
+    ...DASHBOARD.estudiantes,
+    {
+      id: 5,
+      nombres: "Ana",
+      apellidos: "Roja",
+      gradoId: 3,
+      gradoNombre: "3.º",
+      promedio: 40,
+      color: "rojo",
+      competencias: [
+        { competencia: "lectura", promedio: 40 },
+        { competencia: "escritura", promedio: 40 },
+        { competencia: "oralidad", promedio: 40 },
+      ],
+    },
+  ],
+};
+
 const DASHBOARD_GRIS = {
   aulaId: 10,
   aulaNombre: "Prueba Noemi",
@@ -258,5 +284,96 @@ describe("Pantalla del dashboard (T-279)", () => {
       "No se pudo cargar el dashboard"
     );
     expect(screen.getByRole("button", { name: /reintentar/i })).toBeInTheDocument();
+  });
+});
+
+describe("Sección Necesitan refuerzo (T-283)", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    api.listarAulas.mockResolvedValue([AULA]);
+  });
+
+  it("muestra el conteo y los datos del alumno en rojo sin duplicar la consulta", async () => {
+    api.listarDashboardAula.mockResolvedValue(DASHBOARD);
+    mostrar();
+
+    const refuerzo = await screen.findByRole("region", {
+      name: "Necesitan refuerzo",
+    });
+
+    expect(within(refuerzo).getByLabelText("1 alumno en rojo")).toHaveTextContent("1");
+    expect(within(refuerzo).getByText(/Ester Zavala/)).toHaveTextContent(
+      "Ester Zavala · 1.º · Promedio 50/100"
+    );
+    expect(within(refuerzo).queryByText(/minji prueba/)).not.toBeInTheDocument();
+    expect(within(refuerzo).queryByText(/Breysi Zavala/)).not.toBeInTheDocument();
+    expect(api.listarDashboardAula).toHaveBeenCalledTimes(1);
+  });
+
+  it("muestra a todos los alumnos en rojo y usa el plural en el conteo", async () => {
+    api.listarDashboardAula.mockResolvedValue(DASHBOARD_DOS_ROJOS);
+    mostrar();
+
+    const refuerzo = await screen.findByRole("region", {
+      name: "Necesitan refuerzo",
+    });
+
+    expect(within(refuerzo).getByLabelText("2 alumnos en rojo")).toHaveTextContent("2");
+    const alumnos = within(refuerzo).getAllByRole("listitem");
+    expect(alumnos).toHaveLength(2);
+    expect(alumnos[0]).toHaveTextContent("Ester Zavala · 1.º · Promedio 50/100");
+    expect(alumnos[1]).toHaveTextContent("Ana Roja · 3.º · Promedio 40/100");
+  });
+
+  it("no muestra la sección cuando no hay alumnos en rojo", async () => {
+    api.listarDashboardAula.mockResolvedValue(DASHBOARD_GRIS);
+    mostrar();
+
+    expect(await screen.findByText("NOEMI DE LA CRUZ")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: "Necesitan refuerzo" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Necesitan refuerzo" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("ubica la sección después del resumen y antes de la leyenda y las tarjetas", async () => {
+    api.listarDashboardAula.mockResolvedValue(DASHBOARD);
+    mostrar();
+
+    const refuerzo = await screen.findByRole("region", {
+      name: "Necesitan refuerzo",
+    });
+    const resumen = screen.getByRole("region", { name: "Resumen del aula" });
+    const leyenda = screen.getByRole("region", { name: "Leyenda del semáforo" });
+    const alumnos = screen.getByRole("region", {
+      name: "Rendimiento por estudiante",
+    });
+    const regiones = screen.getAllByRole("region");
+
+    expect(regiones.indexOf(resumen)).toBeLessThan(regiones.indexOf(refuerzo));
+    expect(regiones.indexOf(refuerzo)).toBeLessThan(regiones.indexOf(leyenda));
+    expect(regiones.indexOf(refuerzo)).toBeLessThan(regiones.indexOf(alumnos));
+  });
+
+  it("oculta la sección al cambiar a un aula sin alumnos en rojo", async () => {
+    api.listarAulas.mockResolvedValue([AULA, AULA2]);
+    api.listarDashboardAula
+      .mockResolvedValueOnce(DASHBOARD)
+      .mockResolvedValueOnce(DASHBOARD2);
+    mostrar();
+
+    expect(
+      await screen.findByRole("region", { name: "Necesitan refuerzo" })
+    ).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Aula"), "20");
+
+    expect(await screen.findByText("Luis Costa")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: "Necesitan refuerzo" })
+    ).not.toBeInTheDocument();
+    expect(api.listarDashboardAula).toHaveBeenCalledTimes(2);
   });
 });
