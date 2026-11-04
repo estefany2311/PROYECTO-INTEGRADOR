@@ -8,6 +8,7 @@ import RolesPermisos from "./pages/RolesPermisos";
 import Catalogo from "./pages/Catalogo";
 import Usuarios from "./pages/Usuarios";
 import Inicio from "./pages/Inicio";
+import ConfiguracionVoz from "./pages/ConfiguracionVoz";
 import { obtenerMiPerfil, sesion } from "./api";
 import "./App.css";
 import "./estilos/paginas/index.css";
@@ -109,6 +110,8 @@ export default function App() {
       {paginaActual === "roles" && <RolesPermisos onNoAutorizado={sesionExpirada} />}
 
       {paginaActual === "catalogo" && <Catalogo onNoAutorizado={sesionExpirada} puede={puede} />}
+
+      {paginaActual === "configuracion" && <ConfiguracionVoz onNoAutorizado={sesionExpirada} puede={puede} />}
 
       {paginaActual === "usuarios" && (
         <Usuarios onNoAutorizado={sesionExpirada} puede={puede} usuarioActualId={perfil.id} />

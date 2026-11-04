@@ -1,0 +1,27 @@
+/* =====================================================================
+   PESTAÑA: CONFIGURACIÓN IA · EVALUACIÓN DE VOZ (US-51)
+   Todo lo que cambies aquí afecta SOLO a esta pestaña.
+   ===================================================================== */
+
+/* 1) PANEL DE COLORES: cambia el valor y guarda (Ctrl + S) */
+.main.pagina-configuracion {
+  --fondo: #F4FAFF;                    /* fondo de la pestaña */
+  --titulo: #1D3557;                   /* color del título grande */
+  --titulo-tamano: 22px;               /* tamaño del título grande */
+  --subtitulo: #5F6F86;                /* texto debajo del título (ruta) */
+  --tarjeta-fondo: #FFFFFF;            /* fondo de las tarjetas y tablas */
+  --tarjeta-borde: #E1E8F0;            /* borde de las tarjetas */
+  --tarjeta-radio: 14px;               /* qué tan redondas son las esquinas */
+  --tarjeta-titulo: #1D3557;           /* títulos dentro de las tarjetas */
+  --tabla-encabezado-fondo: #FAFBFC;   /* fila de títulos de la tabla: fondo */
+  --tabla-encabezado-texto: #5F6F86;   /* fila de títulos de la tabla: texto */
+  --tabla-fila-hover: #EEF7FD;         /* color al pasar el mouse por una fila */
+  --boton: #0A8378;                    /* botones principales */
+  --boton-hover: #08665E;              /* botones principales al pasar el mouse */
+  --nota: #5F6F86;                     /* textos pequeños grises */
+  --fila-cambios: #FFF8E7;             /* fila con cambios sin guardar */
+}
+
+/* 2) REGLAS SOLO DE ESTA PESTAÑA (empieza siempre con .pagina-configuracion) */
+.pagina-configuracion .tabla-voz input { max-width: 110px; text-align: center; font-weight: 600; }
+.pagina-configuracion .tabla-voz tr.con-cambios td { background: var(--fila-cambios); }

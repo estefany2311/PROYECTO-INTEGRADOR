@@ -24,6 +24,11 @@ const SECCIONES = [
     titulo: "Contenido",
         enlaces: [{ id: "catalogo", icono: "bi-journal-richtext", texto: "Catálogo", disponible: true }],
   },
+
+    {
+    titulo: "Configuración IA",
+    enlaces: [{ id: "configuracion", icono: "bi-mic", texto: "Evaluación de voz", disponible: true }],
+  },
 ];
 
 const iniciales = (texto) =>

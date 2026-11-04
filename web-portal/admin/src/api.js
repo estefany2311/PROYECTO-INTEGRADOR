@@ -95,3 +95,9 @@ export const actualizarLectura = (id, datos) =>
 
 export const cambiarEstadoUsuario = (id, isActive) =>
   pedir(`/usuarios/${id}/estado/`, { method: "PATCH", body: JSON.stringify({ is_active: isActive }) });
+
+
+export const listarConfiguracionEvaluacion = () => pedir("/configuracion/evaluacion/");
+
+export const actualizarConfiguracionEvaluacion = (grado, datos) =>
+  pedir(`/configuracion/evaluacion/${grado}/`, { method: "PATCH", body: JSON.stringify(datos) });
