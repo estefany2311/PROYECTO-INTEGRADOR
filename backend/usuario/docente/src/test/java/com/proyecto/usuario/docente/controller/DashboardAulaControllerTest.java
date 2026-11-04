@@ -49,7 +49,7 @@ class DashboardAulaControllerTest {
 
     @Test
     void devuelveElDashboardDelAula() throws Exception {
-        when(service.dashboardAula(1L, 10L)).thenReturn(new DashboardAulaResponse(
+        when(service.dashboardAula(1L, 10L, false)).thenReturn(new DashboardAulaResponse(
                 10L,
                 "Aula Rural",
                 List.of(new GradoResponse((short) 1, "1.º")),
@@ -82,8 +82,32 @@ class DashboardAulaControllerTest {
     }
 
     @Test
+    void soloRojoPideAlServicioSoloLasTarjetasRojas() throws Exception {
+        when(service.dashboardAula(1L, 10L, true)).thenReturn(new DashboardAulaResponse(
+                10L,
+                "Aula Rural",
+                List.of(new GradoResponse((short) 1, "1.º")),
+                new ResumenDashboardResponse(3, 1, 1, 1, 0),
+                List.of(new EstudianteDashboardResponse(
+                        9L, "Ester", "Prueba", (short) 5, "5.º", 50, ColorSemaforo.ROJO,
+                        List.of(new CompetenciaPromedioResponse("lectura", 50.0)))),
+                List.of(new CompetenciaPromedioResponse("lectura", 68.0)),
+                68,
+                ColorSemaforo.AMARILLO));
+
+        mvc.perform(get("/api/docente/aulas/10/dashboard")
+                        .param("soloRojo", "true")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estudiantes.length()").value(1))
+                .andExpect(jsonPath("$.estudiantes[0].nombres").value("Ester"))
+                .andExpect(jsonPath("$.estudiantes[0].color").value("rojo"))
+                .andExpect(jsonPath("$.resumen.necesitanRefuerzo").value(1));
+    }
+
+    @Test
     void aulaDeOtroDocenteDevuelve403() throws Exception {
-        when(service.dashboardAula(1L, 10L))
+        when(service.dashboardAula(1L, 10L, false))
                 .thenThrow(new ReglaNegocioException(
                         "El aula no pertenece al docente", HttpStatus.FORBIDDEN));
 
@@ -94,7 +118,7 @@ class DashboardAulaControllerTest {
 
     @Test
     void aulaInexistenteDevuelve404() throws Exception {
-        when(service.dashboardAula(1L, 99L))
+        when(service.dashboardAula(1L, 99L, false))
                 .thenThrow(new ReglaNegocioException(
                         "El aula no existe", HttpStatus.NOT_FOUND));
 

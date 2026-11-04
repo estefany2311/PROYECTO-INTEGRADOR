@@ -58,6 +58,10 @@ El color se decide con el promedio ya redondeado: 79.5 pasa a 80 (verde) y 59.5 
 | T-279 | Tarjetas por estudiante en el dashboard. |
 | T-280 | Leyenda accesible: color + ícono + texto. |
 | T-281 | Pruebas unitarias de límites, redondeo y casos sin evaluaciones. |
+| T-282 | Parámetro `soloRojo` del endpoint: filtra las tarjetas rojas. |
+
+El parámetro `soloRojo=true` del endpoint (T-282) filtra solo la lista de tarjetas;
+el resumen y los promedios del aula siguen calculándose con todos los alumnos activos.
 
 El color nunca debe ser la única señal: siempre va acompañado de ícono y texto (T-280).
 

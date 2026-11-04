@@ -44,6 +44,7 @@ npm run preview -- --port 4173
 | `GET /api/docente/grados` | 200 · 6 grados |
 | `GET /api/docente/aulas` | 200 · 3 aulas |
 | `GET /api/docente/aulas/9/dashboard` | 200 · 3 estudiantes · 1 verde, 1 amarillo, 1 rojo |
+| `GET /api/docente/aulas/9/dashboard?soloRojo=true` | 200 · 1 estudiante rojo · resumen del aula completo |
 | `GET /api/docente/aulas/5/estudiantes` | 200 |
 | `GET /api/docente/aulas/5/lecturas` | 200 · 3 lecturas |
 | `GET /api/docente/aulas/5/grupos` | 200 |
@@ -54,5 +55,6 @@ npm run preview -- --port 4173
 | Build de producción con `npm run preview` | 200 |
 | CORS desde `http://localhost:5173` | 200 · `Access-Control-Allow-Origin` correcto |
 | Backend `SemaforoServiceTest` | 8/8 · límites, redondeo y sin evaluaciones |
-| Backend `test` | 153/153 |
+| Backend `RendimientoServiceTest` | 1/1 · filtro `soloRojo` sin alterar resumen |
+| Backend `test` | 155/155 |
 | Frontend `test`, `lint`, `build` | 49/49 · OK · OK |

@@ -61,6 +61,17 @@ public class RendimientoService {
      */
     @Transactional(readOnly = true)
     public DashboardAulaResponse dashboardAula(Long docenteId, Long aulaId) {
+        return dashboardAula(docenteId, aulaId, false);
+    }
+
+    /**
+     * T-282 (US-30): variante con filtro para la sección "Necesitan refuerzo".
+     * Con {@code soloRojo=true} la lista de tarjetas se limita a los alumnos
+     * en rojo; el resumen y los promedios del aula se calculan con todos los
+     * alumnos activos.
+     */
+    @Transactional(readOnly = true)
+    public DashboardAulaResponse dashboardAula(Long docenteId, Long aulaId, boolean soloRojo) {
         Aula aula = buscarAulaDelDocente(docenteId, aulaId);
 
         List<Estudiante> estudiantes = estudianteRepository
@@ -123,6 +134,12 @@ public class RendimientoService {
                         .thenComparing(EstudianteDashboardResponse::apellidos)
                         .thenComparing(EstudianteDashboardResponse::nombres));
 
+        List<EstudianteDashboardResponse> estudiantesVisibles = soloRojo
+                ? estudiantesResponse.stream()
+                        .filter(estudiante -> estudiante.color() == ColorSemaforo.ROJO)
+                        .toList()
+                : estudiantesResponse;
+
         List<CompetenciaPromedioResponse> promediosAula = acumuladosPorCompetencia.entrySet().stream()
                 .map(entry -> new CompetenciaPromedioResponse(
                         entry.getKey(), calcularPromedioValores(entry.getValue())))
@@ -143,7 +160,7 @@ public class RendimientoService {
                 grados,
                 new ResumenDashboardResponse(estudiantes.size(), enNivelEsperado, enProceso,
                         necesitanRefuerzo, sinEvaluaciones),
-                estudiantesResponse,
+                estudiantesVisibles,
                 promediosAula,
                 promedioGeneral == null ? null : (int) Math.round(promedioGeneral),
                 colorGeneral);

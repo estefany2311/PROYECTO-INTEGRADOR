@@ -204,7 +204,6 @@ export default function Dashboard() {
           <div className="dashboard-eyebrow">Evaluación</div>
           <h1 id="titulo-dashboard" className="dashboard-titulo">
             Dashboard del aula
-            <span className="badge-us">US-27</span>
             <span className="semaforo-dots" aria-hidden="true">
               <span className="verde" />
               <span className="amarillo" />

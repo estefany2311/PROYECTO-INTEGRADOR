@@ -1089,20 +1089,6 @@ legend {
   font-weight: 800;
 }
 
-.badge-us {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: #F59E0B;
-  color: #fff;
-  font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.25);
-}
-
 .semaforo-dots {
   display: inline-flex;
   align-items: center;
@@ -1559,25 +1545,6 @@ legend {
 .dashboard-vacio i {
   color: var(--naranja);
   font-size: 1.2rem;
-}
-
-.menu-badge {
-  margin-left: auto;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: #FFF7ED;
-  border: 1px solid #FDE68A;
-  color: #B45309;
-  font-size: 0.58rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-.menu-item.active .menu-badge {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: transparent;
-  color: #fff;
 }
 
 @media (max-width: 900px) {

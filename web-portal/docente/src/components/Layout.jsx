@@ -17,7 +17,6 @@ const MENU = [
         icono: "bi-speedometer2",
         color: "ico-naranja",
         texto: "Dashboard",
-        etiqueta: "US-27",
       },
     ],
   },
@@ -91,9 +90,6 @@ export default function Layout() {
                       <i className={`bi ${item.icono}`} />
                     </span>
                     {item.texto}
-                    {item.etiqueta && (
-                      <span className="menu-badge">{item.etiqueta}</span>
-                    )}
                   </NavLink>
                 ))}
               </div>
