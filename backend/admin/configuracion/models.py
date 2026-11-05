@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models.functions import Lower
 
 
 class ConfiguracionEvaluacion(models.Model):
@@ -80,3 +81,79 @@ class HistorialConfiguracion(models.Model):
 
     def __str__(self):
         return f'{self.grado}.° · {self.get_campo_display()}: {self.valor_anterior} → {self.valor_nuevo}'
+
+
+
+
+class ConfiguracionOrtografia(models.Model):
+    """US-52: parámetros de la validación ortográfica por grado."""
+
+    SENSIBILIDADES = [
+        ('baja', 'Baja'),
+        ('media', 'Media'),
+        ('alta', 'Alta'),
+    ]
+
+    grado = models.PositiveSmallIntegerField(
+        unique=True,
+        validators=[MinValueValidator(1), MaxValueValidator(6)],
+    )
+    sensibilidad = models.CharField(
+        max_length=10,
+        choices=SENSIBILIDADES,
+        default='media',
+        help_text='Qué tan estricta es la IA al marcar errores de ortografía.',
+    )
+    ignorar_tildes = models.BooleanField(
+        default=False,
+        help_text='Si está activo, las tildes faltantes no se marcan como error (pensado para 1.° y 2.°).',
+    )
+    actualizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='configuraciones_ortografia',
+    )
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'configuracion_ortografia'
+        ordering = ['grado']
+        verbose_name = 'Configuración ortográfica'
+        verbose_name_plural = 'Configuraciones ortográficas'
+
+    def __str__(self):
+        tildes = ' · sin marcar tildes' if self.ignorar_tildes else ''
+        return f'{self.grado}.° grado · sensibilidad {self.get_sensibilidad_display().lower()}{tildes}'
+
+
+class PalabraPermitida(models.Model):
+    """US-52: palabras que el validador nunca marca como error (quechua, nombres de la zona, etc.)."""
+
+    palabra = models.CharField(max_length=60)
+    creado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='palabras_permitidas',
+    )
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'palabras_permitidas'
+        ordering = ['palabra']
+        verbose_name = 'Palabra permitida'
+        verbose_name_plural = 'Palabras permitidas'
+        constraints = [
+            # "Chacra" y "chacra" cuentan como la misma palabra
+            models.UniqueConstraint(Lower('palabra'), name='palabra_permitida_unica'),
+        ]
+
+    def save(self, *args, **kwargs):
+        self.palabra = self.palabra.strip()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.palabra

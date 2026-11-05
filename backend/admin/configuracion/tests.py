@@ -4,7 +4,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from usuarios.models import Rol, Usuario
-from .models import ConfiguracionEvaluacion, HistorialConfiguracion
+from django.db import IntegrityError
+from .models import ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion, PalabraPermitida
 
 
 class ConfiguracionEvaluacionTests(TestCase):
@@ -170,3 +171,36 @@ class ConfiguracionEvaluacionAPITests(APITestCase):
         self.client.force_authenticate(self.docente)
         resp = self.client.get(f'{self.URL}historial/')
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+
+
+class ConfiguracionOrtografiaModelTests(TestCase):
+    """T-254: modelos de la validación ortográfica."""
+
+    def test_valores_por_defecto_del_modelo(self):
+        config = ConfiguracionOrtografia.objects.create(grado=3)
+        self.assertEqual(config.sensibilidad, 'media')
+        self.assertFalse(config.ignorar_tildes)
+
+    def test_str_muestra_grado_sensibilidad_y_tildes(self):
+        config = ConfiguracionOrtografia.objects.create(grado=1, sensibilidad='baja', ignorar_tildes=True)
+        self.assertEqual(str(config), '1.° grado · sensibilidad baja · sin marcar tildes')
+
+    def test_sensibilidad_invalida_no_es_valida(self):
+        config = ConfiguracionOrtografia(grado=2, sensibilidad='extrema')
+        with self.assertRaises(ValidationError):
+            config.full_clean()
+
+    def test_grado_fuera_de_rango_no_es_valido(self):
+        with self.assertRaises(ValidationError):
+            ConfiguracionOrtografia(grado=7).full_clean()
+
+    def test_palabra_se_guarda_sin_espacios(self):
+        palabra = PalabraPermitida.objects.create(palabra='  chacra  ')
+        self.assertEqual(palabra.palabra, 'chacra')
+
+    def test_no_se_repite_la_misma_palabra_aunque_cambien_mayusculas(self):
+        PalabraPermitida.objects.create(palabra='Ayllu')
+        with self.assertRaises(IntegrityError):
+            PalabraPermitida.objects.create(palabra='ayllu')
