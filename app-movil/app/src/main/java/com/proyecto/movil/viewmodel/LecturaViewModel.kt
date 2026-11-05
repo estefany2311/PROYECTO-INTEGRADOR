@@ -27,6 +27,18 @@ class LecturaViewModel(
 
     private var nivelId: Int? = null
 
+    // T-311: tamaño de letra elegido por el niño (posición en TAMANOS_LETRA). Empieza en 32 sp.
+    private val _indiceTamano = MutableStateFlow(INDICE_INICIAL)
+    val indiceTamano: StateFlow<Int> = _indiceTamano
+
+    fun agrandarLetra() {
+        if (_indiceTamano.value < TAMANOS_LETRA.lastIndex) _indiceTamano.value++
+    }
+
+    fun achicarLetra() {
+        if (_indiceTamano.value > 0) _indiceTamano.value--
+    }
+
     fun cargar(nivelId: Int) {
         this.nivelId = nivelId
         _uiState.value = LecturaUiState.Cargando
@@ -47,6 +59,10 @@ class LecturaViewModel(
     }
 
     companion object {
+        // T-311: tamaños de letra disponibles (en sp): de cómodo para grados altos a muy grande para 1.º y 2.º
+        val TAMANOS_LETRA = listOf(24, 28, 32, 38, 44)
+        const val INDICE_INICIAL = 2      // 32 sp
+
         const val MENSAJE_SIN_LECTURA = "Tu profesor todavía no preparó una lectura para este nivel."
         const val MENSAJE_SIN_CONEXION = "No pudimos traer tu lectura. Intenta de nuevo."
         const val MENSAJE_SESION_VENCIDA = "Tu sesión terminó. Pide ayuda para volver a entrar."
