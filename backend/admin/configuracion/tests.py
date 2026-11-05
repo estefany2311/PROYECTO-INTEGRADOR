@@ -4,8 +4,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from usuarios.models import Rol, Usuario
-
-from .models import ConfiguracionEvaluacion
+from .models import ConfiguracionEvaluacion, HistorialConfiguracion
 
 
 class ConfiguracionEvaluacionTests(TestCase):
@@ -102,3 +101,72 @@ class ConfiguracionEvaluacionAPITests(APITestCase):
         self.patch(3, grado=9)
         self.assertTrue(ConfiguracionEvaluacion.objects.filter(grado=3).exists())
         self.assertFalse(ConfiguracionEvaluacion.objects.filter(grado=9).exists())
+
+
+    
+    # --- T-253: permisos ---
+    def test_sin_token_devuelve_401(self):
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_docente_no_puede_usar_put(self):
+        self.client.force_authenticate(self.docente)
+        datos = {'umbral_precision': 70, 'tolerancia_pausas': '2.0', 'palabras_por_minuto': 60}
+        resp = self.client.put(f'{self.URL}3/', datos, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_no_se_pueden_crear_ni_borrar_grados(self):
+        crear = self.client.post(self.URL, {'grado': 7, 'umbral_precision': 90}, format='json')
+        borrar = self.client.delete(f'{self.URL}3/')
+                # 403: nadie tiene "configuracion.crear" · 405: el método no existe. Ambos bloquean.
+        self.assertIn(crear.status_code, (status.HTTP_403_FORBIDDEN, status.HTTP_405_METHOD_NOT_ALLOWED))
+        self.assertEqual(borrar.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(ConfiguracionEvaluacion.objects.count(), 6)
+
+    def test_grado_que_no_existe_devuelve_404(self):
+        self.assertEqual(self.client.get(f'{self.URL}7/').status_code, status.HTTP_404_NOT_FOUND)
+
+    # --- T-253: rangos ---
+    def test_pausas_con_dos_decimales_devuelve_400(self):
+        resp = self.patch(1, tolerancia_pausas='2.75')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('un decimal', str(resp.data['tolerancia_pausas'][0]))
+
+    def test_texto_en_vez_de_numero_devuelve_400(self):
+        resp = self.patch(2, palabras_por_minuto='rapido')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['palabras_por_minuto'][0]), 'Ingresa un número válido.')
+
+    def test_put_con_todos_los_campos_validos(self):
+        datos = {'umbral_precision': 72, 'tolerancia_pausas': '1.5', 'palabras_por_minuto': 70}
+        resp = self.client.put(f'{self.URL}4/', datos, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(ConfiguracionEvaluacion.objects.get(grado=4).palabras_por_minuto, 70)
+
+    # --- T-253: historial (T-252) ---
+    def test_cada_cambio_queda_en_el_historial(self):
+        self.patch(3, umbral_precision=72, palabras_por_minuto=62)
+        cambios = HistorialConfiguracion.objects.filter(grado=3)
+        self.assertEqual(cambios.count(), 2)
+        precision = cambios.get(campo='umbral_precision')
+        self.assertEqual((precision.valor_anterior, precision.valor_nuevo, precision.usuario),
+                         ('70', '72', self.admin))
+
+    def test_guardar_sin_cambios_no_crea_historial(self):
+        self.patch(3, umbral_precision=70)  # 70 ya es el valor actual
+        self.assertFalse(HistorialConfiguracion.objects.exists())
+
+    def test_endpoint_historial_lista_y_filtra_por_grado(self):
+        self.patch(2, umbral_precision=66)
+        self.patch(5, palabras_por_minuto=88)
+        todos = self.client.get(f'{self.URL}historial/')
+        del_grado_5 = self.client.get(f'{self.URL}historial/', {'grado': 5})
+        self.assertEqual(todos.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(todos.data), 2)
+        self.assertEqual([c['grado'] for c in del_grado_5.data], [5])
+        self.assertEqual(del_grado_5.data[0]['usuario'], 'admin')
+
+    def test_docente_no_puede_ver_el_historial(self):
+        self.client.force_authenticate(self.docente)
+        resp = self.client.get(f'{self.URL}historial/')
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
