@@ -19,6 +19,7 @@ import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.view.PantallaCodigoAula
 import com.proyecto.movil.model.TipoReto
 import com.proyecto.movil.view.PantallaDetalleNivel
+import com.proyecto.movil.view.PantallaGrabacion
 import com.proyecto.movil.view.PantallaLectura
 import com.proyecto.movil.view.PantallaMapa
 import com.proyecto.movil.view.PantallaPerfiles
@@ -122,14 +123,20 @@ class MainActivity : ComponentActivity() {
                             "lectura/{nivelId}",
                             arguments = listOf(navArgument("nivelId") { type = NavType.IntType })
                         ) { backStackEntry ->
-                            val contexto = LocalContext.current
                             PantallaLectura(
                                 nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
                                 onVolver = { navController.popBackStack() },
-                                onGrabar = {
-                                    // La grabación de voz es la US-11 (T-313 a T-317)
-                                    Toast.makeText(contexto, "La grabación llega en la próxima versión", Toast.LENGTH_SHORT).show()
-                                }
+                                onGrabar = { lectura -> navController.navigate("grabar/${lectura.nivelId}") }
+                            )
+                        }
+                        // US-11: grabar la lectura. T-313 pide antes el permiso del micrófono
+                        composable(
+                            "grabar/{nivelId}",
+                            arguments = listOf(navArgument("nivelId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            PantallaGrabacion(
+                                nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
+                                onVolver = { navController.popBackStack() }
                             )
                         }
                     }
