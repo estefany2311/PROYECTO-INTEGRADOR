@@ -17,7 +17,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.view.PantallaCodigoAula
+import com.proyecto.movil.model.TipoReto
 import com.proyecto.movil.view.PantallaDetalleNivel
+import com.proyecto.movil.view.PantallaLectura
 import com.proyecto.movil.view.PantallaMapa
 import com.proyecto.movil.view.PantallaPerfiles
 import com.proyecto.movil.view.PantallaPin
@@ -104,10 +106,29 @@ class MainActivity : ComponentActivity() {
                             PantallaDetalleNivel(
                                 nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
                                 onVolver = { navController.popBackStack() },
-                                onComenzar = {
-                                    // Las pantallas de cada reto (lectura, escritura, oralidad) llegan en el
-                                    // Sprint 3 (US-10, T-219). Por ahora se avisa para la demo.
-                                    Toast.makeText(contexto, "El reto se abre en la próxima versión", Toast.LENGTH_SHORT).show()
+                                onComenzar = { detalle ->
+                                    // T-219: los retos de lectura y de oralidad empiezan leyendo un texto.
+                                    // El reto de escritura (consigna y editor) llega en US-17 y US-18.
+                                    if (detalle.reto == TipoReto.LECTURA || detalle.reto == TipoReto.ORALIDAD) {
+                                        navController.navigate("lectura/${detalle.id}")
+                                    } else {
+                                        Toast.makeText(contexto, "El reto de escritura se abre en la próxima versión", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+                        }
+                        // T-219 (US-10): el texto para leer en voz alta, con letra grande
+                        composable(
+                            "lectura/{nivelId}",
+                            arguments = listOf(navArgument("nivelId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val contexto = LocalContext.current
+                            PantallaLectura(
+                                nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
+                                onVolver = { navController.popBackStack() },
+                                onGrabar = {
+                                    // La grabación de voz es la US-11 (T-313 a T-317)
+                                    Toast.makeText(contexto, "La grabación llega en la próxima versión", Toast.LENGTH_SHORT).show()
                                 }
                             )
                         }
