@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from .models import ConfiguracionEvaluacion
+from .models import ConfiguracionEvaluacion, HistorialConfiguracion
 
 # Límites permitidos (los mismos del modelo y de la pantalla)
 PRECISION = (0, 100)
@@ -58,3 +58,13 @@ class ConfiguracionEvaluacionSerializer(serializers.ModelSerializer):
         if errores:
             raise serializers.ValidationError(errores)
         return attrs
+
+
+
+class HistorialConfiguracionSerializer(serializers.ModelSerializer):
+    usuario = serializers.CharField(source='usuario.username', read_only=True, default=None)
+    campo_texto = serializers.CharField(source='get_campo_display', read_only=True)
+
+    class Meta:
+        model = HistorialConfiguracion
+        fields = ['id', 'grado', 'campo', 'campo_texto', 'valor_anterior', 'valor_nuevo', 'usuario', 'fecha']

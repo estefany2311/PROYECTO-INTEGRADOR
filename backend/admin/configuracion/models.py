@@ -47,3 +47,36 @@ class ConfiguracionEvaluacion(models.Model):
 
     def __str__(self):
         return f'{self.grado}.° grado · precisión {self.umbral_precision} %'
+
+
+
+class HistorialConfiguracion(models.Model):
+    """T-252: cada cambio de la configuración de voz (quién, qué y cuándo)."""
+
+    CAMPOS = [
+        ('umbral_precision', 'Precisión mínima'),
+        ('tolerancia_pausas', 'Pausas toleradas'),
+        ('palabras_por_minuto', 'Palabras por minuto'),
+    ]
+
+    grado = models.PositiveSmallIntegerField()
+    campo = models.CharField(max_length=40, choices=CAMPOS)
+    valor_anterior = models.CharField(max_length=20)
+    valor_nuevo = models.CharField(max_length=20)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cambios_configuracion',
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'historial_configuracion'
+        ordering = ['-fecha', '-id']
+        verbose_name = 'Cambio de configuración'
+        verbose_name_plural = 'Historial de configuración'
+
+    def __str__(self):
+        return f'{self.grado}.° · {self.get_campo_display()}: {self.valor_anterior} → {self.valor_nuevo}'
