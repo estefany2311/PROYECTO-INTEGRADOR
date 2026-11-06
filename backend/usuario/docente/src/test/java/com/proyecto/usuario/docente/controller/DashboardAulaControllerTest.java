@@ -49,7 +49,7 @@ class DashboardAulaControllerTest {
 
     @Test
     void devuelveElDashboardDelAula() throws Exception {
-        when(service.dashboardAula(1L, 10L, false)).thenReturn(new DashboardAulaResponse(
+        when(service.dashboardAula(1L, 10L, null, null, false)).thenReturn(new DashboardAulaResponse(
                 10L,
                 "Aula Rural",
                 List.of(new GradoResponse((short) 1, "1.º")),
@@ -83,7 +83,7 @@ class DashboardAulaControllerTest {
 
     @Test
     void soloRojoPideAlServicioSoloLasTarjetasRojas() throws Exception {
-        when(service.dashboardAula(1L, 10L, true)).thenReturn(new DashboardAulaResponse(
+        when(service.dashboardAula(1L, 10L, null, null, true)).thenReturn(new DashboardAulaResponse(
                 10L,
                 "Aula Rural",
                 List.of(new GradoResponse((short) 1, "1.º")),
@@ -106,8 +106,40 @@ class DashboardAulaControllerTest {
     }
 
     @Test
+    void reenviaLosFiltrosDeGradoYCompetencia() throws Exception {
+        when(service.dashboardAula(1L, 10L, (short) 1, "lectura", false))
+                .thenReturn(new DashboardAulaResponse(
+                        10L,
+                        "Aula Rural",
+                        List.of(new GradoResponse((short) 1, "1.º")),
+                        new ResumenDashboardResponse(1, 0, 0, 1, 0),
+                        List.of(new EstudianteDashboardResponse(
+                                9L, "Ester", "Prueba", (short) 1, "1.º", 50,
+                                ColorSemaforo.ROJO,
+                                List.of(new CompetenciaPromedioResponse("lectura", 50.0)))),
+                        List.of(new CompetenciaPromedioResponse("lectura", 50.0)),
+                        50,
+                        ColorSemaforo.ROJO));
+
+        mvc.perform(get("/api/docente/aulas/10/dashboard")
+                        .param("gradoId", "1")
+                        .param("competencia", "lectura")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.grados.length()").value(1))
+                .andExpect(jsonPath("$.estudiantes.length()").value(1))
+                .andExpect(jsonPath("$.estudiantes[0].gradoId").value(1))
+                .andExpect(jsonPath("$.estudiantes[0].competencias.length()").value(1))
+                .andExpect(jsonPath("$.estudiantes[0].competencias[0].competencia")
+                        .value("lectura"))
+                .andExpect(jsonPath("$.promediosPorCompetencia.length()").value(1))
+                .andExpect(jsonPath("$.promediosPorCompetencia[0].competencia")
+                        .value("lectura"));
+    }
+
+    @Test
     void aulaDeOtroDocenteDevuelve403() throws Exception {
-        when(service.dashboardAula(1L, 10L, false))
+        when(service.dashboardAula(1L, 10L, null, null, false))
                 .thenThrow(new ReglaNegocioException(
                         "El aula no pertenece al docente", HttpStatus.FORBIDDEN));
 
@@ -118,7 +150,7 @@ class DashboardAulaControllerTest {
 
     @Test
     void aulaInexistenteDevuelve404() throws Exception {
-        when(service.dashboardAula(1L, 99L, false))
+        when(service.dashboardAula(1L, 99L, null, null, false))
                 .thenThrow(new ReglaNegocioException(
                         "El aula no existe", HttpStatus.NOT_FOUND));
 

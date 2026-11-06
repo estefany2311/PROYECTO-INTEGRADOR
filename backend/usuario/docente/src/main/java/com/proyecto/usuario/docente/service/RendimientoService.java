@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +34,9 @@ import java.util.stream.Collectors;
  */
 @Service
 public class RendimientoService {
+
+    private static final List<String> COMPETENCIAS_VALIDAS =
+            List.of("lectura", "escritura", "oralidad");
 
     private final EvaluacionRepository evaluacionRepository;
     private final AulaRepository aulaRepository;
@@ -72,13 +77,37 @@ public class RendimientoService {
      */
     @Transactional(readOnly = true)
     public DashboardAulaResponse dashboardAula(Long docenteId, Long aulaId, boolean soloRojo) {
+        return dashboardAula(docenteId, aulaId, null, null, soloRojo);
+    }
+
+    /**
+     * T-286 (US-28): dashboard filtrado por grado y competencia.
+     * El grado limita los alumnos, el resumen y los promedios; la competencia
+     * limita las evaluaciones que alimentan el promedio y el color de cada
+     * alumno. Ambos filtros son opcionales y se combinan con {@code soloRojo}.
+     */
+    @Transactional(readOnly = true)
+    public DashboardAulaResponse dashboardAula(Long docenteId, Long aulaId,
+                                                Short gradoId, String competencia,
+                                                boolean soloRojo) {
         Aula aula = buscarAulaDelDocente(docenteId, aulaId);
+        validarGrado(aula, gradoId);
+        String competenciaFiltro = normalizarCompetencia(competencia);
 
         List<Estudiante> estudiantes = estudianteRepository
-                .findByAulaIdAndActivoTrueOrderByApellidosAscNombresAsc(aulaId);
+                .findByAulaIdAndActivoTrueOrderByApellidosAscNombresAsc(aulaId).stream()
+                .filter(estudiante -> gradoId == null
+                        || gradoId.equals(estudiante.getGrado().getId()))
+                .toList();
+        Set<Long> idsEstudiantes = estudiantes.stream()
+                .map(Estudiante::getId)
+                .collect(Collectors.toSet());
 
         Map<Long, List<PromedioCompetenciaResponse>> promediosPorEstudiante =
                 promediosDelAula(aulaId).stream()
+                        .filter(promedio -> idsEstudiantes.contains(promedio.estudianteId()))
+                        .filter(promedio -> competenciaFiltro == null
+                                || competenciaFiltro.equals(promedio.competencia()))
                         .collect(Collectors.groupingBy(PromedioCompetenciaResponse::estudianteId));
 
         int enNivelEsperado = 0;
@@ -110,10 +139,10 @@ public class RendimientoService {
             if (promedio != null) {
                 promediosGenerales.add(promedio);
             }
-            for (CompetenciaPromedioResponse competencia : competencias) {
+            for (CompetenciaPromedioResponse competenciaItem : competencias) {
                 acumuladosPorCompetencia
-                        .computeIfAbsent(competencia.competencia(), clave -> new ArrayList<>())
-                        .add(competencia.promedio());
+                        .computeIfAbsent(competenciaItem.competencia(), clave -> new ArrayList<>())
+                        .add(competenciaItem.promedio());
             }
 
             estudiantesResponse.add(new EstudianteDashboardResponse(
@@ -164,6 +193,26 @@ public class RendimientoService {
                 promediosAula,
                 promedioGeneral == null ? null : (int) Math.round(promedioGeneral),
                 colorGeneral);
+    }
+
+    private void validarGrado(Aula aula, Short gradoId) {
+        if (gradoId != null && aula.getGrados().stream()
+                .noneMatch(grado -> grado.getId().equals(gradoId))) {
+            throw new ReglaNegocioException(
+                    "El grado no corresponde a esta aula", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private String normalizarCompetencia(String competencia) {
+        if (competencia == null || competencia.isBlank()) {
+            return null;
+        }
+        String normalizada = competencia.trim().toLowerCase(Locale.ROOT);
+        if (!COMPETENCIAS_VALIDAS.contains(normalizada)) {
+            throw new ReglaNegocioException(
+                    "La competencia no es válida", HttpStatus.BAD_REQUEST);
+        }
+        return normalizada;
     }
 
     private List<PromedioCompetenciaResponse> promediosDelAula(Long aulaId) {

@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * T-282 (US-30): {@code ?soloRojo=true} devuelve solo las tarjetas rojas;
  * el resumen y los promedios siguen siendo del aula completa.
+ *
+ * T-286 (US-28): {@code ?gradoId=1&competencia=lectura} filtra los alumnos,
+ * el resumen y los promedios por el grado y la competencia indicados.
  */
 @RestController
 @RequestMapping("/api/docente/aulas/{aulaId}/dashboard")
@@ -36,7 +39,9 @@ public class DashboardAulaController {
     @GetMapping
     public DashboardAulaResponse obtener(@RequestHeader("X-Docente-Id") Long docenteId,
                                          @PathVariable Long aulaId,
+                                         @RequestParam(required = false) Short gradoId,
+                                         @RequestParam(required = false) String competencia,
                                          @RequestParam(defaultValue = "false") boolean soloRojo) {
-        return service.dashboardAula(docenteId, aulaId, soloRojo);
+        return service.dashboardAula(docenteId, aulaId, gradoId, competencia, soloRojo);
     }
 }

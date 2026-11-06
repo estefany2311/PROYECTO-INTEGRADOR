@@ -1,6 +1,7 @@
 package com.proyecto.usuario.docente.service;
 
 import com.proyecto.usuario.docente.dto.DashboardAulaResponse;
+import com.proyecto.usuario.docente.exception.ReglaNegocioException;
 import com.proyecto.usuario.docente.model.Aula;
 import com.proyecto.usuario.docente.model.ColorSemaforo;
 import com.proyecto.usuario.docente.model.Estudiante;
@@ -14,12 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,12 +43,14 @@ class RendimientoServiceTest {
 
     RendimientoService service;
     Grado grado;
+    Grado gradoUno;
 
     @BeforeEach
     void preparar() {
         service = new RendimientoService(
                 evaluacionRepository, aulaRepository, estudianteRepository, new SemaforoService());
         grado = new Grado((short) 5, "5.º", (short) 5);
+        gradoUno = new Grado((short) 1, "1.º", (short) 1);
     }
 
     @Test
@@ -81,7 +86,104 @@ class RendimientoServiceTest {
         assertEquals(68, soloRojo.promedioGeneral().intValue());
     }
 
+    @Test
+    void filtraPorGradoYMantieneLosGradosDelAulaParaElSelector() {
+        Aula aula = mock(Aula.class);
+        when(aula.getId()).thenReturn(10L);
+        when(aula.getNombre()).thenReturn("Aula Rural");
+        when(aula.getDocenteId()).thenReturn(1L);
+        when(aula.getGrados()).thenReturn(Set.of(grado, gradoUno));
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+
+        Estudiante minji = mock(Estudiante.class);
+        when(minji.getGrado()).thenReturn(grado);
+        Estudiante ester = estudiante(9L, "Ester", "Prueba", gradoUno);
+        when(estudianteRepository.findByAulaIdAndActivoTrueOrderByApellidosAscNombresAsc(10L))
+                .thenReturn(List.of(minji, ester));
+        PromedioCompetenciaProjection promedioMinji = promedio(7L, "lectura", 85.0);
+        PromedioCompetenciaProjection promedioEster = promedio(9L, "lectura", 50.0);
+        when(evaluacionRepository.promediosPorAula(10L))
+                .thenReturn(List.of(promedioMinji, promedioEster));
+
+        DashboardAulaResponse filtrado = service.dashboardAula(
+                1L, 10L, (short) 1, null, false);
+
+        assertEquals(1, filtrado.estudiantes().size());
+        assertEquals("Ester", filtrado.estudiantes().get(0).nombres());
+        assertEquals((short) 1, filtrado.estudiantes().get(0).gradoId());
+        assertEquals(1, filtrado.resumen().totalEstudiantes());
+        assertEquals(1, filtrado.resumen().necesitanRefuerzo());
+        assertEquals(50, filtrado.promedioGeneral().intValue());
+        assertEquals(2, filtrado.grados().size());
+        assertEquals(1, filtrado.promediosPorCompetencia().size());
+        assertEquals("lectura", filtrado.promediosPorCompetencia().get(0).competencia());
+        assertEquals(50.0, filtrado.promediosPorCompetencia().get(0).promedio(), 0.001);
+    }
+
+    @Test
+    void filtraPorCompetenciaYRecalculaPromedioYColor() {
+        Aula aula = mock(Aula.class);
+        when(aula.getId()).thenReturn(10L);
+        when(aula.getNombre()).thenReturn("Aula Rural");
+        when(aula.getDocenteId()).thenReturn(1L);
+        when(aula.getGrados()).thenReturn(Set.of(grado));
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+
+        Estudiante minji = estudiante(7L, "Minji", "Prueba");
+        when(estudianteRepository.findByAulaIdAndActivoTrueOrderByApellidosAscNombresAsc(10L))
+                .thenReturn(List.of(minji));
+        PromedioCompetenciaProjection promedioLectura = promedio(7L, "lectura", 50.0);
+        PromedioCompetenciaProjection promedioEscritura = promedio(7L, "escritura", 90.0);
+        when(evaluacionRepository.promediosPorAula(10L))
+                .thenReturn(List.of(promedioLectura, promedioEscritura));
+
+        DashboardAulaResponse filtrado = service.dashboardAula(
+                1L, 10L, null, "lectura", false);
+
+        assertEquals(1, filtrado.estudiantes().size());
+        assertEquals(50, filtrado.estudiantes().get(0).promedio());
+        assertEquals(ColorSemaforo.ROJO, filtrado.estudiantes().get(0).color());
+        assertEquals(1, filtrado.estudiantes().get(0).competencias().size());
+        assertEquals("lectura",
+                filtrado.estudiantes().get(0).competencias().get(0).competencia());
+        assertEquals(1, filtrado.promediosPorCompetencia().size());
+        assertEquals("lectura", filtrado.promediosPorCompetencia().get(0).competencia());
+        assertEquals(50, filtrado.promedioGeneral().intValue());
+        assertEquals(ColorSemaforo.ROJO, filtrado.colorGeneral());
+    }
+
+    @Test
+    void gradoFueraDelAulaDevuelve400() {
+        Aula aula = mock(Aula.class);
+        when(aula.getDocenteId()).thenReturn(1L);
+        when(aula.getGrados()).thenReturn(Set.of(grado));
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                () -> service.dashboardAula(1L, 10L, (short) 1, null, false));
+
+        assertEquals(HttpStatus.BAD_REQUEST, error.getEstado());
+        assertEquals("El grado no corresponde a esta aula", error.getMessage());
+    }
+
+    @Test
+    void competenciaInvalidaDevuelve400() {
+        Aula aula = mock(Aula.class);
+        when(aula.getDocenteId()).thenReturn(1L);
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                () -> service.dashboardAula(1L, 10L, null, "matematica", false));
+
+        assertEquals(HttpStatus.BAD_REQUEST, error.getEstado());
+        assertEquals("La competencia no es válida", error.getMessage());
+    }
+
     private Estudiante estudiante(Long id, String nombres, String apellidos) {
+        return estudiante(id, nombres, apellidos, grado);
+    }
+
+    private Estudiante estudiante(Long id, String nombres, String apellidos, Grado grado) {
         Estudiante estudiante = mock(Estudiante.class);
         when(estudiante.getId()).thenReturn(id);
         when(estudiante.getNombres()).thenReturn(nombres);

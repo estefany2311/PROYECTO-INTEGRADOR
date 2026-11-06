@@ -61,9 +61,11 @@ El color se decide con el promedio ya redondeado: 79.5 pasa a 80 (verde) y 59.5 
 | T-282 | Parámetro `soloRojo` del endpoint: filtra las tarjetas rojas. |
 | T-283 | Sección destacada con los alumnos en rojo. |
 | T-284 | Contador de alumnos en rojo en el menú. |
+| T-286 | Parámetros `gradoId` y `competencia` del endpoint: filtran alumnos, resumen y promedios. |
 
 El parámetro `soloRojo=true` del endpoint (T-282) filtra solo la lista de tarjetas;
-el resumen y los promedios del aula siguen calculándose con todos los alumnos activos.
+el resumen y los promedios del aula se calculan con los alumnos activos que pasan los
+filtros de grado y competencia (T-286).
 
 El color nunca debe ser la única señal: siempre va acompañado de ícono y texto (T-280).
 
@@ -92,3 +94,21 @@ El menú lateral muestra un contador junto a **Dashboard** con la cantidad de al
 del aula activa. Usa el parámetro `soloRojo=true` de T-282 y se oculta cuando el contador es
 cero. La selección de aula se comparte entre el dashboard y el menú; si todavía no hay una
 selección, se usa la primera aula del docente.
+
+## 11. Filtros por grado y competencia (T-286)
+
+El endpoint del dashboard acepta dos parámetros opcionales:
+
+- `gradoId`: limita los alumnos, el resumen y los promedios al grado indicado. La lista
+  `grados` sigue devolviendo todos los grados del aula para que el selector pueda cambiarse.
+- `competencia`: acepta `lectura`, `escritura` u `oralidad`. Solo las evaluaciones de esa
+  competencia alimentan el promedio y el color de cada alumno, el resumen y los promedios
+  del aula. Si se omite o se envía vacío, no se filtra por competencia.
+
+Los dos filtros se combinan entre sí y con `soloRojo=true`. `soloRojo` sigue limitando
+únicamente la lista de tarjetas; el resumen y los promedios se calculan con los filtros de
+grado y competencia activos.
+
+Un grado que no pertenece al aula devuelve `400` con `El grado no corresponde a esta aula`.
+Una competencia fuera de `lectura`, `escritura` u `oralidad` devuelve `400` con
+`La competencia no es válida`.
