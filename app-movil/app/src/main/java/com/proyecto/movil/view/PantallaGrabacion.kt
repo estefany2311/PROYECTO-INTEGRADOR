@@ -52,7 +52,8 @@ import com.proyecto.movil.viewmodel.LecturaViewModel
  * T-313: primero se asegura el permiso del micrófono con la explicación de Kiko.
  * T-314: graba en WAV, mono, 16 kHz (decisión de T-327). El texto sigue a la vista mientras graba.
  * T-315: indicador visual mientras graba (micrófono que late con la voz, punto rojo y barra de tiempo).
- * Llegan después: límite de 2 minutos (T-316), guardado temporal (T-317)
+ * T-316: a los 2 minutos se detiene sola; en los últimos 15 s avisa cuánto queda.
+ * Llegan después: guardado temporal (T-317)
  * y escuchar/enviar la grabación (US-12, US-13).
  */
 @Composable
@@ -162,6 +163,17 @@ private fun ControlesGrabacion(
                 ) { Text("Terminar", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
             }
             is GrabacionUiState.Grabada -> {
+                // T-316: si se detuvo sola, se le explica por qué
+                if (estado.porTiempo) {
+                    Text(
+                        "Se terminó el tiempo de ${formatoTiempo(GrabacionViewModel.DURACION_MAXIMA_MS)}",
+                        fontSize = 22.sp,
+                        textAlign = TextAlign.Center,
+                        color = ColoresAventura.TextoOscuro,
+                        modifier = Modifier.testTag("aviso_tiempo_terminado")
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
                 Text(
                     "¡Listo! Grabaste ${formatoTiempo(estado.grabacion.duracionMs)}",
                     fontSize = 28.sp,
@@ -246,7 +258,19 @@ private fun BarraTiempo(duracionMs: Long) {
             modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)).testTag("barra_tiempo")
         )
         Spacer(Modifier.height(4.dp))
-        Text("Puedes leer hasta ${formatoTiempo(maximo)}", fontSize = 16.sp, color = ColoresAventura.TextoOscuro)
+        // T-316: en los últimos 15 segundos se avisa cuánto falta, para que no lo tome por sorpresa
+        val restante = maximo - duracionMs
+        if (restante <= GrabacionViewModel.AVISO_FINAL_MS) {
+            Text(
+                "¡Te quedan ${formatoTiempo(restante.coerceAtLeast(0) + 999)}!",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = ColoresAventura.Rojo,
+                modifier = Modifier.testTag("aviso_tiempo_final")
+            )
+        } else {
+            Text("Puedes leer hasta ${formatoTiempo(maximo)}", fontSize = 16.sp, color = ColoresAventura.TextoOscuro)
+        }
     }
 }
 
@@ -279,6 +303,16 @@ fun GrabacionListaPreview() = GrabacionDePrueba(GrabacionUiState.Lista)
 @Preview(name = "Grabación · grabando", widthDp = 800, heightDp = 1280, showBackground = true)
 @Composable
 fun GrabacionGrabandoPreview() = GrabacionDePrueba(GrabacionUiState.Grabando(12_000, 0.4f))
+
+@Preview(name = "Grabación · últimos segundos", widthDp = 800, heightDp = 1280, showBackground = true)
+@Composable
+fun GrabacionUltimosSegundosPreview() = GrabacionDePrueba(GrabacionUiState.Grabando(108_000, 0.4f))
+
+@Preview(name = "Grabación · se acabó el tiempo", widthDp = 800, heightDp = 1280, showBackground = true)
+@Composable
+fun GrabacionPorTiempoPreview() = GrabacionDePrueba(
+    GrabacionUiState.Grabada(com.proyecto.movil.model.audio.Grabacion(java.io.File("nivel_1.wav"), 120_000), porTiempo = true)
+)
 
 @Composable
 private fun GrabacionDePrueba(estado: GrabacionUiState) {

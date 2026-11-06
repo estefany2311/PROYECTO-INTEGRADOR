@@ -18,7 +18,8 @@ import java.io.File
 sealed class GrabacionUiState {
     object Lista : GrabacionUiState()                                        // todavía no graba
     data class Grabando(val duracionMs: Long, val nivelVoz: Float) : GrabacionUiState()
-    data class Grabada(val grabacion: Grabacion) : GrabacionUiState()
+    // T-316: porTiempo = true cuando se detuvo sola al llegar a los 2 minutos
+    data class Grabada(val grabacion: Grabacion, val porTiempo: Boolean = false) : GrabacionUiState()
     data class Error(val mensaje: String) : GrabacionUiState()
 }
 
@@ -45,16 +46,27 @@ class GrabacionViewModel(
         // Cada 0,1 s se actualizan el tiempo y el volumen (los usa el indicador de T-315)
         reloj = viewModelScope.launch {
             while (isActive && grabadora.grabando) {
-                _uiState.value = GrabacionUiState.Grabando(grabadora.duracionMs, grabadora.nivelVoz)
+                val duracion = grabadora.duracionMs
+                // T-316: al llegar a los 2 minutos se detiene sola, así el audio no crece sin control
+                if (duracion >= DURACION_MAXIMA_MS) {
+                    detenerGrabacion(porTiempo = true)
+                    break
+                }
+                _uiState.value = GrabacionUiState.Grabando(duracion, grabadora.nivelVoz)
                 delay(INTERVALO_MS)
             }
         }
     }
 
+    // El niño toca "Terminar"
     fun terminar() {
         reloj?.cancel()
+        detenerGrabacion(porTiempo = false)
+    }
+
+    private fun detenerGrabacion(porTiempo: Boolean) {
         val grabacion = grabadora.detener()
-        _uiState.value = if (grabacion != null && grabacion.duracionMs > 0) GrabacionUiState.Grabada(grabacion)
+        _uiState.value = if (grabacion != null && grabacion.duracionMs > 0) GrabacionUiState.Grabada(grabacion, porTiempo)
         else GrabacionUiState.Error(MENSAJE_SIN_AUDIO)
     }
 
@@ -70,8 +82,10 @@ class GrabacionViewModel(
 
     companion object {
         const val INTERVALO_MS = 100L
-        // T-315: tiempo máximo de una lectura (lo usa la barra de tiempo; T-316 detiene la grabación ahí)
+        // T-315/T-316: tiempo máximo de una lectura (decisión de T-327). La barra lo muestra y ahí se detiene sola
         const val DURACION_MAXIMA_MS = 120_000L
+        // T-316: en los últimos 15 segundos se avisa cuánto queda
+        const val AVISO_FINAL_MS = 15_000L
         const val MENSAJE_SIN_MICROFONO = "No pudimos usar el micrófono. Pide ayuda a tu profesor."
         const val MENSAJE_SIN_AUDIO = "No escuchamos nada. Intenta grabar otra vez."
     }
