@@ -62,6 +62,7 @@ El color se decide con el promedio ya redondeado: 79.5 pasa a 80 (verde) y 59.5 
 | T-283 | Sección destacada con los alumnos en rojo. |
 | T-284 | Contador de alumnos en rojo en el menú. |
 | T-286 | Parámetros `gradoId` y `competencia` del endpoint: filtran alumnos, resumen y promedios. |
+| T-287 | Selectores de grado y competencia en el dashboard. |
 
 El parámetro `soloRojo=true` del endpoint (T-282) filtra solo la lista de tarjetas;
 el resumen y los promedios del aula se calculan con los alumnos activos que pasan los
@@ -112,3 +113,7 @@ grado y competencia activos.
 Un grado que no pertenece al aula devuelve `400` con `El grado no corresponde a esta aula`.
 Una competencia fuera de `lectura`, `escritura` u `oralidad` devuelve `400` con
 `La competencia no es válida`.
+
+La pantalla `/dashboard` expone estos filtros mediante selectores de grado y competencia
+(T-287); al cambiar de aula se limpia el grado seleccionado porque los grados pertenecen
+a cada aula.

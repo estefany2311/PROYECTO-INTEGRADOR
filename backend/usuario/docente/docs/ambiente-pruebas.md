@@ -59,10 +59,11 @@ npm run preview -- --port 4173
 | Leyenda del semáforo en `/dashboard` | 4 estados visibles · color + ícono + texto |
 | Aviso "Necesitan refuerzo" en `/dashboard` (aula 9) | visible · 1 alumno rojo · Ester · 50/100 |
 | Contador de alumnos en rojo en el menú (aula 9) | badge 1 junto a Dashboard |
+| Filtros de grado y competencia en `/dashboard` (aula 9) | Grado 1.º → Ester · Lectura → solo lectura · sin alumnos → aviso de filtros |
 | Build de producción con `npm run preview` | 200 |
 | CORS desde `http://localhost:5173` | 200 · `Access-Control-Allow-Origin` correcto |
 | Backend `SemaforoServiceTest` | 8/8 · límites, redondeo y sin evaluaciones |
 | Backend `RendimientoServiceTest` | 5/5 · filtros de grado y competencia, validaciones y `soloRojo` |
 | Backend `DashboardAulaControllerTest` | 5/5 · reenvío de filtros y errores |
 | Backend `test` | 160/160 |
-| Frontend `test`, `lint`, `build` | 49/49 · OK · OK |
+| Frontend `test`, `lint`, `build` | 58/58 · OK · OK |

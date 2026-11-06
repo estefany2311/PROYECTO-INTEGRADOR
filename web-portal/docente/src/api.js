@@ -19,9 +19,12 @@ export const listarGrados = () => pedir("/api/docente/grados");
 export const listarAulas = () => pedir("/api/docente/aulas");
 // T-279: dashboard del aula (endpoint de T-278).
 // T-284: filtro soloRojo del endpoint (T-282) para el contador del menú.
+// T-287: filtros de grado y competencia del dashboard (T-286).
 export const listarDashboardAula = (aulaId, filtros = {}) => {
   const params = new URLSearchParams();
   if (filtros.soloRojo) params.set("soloRojo", "true");
+  if (filtros.gradoId) params.set("gradoId", filtros.gradoId);
+  if (filtros.competencia) params.set("competencia", filtros.competencia);
   const query = params.toString();
   return pedir(`/api/docente/aulas/${aulaId}/dashboard${query ? `?${query}` : ""}`);
 };

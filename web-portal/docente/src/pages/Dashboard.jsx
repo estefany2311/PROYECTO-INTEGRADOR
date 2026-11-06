@@ -83,6 +83,8 @@ export default function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [recarga, setRecarga] = useState(0);
+  const [gradoId, setGradoId] = useState("");
+  const [competencia, setCompetencia] = useState("");
 
   const aula = aulas.find((a) => String(a.id) === String(aulaId));
 
@@ -117,12 +119,15 @@ export default function Dashboard() {
     };
   }, []);
 
-  // Cada cambio de aula (o recarga manual) vuelve a pedir el dashboard.
+  // Cada cambio de aula, filtro o recarga manual vuelve a pedir el dashboard.
   useEffect(() => {
     if (!aulaId) return;
     let vigente = true;
+    const filtros = {};
+    if (gradoId) filtros.gradoId = gradoId;
+    if (competencia) filtros.competencia = competencia;
 
-    listarDashboardAula(aulaId)
+    listarDashboardAula(aulaId, filtros)
       .then((data) => {
         if (vigente) setDashboard(data);
       })
@@ -136,7 +141,7 @@ export default function Dashboard() {
     return () => {
       vigente = false;
     };
-  }, [aulaId, recarga]);
+  }, [aulaId, gradoId, competencia, recarga]);
 
   const actualizar = () => {
     refrescarAulaSeleccionada();
@@ -148,6 +153,14 @@ export default function Dashboard() {
 
   const cambiarAula = (id) => {
     setAulaId(id);
+    setGradoId("");
+    setDashboard(null);
+    setCargando(true);
+    setError(null);
+  };
+
+  const cambiarFiltro = (setter, valor) => {
+    setter(valor);
     setDashboard(null);
     setCargando(true);
     setError(null);
@@ -170,6 +183,7 @@ export default function Dashboard() {
   const grados = dashboard?.grados || aula?.grados || [];
   const gradosTexto = grados.map((g) => g.nombre).filter(Boolean).join(", ");
   const detallesAula = [aulaNombre, gradosTexto].filter(Boolean).join(" · ");
+  const hayFiltros = Boolean(gradoId || competencia);
 
   const tarjetas = [
     {
@@ -232,19 +246,51 @@ export default function Dashboard() {
 
         <div className="dashboard-controles">
           {aulas.length > 0 && (
-            <div>
-              <label htmlFor="aula-dashboard" className="visually-hidden">Aula</label>
-              <select
-                id="aula-dashboard"
-                className="form-select rounded-pill"
-                value={aulaId}
-                onChange={(ev) => cambiarAula(ev.target.value)}
-              >
-                {aulas.map((a) => (
-                  <option key={a.id} value={a.id}>{a.nombre}</option>
-                ))}
-              </select>
-            </div>
+            <>
+              <div>
+                <label htmlFor="aula-dashboard" className="visually-hidden">Aula</label>
+                <select
+                  id="aula-dashboard"
+                  className="form-select rounded-pill"
+                  value={aulaId}
+                  onChange={(ev) => cambiarAula(ev.target.value)}
+                >
+                  {aulas.map((a) => (
+                    <option key={a.id} value={a.id}>{a.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="grado-dashboard" className="visually-hidden">Grado</label>
+                <select
+                  id="grado-dashboard"
+                  className="form-select rounded-pill"
+                  value={gradoId}
+                  onChange={(ev) => cambiarFiltro(setGradoId, ev.target.value)}
+                >
+                  <option value="">Todos los grados</option>
+                  {grados.map((grado) => (
+                    <option key={grado.id} value={grado.id}>{grado.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="competencia-dashboard" className="visually-hidden">
+                  Competencia
+                </label>
+                <select
+                  id="competencia-dashboard"
+                  className="form-select rounded-pill"
+                  value={competencia}
+                  onChange={(ev) => cambiarFiltro(setCompetencia, ev.target.value)}
+                >
+                  <option value="">Todas las competencias</option>
+                  {COMPETENCIAS.map(({ clave, texto }) => (
+                    <option key={clave} value={clave}>{texto}</option>
+                  ))}
+                </select>
+              </div>
+            </>
           )}
           <button
             type="button"
@@ -324,11 +370,19 @@ export default function Dashboard() {
 
           {estudiantes.length === 0 ? (
             <div className="panel text-center py-5">
-              <p className="mb-1 fw-semibold">Aún no hay alumnos activos en esta aula.</p>
-              <p className="text-secondary mb-3">
-                Agrega alumnos para comenzar a ver su rendimiento.
+              <p className="mb-1 fw-semibold">
+                {hayFiltros
+                  ? "No hay alumnos para los filtros seleccionados."
+                  : "Aún no hay alumnos activos en esta aula."}
               </p>
-              <Link to="/alumnos" className="btn btn-primary">Ir a Alumnos</Link>
+              <p className="text-secondary mb-3">
+                {hayFiltros
+                  ? "Prueba con otro grado o competencia."
+                  : "Agrega alumnos para comenzar a ver su rendimiento."}
+              </p>
+              {!hayFiltros && (
+                <Link to="/alumnos" className="btn btn-primary">Ir a Alumnos</Link>
+              )}
             </div>
           ) : (
             <section className="dashboard-alumnos" aria-label="Rendimiento por estudiante">
@@ -337,6 +391,7 @@ export default function Dashboard() {
                   key={estudiante.id}
                   estudiante={estudiante}
                   aulaNombre={aulaNombre}
+                  competencia={competencia}
                 />
               ))}
             </section>
@@ -348,6 +403,7 @@ export default function Dashboard() {
             colorGeneral={colorGeneral}
             totalEstudiantes={resumen.totalEstudiantes}
             aulaNombre={aulaNombre}
+            competencia={competencia}
           />
         </>
       ) : null}
@@ -408,9 +464,14 @@ function SeccionRefuerzo({ estudiantes }) {
   );
 }
 
-function TarjetaEstudiante({ estudiante, aulaNombre }) {
+function TarjetaEstudiante({ estudiante, aulaNombre, competencia }) {
   const semaforo = datosSemaforo(estudiante.color);
   const nombre = nombreCompleto(estudiante);
+  const competenciaTexto =
+    COMPETENCIAS.find(({ clave }) => clave === competencia)?.texto || "";
+  const competenciasVisibles = competencia
+    ? COMPETENCIAS.filter(({ clave }) => clave === competencia)
+    : COMPETENCIAS;
   const sinDatos = !estudiante.competencias || estudiante.competencias.length === 0;
 
   return (
@@ -445,11 +506,13 @@ function TarjetaEstudiante({ estudiante, aulaNombre }) {
       {sinDatos ? (
         <p className="alumno-sin-datos mb-0">
           <i className="bi bi-info-circle me-1" aria-hidden="true" />
-          Aún no tiene evaluaciones registradas.
+          {competenciaTexto
+            ? `Aún no tiene evaluaciones de ${competenciaTexto.toLowerCase()}.`
+            : "Aún no tiene evaluaciones registradas."}
         </p>
       ) : (
         <div className="alumno-competencias">
-          {COMPETENCIAS.map(({ clave, texto }) => {
+          {competenciasVisibles.map(({ clave, texto }) => {
             const valor = competenciaDe(estudiante, clave);
             return (
               <div className="competencia-line" key={clave}>
@@ -473,15 +536,28 @@ function PromediosAula({
   colorGeneral,
   totalEstudiantes,
   aulaNombre,
+  competencia,
 }) {
   const semaforo = datosSemaforo(colorGeneral);
+  const competenciaTexto =
+    COMPETENCIAS.find(({ clave }) => clave === competencia)?.texto || "";
+  const competenciaNombre = competenciaTexto.toLowerCase();
+  const competenciasVisibles = competencia
+    ? COMPETENCIAS.filter(({ clave }) => clave === competencia)
+    : COMPETENCIAS;
+  const titulo = competenciaNombre
+    ? `Promedio de ${competenciaNombre} del aula`
+    : "Promedio del aula por competencia";
+  const etiquetaGeneral = competenciaNombre
+    ? `Promedio de ${competenciaNombre} del aula`
+    : "Promedio general del aula";
 
   return (
     <section className="panel dashboard-aula-panel" aria-labelledby="titulo-promedios-aula">
       <div className="dashboard-aula-head">
         <div>
           <h2 id="titulo-promedios-aula" className="h5 fw-bold mb-1">
-            Promedio del aula por competencia
+            {titulo}
           </h2>
           <p className="text-secondary mb-0 small">
             {textoEstudiantes(totalEstudiantes)} · {aulaNombre}
@@ -493,13 +569,15 @@ function PromediosAula({
         <div className="dashboard-vacio">
           <i className="bi bi-bar-chart-line" aria-hidden="true" />
           <p className="mb-0">
-            Aún no hay evaluaciones para calcular los promedios del aula.
+            {competenciaNombre
+              ? `Aún no hay evaluaciones de ${competenciaNombre} para calcular el promedio del aula.`
+              : "Aún no hay evaluaciones para calcular los promedios del aula."}
           </p>
         </div>
       ) : (
         <div className="dashboard-aula-grid">
           <div className="dashboard-aula-barras">
-            {COMPETENCIAS.map(({ clave, texto }) => {
+            {competenciasVisibles.map(({ clave, texto }) => {
               const promedio = promedios.find((p) => p.competencia === clave)?.promedio;
               return (
                 <div className="aula-barra-line" key={clave}>
@@ -516,7 +594,7 @@ function PromediosAula({
           </div>
 
           <div className="dashboard-promedio-general">
-            <span className="dashboard-promedio-label">Promedio general del aula</span>
+            <span className="dashboard-promedio-label">{etiquetaGeneral}</span>
             <div className="dashboard-promedio-valor">
               <b>{promedioVisible(promedioGeneral)}</b>
               <span>/100</span>

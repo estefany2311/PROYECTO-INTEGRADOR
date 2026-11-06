@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -177,6 +177,64 @@ const DASHBOARD2 = {
   colorGeneral: "verde",
 };
 
+const DASHBOARD_GRADO_UNO = {
+  ...DASHBOARD,
+  resumen: {
+    totalEstudiantes: 1,
+    enNivelEsperado: 0,
+    enProceso: 0,
+    necesitanRefuerzo: 1,
+    sinEvaluaciones: 0,
+  },
+  estudiantes: [DASHBOARD.estudiantes[2]],
+  promediosPorCompetencia: [
+    { competencia: "lectura", promedio: 55 },
+    { competencia: "escritura", promedio: 50 },
+    { competencia: "oralidad", promedio: 45 },
+  ],
+  promedioGeneral: 50,
+  colorGeneral: "rojo",
+};
+
+const colorPorPromedio = (promedio) => {
+  if (promedio >= 80) return "verde";
+  if (promedio >= 60) return "amarillo";
+  return "rojo";
+};
+
+const DASHBOARD_LECTURA = {
+  ...DASHBOARD,
+  estudiantes: DASHBOARD.estudiantes.map((estudiante) => {
+    const lectura = estudiante.competencias.find(
+      (competencia) => competencia.competencia === "lectura"
+    );
+    return {
+      ...estudiante,
+      promedio: lectura.promedio,
+      color: colorPorPromedio(lectura.promedio),
+      competencias: [lectura],
+    };
+  }),
+  promediosPorCompetencia: [{ competencia: "lectura", promedio: 73.33 }],
+  promedioGeneral: 73,
+  colorGeneral: "amarillo",
+};
+
+const DASHBOARD_SIN_ALUMNOS = {
+  ...DASHBOARD,
+  resumen: {
+    totalEstudiantes: 0,
+    enNivelEsperado: 0,
+    enProceso: 0,
+    necesitanRefuerzo: 0,
+    sinEvaluaciones: 0,
+  },
+  estudiantes: [],
+  promediosPorCompetencia: [],
+  promedioGeneral: null,
+  colorGeneral: "gris",
+};
+
 const mostrar = () =>
   render(
     <MemoryRouter>
@@ -260,7 +318,7 @@ describe("Pantalla del dashboard (T-279)", () => {
     await userEvent.selectOptions(screen.getByLabelText("Aula"), "20");
 
     expect(await screen.findByText("Luis Costa")).toBeInTheDocument();
-    expect(api.listarDashboardAula).toHaveBeenCalledWith("20");
+    expect(api.listarDashboardAula).toHaveBeenCalledWith("20", {});
   });
 
   it("muestra el estado vacío cuando no hay aulas", async () => {
@@ -375,5 +433,106 @@ describe("Sección Necesitan refuerzo (T-283)", () => {
       screen.queryByRole("region", { name: "Necesitan refuerzo" })
     ).not.toBeInTheDocument();
     expect(api.listarDashboardAula).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("Filtros de grado y competencia (T-287)", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    api.listarAulas.mockResolvedValue([AULA]);
+  });
+
+  it("envía el grado elegido al endpoint y actualiza el dashboard", async () => {
+    api.listarDashboardAula
+      .mockResolvedValueOnce(DASHBOARD)
+      .mockResolvedValueOnce(DASHBOARD_GRADO_UNO);
+    mostrar();
+
+    expect(await screen.findByText("minji prueba")).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Grado"), "1");
+
+    expect(await screen.findByText("Ester Zavala")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText("minji prueba")).not.toBeInTheDocument()
+    );
+    expect(screen.getByLabelText("Grado")).toHaveValue("1");
+    expect(api.listarDashboardAula).toHaveBeenLastCalledWith("10", {
+      gradoId: "1",
+    });
+  });
+
+  it("envía la competencia elegida y muestra solo esa competencia", async () => {
+    api.listarDashboardAula
+      .mockResolvedValueOnce(DASHBOARD)
+      .mockResolvedValueOnce(DASHBOARD_LECTURA);
+    mostrar();
+
+    expect(await screen.findByText("minji prueba")).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Competencia"), "lectura");
+
+    const panel = await screen.findByRole("region", {
+      name: "Promedio de lectura del aula",
+    });
+    expect(within(panel).getByText("Lectura")).toBeInTheDocument();
+    expect(within(panel).queryByText("Escritura")).not.toBeInTheDocument();
+    expect(within(panel).queryByText("Oralidad")).not.toBeInTheDocument();
+
+    const tarjeta = screen.getByText("minji prueba").closest("article");
+    expect(within(tarjeta).getByText("Lectura")).toBeInTheDocument();
+    expect(within(tarjeta).queryByText("Escritura")).not.toBeInTheDocument();
+    expect(within(tarjeta).queryByText("Oralidad")).not.toBeInTheDocument();
+    expect(api.listarDashboardAula).toHaveBeenLastCalledWith("10", {
+      competencia: "lectura",
+    });
+  });
+
+  it("limpia el grado al cambiar de aula", async () => {
+    api.listarAulas.mockResolvedValue([AULA, AULA2]);
+    api.listarDashboardAula
+      .mockResolvedValueOnce(DASHBOARD)
+      .mockResolvedValueOnce(DASHBOARD_GRADO_UNO)
+      .mockResolvedValueOnce(DASHBOARD2);
+    mostrar();
+
+    expect(await screen.findByText("minji prueba")).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Grado"), "1");
+    expect(await screen.findByText("Ester Zavala")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText("minji prueba")).not.toBeInTheDocument()
+    );
+    expect(screen.getByLabelText("Grado")).toHaveValue("1");
+
+    await userEvent.selectOptions(screen.getByLabelText("Aula"), "20");
+
+    expect(await screen.findByText("Luis Costa")).toBeInTheDocument();
+    expect(screen.getByLabelText("Grado")).toHaveValue("");
+    expect(api.listarDashboardAula).toHaveBeenLastCalledWith("20", {});
+  });
+
+  it("muestra un estado vacío propio cuando los filtros no devuelven alumnos", async () => {
+    api.listarDashboardAula
+      .mockResolvedValueOnce(DASHBOARD)
+      .mockResolvedValueOnce(DASHBOARD_SIN_ALUMNOS);
+    mostrar();
+
+    expect(await screen.findByText("minji prueba")).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Grado"), "1");
+
+    expect(
+      await screen.findByText("No hay alumnos para los filtros seleccionados.")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Prueba con otro grado o competencia.")
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /ir a alumnos/i })
+    ).not.toBeInTheDocument();
+    expect(api.listarDashboardAula).toHaveBeenLastCalledWith("10", {
+      gradoId: "1",
+    });
   });
 });
