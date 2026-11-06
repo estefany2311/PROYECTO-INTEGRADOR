@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -28,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * T-278: ruta, forma de la respuesta y errores del dashboard del aula.
+ * T-289 (US-28): reenvío de filtros combinados al servicio.
  */
 @ExtendWith(MockitoExtension.class)
 class DashboardAulaControllerTest {
@@ -135,6 +137,39 @@ class DashboardAulaControllerTest {
                 .andExpect(jsonPath("$.promediosPorCompetencia.length()").value(1))
                 .andExpect(jsonPath("$.promediosPorCompetencia[0].competencia")
                         .value("lectura"));
+    }
+
+    @Test
+    void reenviaLosFiltrosCombinadosConSoloRojo() throws Exception {
+        when(service.dashboardAula(1L, 10L, (short) 1, "lectura", true))
+                .thenReturn(new DashboardAulaResponse(
+                        10L,
+                        "Aula Rural",
+                        List.of(new GradoResponse((short) 1, "1.º")),
+                        new ResumenDashboardResponse(1, 0, 0, 1, 0),
+                        List.of(new EstudianteDashboardResponse(
+                                9L, "Ester", "Prueba", (short) 1, "1.º", 50,
+                                ColorSemaforo.ROJO,
+                                List.of(new CompetenciaPromedioResponse("lectura", 50.0)))),
+                        List.of(new CompetenciaPromedioResponse("lectura", 50.0)),
+                        50,
+                        ColorSemaforo.ROJO));
+
+        mvc.perform(get("/api/docente/aulas/10/dashboard")
+                        .param("gradoId", "1")
+                        .param("competencia", "lectura")
+                        .param("soloRojo", "true")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estudiantes.length()").value(1))
+                .andExpect(jsonPath("$.estudiantes[0].nombres").value("Ester"))
+                .andExpect(jsonPath("$.estudiantes[0].color").value("rojo"))
+                .andExpect(jsonPath("$.resumen.totalEstudiantes").value(1))
+                .andExpect(jsonPath("$.resumen.necesitanRefuerzo").value(1))
+                .andExpect(jsonPath("$.promediosPorCompetencia[0].competencia")
+                        .value("lectura"));
+
+        verify(service).dashboardAula(1L, 10L, (short) 1, "lectura", true);
     }
 
     @Test

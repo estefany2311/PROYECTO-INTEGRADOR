@@ -206,6 +206,21 @@ const DASHBOARD_GRADO_UNO = {
   colorGeneral: "rojo",
 };
 
+const DASHBOARD_GRADO_UNO_LECTURA = {
+  ...DASHBOARD_GRADO_UNO,
+  estudiantes: [
+    {
+      ...DASHBOARD.estudiantes[2],
+      promedio: 55,
+      color: "rojo",
+      competencias: [{ competencia: "lectura", promedio: 55 }],
+    },
+  ],
+  promediosPorCompetencia: [{ competencia: "lectura", promedio: 55 }],
+  promedioGeneral: 55,
+  colorGeneral: "rojo",
+};
+
 const colorPorPromedio = (promedio) => {
   if (promedio >= 80) return "verde";
   if (promedio >= 60) return "amarillo";
@@ -631,5 +646,44 @@ describe("Persistencia de filtros (T-288)", () => {
     expect(screen.getByLabelText("Aula")).toHaveValue("20");
     expect(screen.getByLabelText("Grado")).toHaveValue("");
     expect(api.listarDashboardAula).toHaveBeenLastCalledWith("20", {});
+  });
+});
+
+describe("Filtros combinados (T-289)", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    api.listarAulas.mockResolvedValue([AULA]);
+  });
+
+  it("combina grado y competencia en una sola consulta", async () => {
+    api.listarDashboardAula
+      .mockResolvedValueOnce(DASHBOARD)
+      .mockResolvedValueOnce(DASHBOARD_GRADO_UNO)
+      .mockResolvedValueOnce(DASHBOARD_GRADO_UNO_LECTURA);
+    mostrar();
+
+    expect(await screen.findByText("minji prueba")).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Grado"), "1");
+    expect(await screen.findByText("Ester Zavala")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText("minji prueba")).not.toBeInTheDocument()
+    );
+
+    await userEvent.selectOptions(screen.getByLabelText("Competencia"), "lectura");
+
+    const panel = await screen.findByRole("region", {
+      name: "Promedio de lectura del aula",
+    });
+    expect(screen.getByText("Ester Zavala")).toBeInTheDocument();
+    expect(screen.queryByText("minji prueba")).not.toBeInTheDocument();
+    expect(screen.queryByText("Breysi Zavala")).not.toBeInTheDocument();
+    expect(within(panel).getByText("Lectura")).toBeInTheDocument();
+    expect(within(panel).queryByText("Escritura")).not.toBeInTheDocument();
+    expect(within(panel).queryByText("Oralidad")).not.toBeInTheDocument();
+    expect(api.listarDashboardAula).toHaveBeenLastCalledWith("10", {
+      gradoId: "1",
+      competencia: "lectura",
+    });
   });
 });

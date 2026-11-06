@@ -64,7 +64,7 @@ npm run preview -- --port 4173
 | Build de producción con `npm run preview` | 200 |
 | CORS desde `http://localhost:5173` | 200 · `Access-Control-Allow-Origin` correcto |
 | Backend `SemaforoServiceTest` | 8/8 · límites, redondeo y sin evaluaciones |
-| Backend `RendimientoServiceTest` | 5/5 · filtros de grado y competencia, validaciones y `soloRojo` |
-| Backend `DashboardAulaControllerTest` | 5/5 · reenvío de filtros y errores |
-| Backend `test` | 160/160 |
-| Frontend `test`, `lint`, `build` | 61/61 · OK · OK |
+| Backend `RendimientoServiceTest` | 7/7 · filtros combinados, validaciones y `soloRojo` |
+| Backend `DashboardAulaControllerTest` | 6/6 · reenvío de filtros combinados y errores |
+| Backend `test` | 163/163 |
+| Frontend `test`, `lint`, `build` | 62/62 · OK · OK |
