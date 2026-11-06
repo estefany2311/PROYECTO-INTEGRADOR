@@ -53,8 +53,8 @@ import com.proyecto.movil.viewmodel.LecturaViewModel
  * T-314: graba en WAV, mono, 16 kHz (decisión de T-327). El texto sigue a la vista mientras graba.
  * T-315: indicador visual mientras graba (micrófono que late con la voz, punto rojo y barra de tiempo).
  * T-316: a los 2 minutos se detiene sola; en los últimos 15 s avisa cuánto queda.
- * Llegan después: guardado temporal (T-317)
- * y escuchar/enviar la grabación (US-12, US-13).
+ * T-317: la grabación queda guardada en la tablet (por estudiante) hasta que se envíe.
+ * Llegan después: escuchar y enviar la grabación (US-12, US-13).
  */
 @Composable
 fun PantallaGrabacion(
@@ -67,7 +67,10 @@ fun PantallaGrabacion(
         val lectura by lecturaViewModel.uiState.collectAsState()
         val grabacion by grabacionViewModel.uiState.collectAsState()
 
-        LaunchedEffect(nivelId) { lecturaViewModel.cargar(nivelId) }
+        LaunchedEffect(nivelId) {
+            lecturaViewModel.cargar(nivelId)
+            grabacionViewModel.revisarGuardada(nivelId)   // T-317: si ya grabó este nivel, se muestra
+        }
 
         ContenidoGrabacion(
             lectura = (lectura as? LecturaUiState.Exito)?.lectura,
@@ -175,11 +178,19 @@ private fun ControlesGrabacion(
                     Spacer(Modifier.height(4.dp))
                 }
                 Text(
-                    "¡Listo! Grabaste ${formatoTiempo(estado.grabacion.duracionMs)}",
+                    if (estado.deAntes) "Ya grabaste esta lectura (${formatoTiempo(estado.grabacion.duracionMs)})"
+                    else "¡Listo! Grabaste ${formatoTiempo(estado.grabacion.duracionMs)}",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = ColoresAventura.Turquesa,
                     modifier = Modifier.testTag("grabacion_terminada")
+                )
+                // T-317: le da tranquilidad saber que no se pierde aunque cierre la app
+                Text(
+                    "Tu grabación quedó guardada en la tablet",
+                    fontSize = 16.sp,
+                    color = ColoresAventura.TextoOscuro,
+                    modifier = Modifier.testTag("aviso_guardada")
                 )
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(
@@ -312,6 +323,12 @@ fun GrabacionUltimosSegundosPreview() = GrabacionDePrueba(GrabacionUiState.Graba
 @Composable
 fun GrabacionPorTiempoPreview() = GrabacionDePrueba(
     GrabacionUiState.Grabada(com.proyecto.movil.model.audio.Grabacion(java.io.File("nivel_1.wav"), 120_000), porTiempo = true)
+)
+
+@Preview(name = "Grabación · guardada de antes", widthDp = 800, heightDp = 1280, showBackground = true)
+@Composable
+fun GrabacionGuardadaPreview() = GrabacionDePrueba(
+    GrabacionUiState.Grabada(com.proyecto.movil.model.audio.Grabacion(java.io.File("nivel_1.wav"), 45_000), deAntes = true)
 )
 
 @Composable

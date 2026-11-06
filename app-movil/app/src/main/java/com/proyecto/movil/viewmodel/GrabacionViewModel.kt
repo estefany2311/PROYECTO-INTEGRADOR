@@ -3,6 +3,7 @@ package com.proyecto.movil.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.proyecto.movil.Dependencias
+import com.proyecto.movil.model.audio.AlmacenGrabaciones
 import com.proyecto.movil.model.audio.GrabadoraWav
 import com.proyecto.movil.model.audio.Grabacion
 import com.proyecto.movil.model.audio.IGrabadora
@@ -12,32 +13,48 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.io.File
 
 // T-314: lo que muestra la parte de grabación
 sealed class GrabacionUiState {
     object Lista : GrabacionUiState()                                        // todavía no graba
     data class Grabando(val duracionMs: Long, val nivelVoz: Float) : GrabacionUiState()
     // T-316: porTiempo = true cuando se detuvo sola al llegar a los 2 minutos
-    data class Grabada(val grabacion: Grabacion, val porTiempo: Boolean = false) : GrabacionUiState()
+    // T-317: deAntes = true cuando es una grabación que ya estaba guardada en la tablet
+    data class Grabada(
+        val grabacion: Grabacion,
+        val porTiempo: Boolean = false,
+        val deAntes: Boolean = false
+    ) : GrabacionUiState()
     data class Error(val mensaje: String) : GrabacionUiState()
 }
 
 class GrabacionViewModel(
     private val grabadora: IGrabadora = GrabadoraWav(),
-    private val carpeta: File = Dependencias.carpetaGrabaciones
+    private val almacen: AlmacenGrabaciones = Dependencias.almacenGrabaciones,
+    // T-317: cada niño tiene sus grabaciones (varios usan la misma tablet)
+    private val estudianteId: () -> Long = { Dependencias.almacenSesion.leer()?.estudianteId ?: 0L }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<GrabacionUiState>(GrabacionUiState.Lista)
     val uiState: StateFlow<GrabacionUiState> = _uiState
 
     private var reloj: Job? = null
+    private var nivelActual = 0
+
+    // T-317: al abrir la pantalla, si ya grabó este nivel se le muestra su grabación
+    fun revisarGuardada(nivelId: Int) {
+        if (_uiState.value !is GrabacionUiState.Lista) return
+        almacen.guardada(estudianteId(), nivelId)?.let {
+            _uiState.value = GrabacionUiState.Grabada(it, deAntes = true)
+        }
+    }
 
     fun grabar(nivelId: Int) {
         if (grabadora.grabando) return
+        nivelActual = nivelId
         try {
-            // Una grabación por nivel: si vuelve a grabar, reemplaza la anterior (T-317 decide cuánto se guarda)
-            grabadora.iniciar(File(carpeta, "nivel_$nivelId.wav"))
+            // Se graba en un archivo aparte; la grabación anterior se reemplaza solo si esta sale bien (T-317)
+            grabadora.iniciar(almacen.archivoEnCurso(estudianteId(), nivelId))
         } catch (e: Exception) {
             _uiState.value = GrabacionUiState.Error(MENSAJE_SIN_MICROFONO)
             return
@@ -66,18 +83,27 @@ class GrabacionViewModel(
 
     private fun detenerGrabacion(porTiempo: Boolean) {
         val grabacion = grabadora.detener()
-        _uiState.value = if (grabacion != null && grabacion.duracionMs > 0) GrabacionUiState.Grabada(grabacion, porTiempo)
-        else GrabacionUiState.Error(MENSAJE_SIN_AUDIO)
+        _uiState.value = if (grabacion != null && grabacion.duracionMs > 0) {
+            // T-317: queda guardada en la tablet hasta que se envíe (US-13)
+            GrabacionUiState.Grabada(almacen.guardar(estudianteId(), nivelActual, grabacion), porTiempo)
+        } else {
+            almacen.descartar(estudianteId(), nivelActual)
+            GrabacionUiState.Error(MENSAJE_SIN_AUDIO)
+        }
     }
 
+    // Vuelve al botón de grabar. La grabación guardada sigue ahí hasta que una nueva salga bien.
     fun grabarOtraVez() {
         _uiState.value = GrabacionUiState.Lista
     }
 
-    // Si el niño sale de la pantalla mientras graba, se apaga el micrófono
+    // Si el niño sale de la pantalla mientras graba, se apaga el micrófono y se borra la grabación a medias
     override fun onCleared() {
         reloj?.cancel()
-        grabadora.detener()
+        if (grabadora.grabando) {
+            grabadora.detener()
+            almacen.descartar(estudianteId(), nivelActual)
+        }
     }
 
     companion object {
