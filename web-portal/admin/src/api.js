@@ -101,3 +101,18 @@ export const listarConfiguracionEvaluacion = () => pedir("/configuracion/evaluac
 
 export const actualizarConfiguracionEvaluacion = (grado, datos) =>
   pedir(`/configuracion/evaluacion/${grado}/`, { method: "PATCH", body: JSON.stringify(datos) });
+
+
+
+export const listarConfiguracionOrtografia = () => pedir("/configuracion/ortografia/");
+
+export const actualizarConfiguracionOrtografia = (grado, datos) =>
+  pedir(`/configuracion/ortografia/${grado}/`, { method: "PATCH", body: JSON.stringify(datos) });
+
+export const listarPalabrasPermitidas = () => pedir("/configuracion/palabras/");
+
+export const agregarPalabraPermitida = (palabra) =>
+  pedir("/configuracion/palabras/", { method: "POST", body: JSON.stringify({ palabra }) });
+
+export const quitarPalabraPermitida = (id) =>
+  pedir(`/configuracion/palabras/${id}/`, { method: "DELETE" });

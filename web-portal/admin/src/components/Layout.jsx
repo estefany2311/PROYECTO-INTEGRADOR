@@ -27,7 +27,10 @@ const SECCIONES = [
 
     {
     titulo: "Configuración IA",
-    enlaces: [{ id: "configuracion", icono: "bi-mic", texto: "Evaluación de voz", disponible: true }],
+        enlaces: [
+      { id: "configuracion", icono: "bi-mic", texto: "Evaluación de voz", disponible: true },
+      { id: "ortografia", modulo: "configuracion", icono: "bi-spellcheck", texto: "Ortografía", disponible: true },
+    ],
   },
 ];
 
@@ -43,7 +46,9 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
     // Un enlace disponible solo se muestra si el rol tiene el permiso "<modulo>.ver"
-  const puedeVer = (enlace) => !enlace.disponible || enlace.libre || permisos.includes(`${enlace.id}.ver`);
+    // "modulo" permite que una pestaña use el permiso de otro módulo (ej. Ortografía → configuracion.ver)
+  const puedeVer = (enlace) =>
+    !enlace.disponible || enlace.libre || permisos.includes(`${enlace.modulo ?? enlace.id}.ver`);
 
   const navegar = (id) => {
     onNavegar(id);

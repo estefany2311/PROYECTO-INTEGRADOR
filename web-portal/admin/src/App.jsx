@@ -12,6 +12,7 @@ import ConfiguracionVoz from "./pages/ConfiguracionVoz";
 import { obtenerMiPerfil, sesion } from "./api";
 import "./App.css";
 import "./estilos/paginas/index.css";
+import ConfiguracionOrtografia from "./pages/ConfiguracionOrtografia";
 
 export default function App() {
   const [autenticado, setAutenticado] = useState(Boolean(sesion.token));
@@ -76,7 +77,10 @@ export default function App() {
   }
 
   // Inicio siempre está disponible; las demás páginas requieren el permiso "<modulo>.ver"
-  const paginaActual = pagina === "dashboard" || puede(`${pagina}.ver`) ? pagina : "dashboard";
+    // Pestañas que usan el permiso de otro módulo
+  const MODULO_DE_PAGINA = { ortografia: "configuracion" };
+  const paginaActual =
+    pagina === "dashboard" || puede(`${MODULO_DE_PAGINA[pagina] ?? pagina}.ver`) ? pagina : "dashboard";
 
   return (
     <Layout
@@ -112,6 +116,9 @@ export default function App() {
       {paginaActual === "catalogo" && <Catalogo onNoAutorizado={sesionExpirada} puede={puede} />}
 
       {paginaActual === "configuracion" && <ConfiguracionVoz onNoAutorizado={sesionExpirada} puede={puede} />}
+
+      
+      {paginaActual === "ortografia" && <ConfiguracionOrtografia onNoAutorizado={sesionExpirada} puede={puede} />}
 
       {paginaActual === "usuarios" && (
         <Usuarios onNoAutorizado={sesionExpirada} puede={puede} usuarioActualId={perfil.id} />
