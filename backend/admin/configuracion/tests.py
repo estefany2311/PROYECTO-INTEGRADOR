@@ -179,12 +179,12 @@ class ConfiguracionOrtografiaModelTests(TestCase):
     """T-254: modelos de la validación ortográfica."""
 
     def test_valores_por_defecto_del_modelo(self):
-        config = ConfiguracionOrtografia.objects.create(grado=3)
+        config = ConfiguracionOrtografia(grado=3)  # sin guardar: solo revisa los valores del modelo
         self.assertEqual(config.sensibilidad, 'media')
         self.assertFalse(config.ignorar_tildes)
 
     def test_str_muestra_grado_sensibilidad_y_tildes(self):
-        config = ConfiguracionOrtografia.objects.create(grado=1, sensibilidad='baja', ignorar_tildes=True)
+        config = ConfiguracionOrtografia.objects.get(grado=1)
         self.assertEqual(str(config), '1.° grado · sensibilidad baja · sin marcar tildes')
 
     def test_sensibilidad_invalida_no_es_valida(self):
@@ -197,10 +197,24 @@ class ConfiguracionOrtografiaModelTests(TestCase):
             ConfiguracionOrtografia(grado=7).full_clean()
 
     def test_palabra_se_guarda_sin_espacios(self):
-        palabra = PalabraPermitida.objects.create(palabra='  chacra  ')
-        self.assertEqual(palabra.palabra, 'chacra')
+        palabra = PalabraPermitida.objects.create(palabra='  kiwicha  ')
+        self.assertEqual(palabra.palabra, 'kiwicha')
 
     def test_no_se_repite_la_misma_palabra_aunque_cambien_mayusculas(self):
-        PalabraPermitida.objects.create(palabra='Ayllu')
+        PalabraPermitida.objects.create(palabra='Quinua')
         with self.assertRaises(IntegrityError):
-            PalabraPermitida.objects.create(palabra='ayllu')
+            PalabraPermitida.objects.create(palabra='quinua')
+
+    
+    # --- T-255: datos iniciales ---
+    def test_hay_valores_ortograficos_para_los_6_grados(self):
+        valores = list(ConfiguracionOrtografia.objects.values_list('grado', 'sensibilidad', 'ignorar_tildes'))
+        self.assertEqual(valores, [
+            (1, 'baja', True), (2, 'baja', True),
+            (3, 'media', False), (4, 'media', False),
+            (5, 'alta', False), (6, 'alta', False),
+        ])
+
+    def test_hay_palabras_permitidas_iniciales(self):
+        self.assertTrue(PalabraPermitida.objects.filter(palabra='chacra').exists())
+        self.assertEqual(PalabraPermitida.objects.count(), 6)
