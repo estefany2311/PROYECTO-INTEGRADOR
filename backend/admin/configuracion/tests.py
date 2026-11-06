@@ -218,3 +218,107 @@ class ConfiguracionOrtografiaModelTests(TestCase):
     def test_hay_palabras_permitidas_iniciales(self):
         self.assertTrue(PalabraPermitida.objects.filter(palabra='chacra').exists())
         self.assertEqual(PalabraPermitida.objects.count(), 6)
+
+
+
+
+class ConfiguracionOrtografiaAPITests(APITestCase):
+    """T-258 (US-52): endpoint de ortografía y palabras permitidas."""
+    URL = '/api/configuracion/ortografia/'
+    URL_PALABRAS = '/api/configuracion/palabras/'
+
+    def setUp(self):
+        rol_admin, _ = Rol.objects.get_or_create(nombre='ADMIN')
+        rol_docente, _ = Rol.objects.get_or_create(nombre='DOCENTE')
+        self.admin = Usuario.objects.create_user(
+            username='admin', email='admin@test.pe', password='clave-segura-1', rol=rol_admin)
+        self.docente = Usuario.objects.create_user(
+            username='rquispe', email='rquispe@test.pe', password='clave-segura-1', rol=rol_docente)
+        self.client.force_authenticate(self.admin)
+
+    # --- Ortografía por grado ---
+    def test_admin_lista_los_6_grados(self):
+        resp = self.client.get(self.URL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual([c['grado'] for c in resp.data], [1, 2, 3, 4, 5, 6])
+
+    def test_admin_cambia_sensibilidad_y_tildes(self):
+        resp = self.client.patch(f'{self.URL}3/', {'sensibilidad': 'alta', 'ignorar_tildes': True}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        config = ConfiguracionOrtografia.objects.get(grado=3)
+        self.assertEqual((config.sensibilidad, config.ignorar_tildes), ('alta', True))
+        self.assertEqual(config.actualizado_por, self.admin)
+
+    def test_sensibilidad_invalida_devuelve_400_con_mensaje(self):
+        resp = self.client.patch(f'{self.URL}3/', {'sensibilidad': 'extrema'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['sensibilidad'][0]), 'La sensibilidad debe ser baja, media o alta.')
+
+    def test_no_se_pueden_crear_ni_borrar_grados(self):
+        crear = self.client.post(self.URL, {'grado': 7, 'sensibilidad': 'alta'}, format='json')
+        borrar = self.client.delete(f'{self.URL}3/')
+        self.assertIn(crear.status_code, (status.HTTP_403_FORBIDDEN, status.HTTP_405_METHOD_NOT_ALLOWED))
+        self.assertEqual(borrar.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(ConfiguracionOrtografia.objects.count(), 6)
+
+    def test_grado_que_no_existe_devuelve_404(self):
+        self.assertEqual(self.client.get(f'{self.URL}7/').status_code, status.HTTP_404_NOT_FOUND)
+
+    # --- Palabras permitidas ---
+    def test_admin_lista_las_palabras_iniciales(self):
+        resp = self.client.get(self.URL_PALABRAS)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn('chacra', [p['palabra'] for p in resp.data])
+
+    def test_admin_agrega_una_palabra(self):
+        resp = self.client.post(self.URL_PALABRAS, {'palabra': 'quinua'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        palabra = PalabraPermitida.objects.get(palabra='quinua')
+        self.assertEqual(palabra.creado_por, self.admin)
+
+    def test_espacios_de_mas_se_limpian(self):
+        resp = self.client.post(self.URL_PALABRAS, {'palabra': '  Machu   Picchu  '}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.data['palabra'], 'Machu Picchu')
+
+    def test_palabra_repetida_devuelve_400_aunque_cambien_mayusculas(self):
+        resp = self.client.post(self.URL_PALABRAS, {'palabra': 'CHACRA'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['palabra'][0]), 'Esa palabra ya está en la lista.')
+
+    def test_palabra_muy_corta_devuelve_400(self):
+        resp = self.client.post(self.URL_PALABRAS, {'palabra': 'a'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('al menos 2 letras', str(resp.data['palabra'][0]))
+
+    def test_palabra_con_numeros_devuelve_400(self):
+        resp = self.client.post(self.URL_PALABRAS, {'palabra': 'chacra2'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Solo se permiten letras', str(resp.data['palabra'][0]))
+
+    def test_admin_quita_una_palabra(self):
+        palabra = PalabraPermitida.objects.get(palabra='wawa')
+        resp = self.client.delete(f'{self.URL_PALABRAS}{palabra.id}/')
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(PalabraPermitida.objects.filter(id=palabra.id).exists())
+
+    # --- Permisos ---
+    def test_sin_token_devuelve_401(self):
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(self.client.get(self.URL_PALABRAS).status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_docente_no_puede_ver_ni_cambiar_la_ortografia(self):
+        self.client.force_authenticate(self.docente)
+        self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_403_FORBIDDEN)
+        resp = self.client.patch(f'{self.URL}3/', {'sensibilidad': 'baja'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_docente_no_puede_agregar_ni_quitar_palabras(self):
+        self.client.force_authenticate(self.docente)
+        palabra = PalabraPermitida.objects.get(palabra='apu')
+        agregar = self.client.post(self.URL_PALABRAS, {'palabra': 'quinua'}, format='json')
+        quitar = self.client.delete(f'{self.URL_PALABRAS}{palabra.id}/')
+        self.assertEqual(agregar.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(quitar.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(PalabraPermitida.objects.filter(id=palabra.id).exists())
