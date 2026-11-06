@@ -3,8 +3,13 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from usuarios.permissions import TienePermiso
-from .models import ConfiguracionEvaluacion, HistorialConfiguracion
-from .serializers import ConfiguracionEvaluacionSerializer, HistorialConfiguracionSerializer
+from .models import ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion, PalabraPermitida
+from .serializers import (
+    ConfiguracionEvaluacionSerializer,
+    ConfiguracionOrtografiaSerializer,
+    HistorialConfiguracionSerializer,
+    PalabraPermitidaSerializer,
+)
 
 CAMPOS_AUDITADOS = ['umbral_precision', 'tolerancia_pausas', 'palabras_por_minuto']
 
@@ -45,3 +50,33 @@ class ConfiguracionEvaluacionViewSet(viewsets.ModelViewSet):
         if grado.isdigit():
             cambios = cambios.filter(grado=int(grado))
         return Response(HistorialConfiguracionSerializer(cambios[:50], many=True).data)
+
+
+
+
+class ConfiguracionOrtografiaViewSet(viewsets.ModelViewSet):
+    """US-52: sensibilidad y tildes por grado. Solo se consulta y se actualiza."""
+    permission_classes = [TienePermiso]
+    modulo = 'configuracion'
+    serializer_class = ConfiguracionOrtografiaSerializer
+    queryset = ConfiguracionOrtografia.objects.select_related('actualizado_por')
+    lookup_field = 'grado'
+    lookup_value_regex = '[1-6]'
+    http_method_names = ['get', 'put', 'patch']
+
+    def perform_update(self, serializer):
+        serializer.save(actualizado_por=self.request.user)
+
+
+class PalabraPermitidaViewSet(viewsets.ModelViewSet):
+    """US-52: palabras que el validador nunca marca como error."""
+    permission_classes = [TienePermiso]
+    modulo = 'configuracion'
+    serializer_class = PalabraPermitidaSerializer
+    queryset = PalabraPermitida.objects.select_related('creado_por')
+    http_method_names = ['get', 'post', 'delete']
+    # Agregar o quitar una palabra es editar la configuración
+    acciones_personalizadas = {'create': 'editar', 'destroy': 'editar'}
+
+    def perform_create(self, serializer):
+        serializer.save(creado_por=self.request.user)

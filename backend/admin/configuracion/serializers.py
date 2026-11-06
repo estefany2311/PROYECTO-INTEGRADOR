@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from .models import ConfiguracionEvaluacion, HistorialConfiguracion
+from .models import ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion, PalabraPermitida
 
 # Límites permitidos (los mismos del modelo y de la pantalla)
 PRECISION = (0, 100)
@@ -68,3 +68,36 @@ class HistorialConfiguracionSerializer(serializers.ModelSerializer):
     class Meta:
         model = HistorialConfiguracion
         fields = ['id', 'grado', 'campo', 'campo_texto', 'valor_anterior', 'valor_nuevo', 'usuario', 'fecha']
+
+
+
+class ConfiguracionOrtografiaSerializer(serializers.ModelSerializer):
+    actualizado_por = serializers.CharField(source='actualizado_por.username', read_only=True, default=None)
+    sensibilidad = serializers.ChoiceField(
+        choices=ConfiguracionOrtografia.SENSIBILIDADES,
+        error_messages={'invalid_choice': 'La sensibilidad debe ser baja, media o alta.'},
+    )
+
+    class Meta:
+        model = ConfiguracionOrtografia
+        fields = ['grado', 'sensibilidad', 'ignorar_tildes', 'actualizado_por', 'actualizado_en']
+        read_only_fields = ['grado', 'actualizado_por', 'actualizado_en']
+
+
+class PalabraPermitidaSerializer(serializers.ModelSerializer):
+    creado_por = serializers.CharField(source='creado_por.username', read_only=True, default=None)
+
+    class Meta:
+        model = PalabraPermitida
+        fields = ['id', 'palabra', 'creado_por', 'creado_en']
+        read_only_fields = ['id', 'creado_por', 'creado_en']
+
+    def validate_palabra(self, value):
+        palabra = ' '.join(value.split())  # quita espacios de más
+        if len(palabra) < 2:
+            raise serializers.ValidationError('La palabra debe tener al menos 2 letras.')
+        if not all(c.isalpha() or c in " -'" for c in palabra):
+            raise serializers.ValidationError('Solo se permiten letras, espacios, guiones y apóstrofos.')
+        if PalabraPermitida.objects.filter(palabra__iexact=palabra).exists():
+            raise serializers.ValidationError('Esa palabra ya está en la lista.')
+        return palabra
