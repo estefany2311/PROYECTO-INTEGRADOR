@@ -70,6 +70,8 @@ class GrabacionViewModel(
 
     companion object {
         const val INTERVALO_MS = 100L
+        // T-315: tiempo máximo de una lectura (lo usa la barra de tiempo; T-316 detiene la grabación ahí)
+        const val DURACION_MAXIMA_MS = 120_000L
         const val MENSAJE_SIN_MICROFONO = "No pudimos usar el micrófono. Pide ayuda a tu profesor."
         const val MENSAJE_SIN_AUDIO = "No escuchamos nada. Intenta grabar otra vez."
     }

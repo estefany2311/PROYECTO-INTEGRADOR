@@ -1,5 +1,11 @@
 package com.proyecto.movil.view
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -20,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
@@ -43,7 +51,8 @@ import com.proyecto.movil.viewmodel.LecturaViewModel
  * US-11: el niño graba su voz mientras lee el texto. Se abre con "Estoy listo, grabar" (T-219).
  * T-313: primero se asegura el permiso del micrófono con la explicación de Kiko.
  * T-314: graba en WAV, mono, 16 kHz (decisión de T-327). El texto sigue a la vista mientras graba.
- * Llegan después: animación y tiempo (T-315), límite de 2 minutos (T-316), guardado temporal (T-317)
+ * T-315: indicador visual mientras graba (micrófono que late con la voz, punto rojo y barra de tiempo).
+ * Llegan después: límite de 2 minutos (T-316), guardado temporal (T-317)
  * y escuchar/enviar la grabación (US-12, US-13).
  */
 @Composable
@@ -129,13 +138,21 @@ private fun ControlesGrabacion(
                 Text("Toca el micrófono y lee en voz alta", fontSize = 20.sp, color = ColoresAventura.TextoOscuro)
             }
             is GrabacionUiState.Grabando -> {
-                Text(
-                    "Grabando… ${formatoTiempo(estado.duracionMs)}",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ColoresAventura.Rojo,
-                    modifier = Modifier.testTag("tiempo_grabacion")
-                )
+                IndicadorGrabando(estado.nivelVoz)
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    PuntoRojo()
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        "Grabando… ${formatoTiempo(estado.duracionMs)}",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ColoresAventura.Rojo,
+                        modifier = Modifier.testTag("tiempo_grabacion")
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                BarraTiempo(estado.duracionMs)
                 Spacer(Modifier.height(12.dp))
                 Button(
                     onClick = onTerminar,
@@ -174,6 +191,62 @@ private fun ControlesGrabacion(
                 }
             }
         }
+    }
+}
+
+/**
+ * T-315: el micrófono rojo con un aro que crece con la voz del niño. Así ve que la tablet lo está escuchando:
+ * si habla bajito el aro casi no se mueve, si lee fuerte y claro el aro se agranda.
+ */
+@Composable
+private fun IndicadorGrabando(nivelVoz: Float) {
+    // Se suaviza para que no tiemble; con poca voz igual "respira" un poco
+    val voz by animateFloatAsState(targetValue = nivelVoz.coerceIn(0f, 1f), animationSpec = tween(120), label = "voz")
+    val respira by rememberInfiniteTransition(label = "respira").animateFloat(
+        initialValue = 0f, targetValue = 0.08f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "respiracion"
+    )
+    val escala = 1f + respira + voz * 0.55f
+    Box(
+        Modifier.size(170.dp).semantics { contentDescription = "Grabando tu voz" }.testTag("indicador_grabando"),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            Modifier
+                .size(112.dp)
+                .graphicsLayer { scaleX = escala; scaleY = escala }
+                .clip(CircleShape)
+                .background(ColoresAventura.Rojo.copy(alpha = 0.22f))
+        )
+        Box(Modifier.size(112.dp).clip(CircleShape).background(ColoresAventura.Rojo), contentAlignment = Alignment.Center) {
+            Icon(painterResource(R.drawable.ic_microfono), contentDescription = null, tint = Color.White, modifier = Modifier.size(56.dp))
+        }
+    }
+}
+
+// T-315: punto rojo que parpadea, como en cualquier grabadora
+@Composable
+private fun PuntoRojo() {
+    val alfa by rememberInfiniteTransition(label = "punto").animateFloat(
+        initialValue = 1f, targetValue = 0.2f,
+        animationSpec = infiniteRepeatable(tween(600), RepeatMode.Reverse), label = "parpadeo"
+    )
+    Box(Modifier.size(16.dp).graphicsLayer { alpha = alfa }.clip(CircleShape).background(ColoresAventura.Rojo))
+}
+
+// T-315: cuánto tiempo queda de los 2 minutos que dura como máximo una lectura
+@Composable
+private fun BarraTiempo(duracionMs: Long) {
+    val maximo = GrabacionViewModel.DURACION_MAXIMA_MS
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        LinearProgressIndicator(
+            progress = { (duracionMs.toFloat() / maximo).coerceIn(0f, 1f) },
+            color = ColoresAventura.Rojo,
+            trackColor = Color.White,
+            modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)).testTag("barra_tiempo")
+        )
+        Spacer(Modifier.height(4.dp))
+        Text("Puedes leer hasta ${formatoTiempo(maximo)}", fontSize = 16.sp, color = ColoresAventura.TextoOscuro)
     }
 }
 
