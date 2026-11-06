@@ -4,8 +4,18 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import Dashboard from "./Dashboard";
 import * as api from "../api";
+import { seleccionarAula } from "../aulaSeleccionada";
+import {
+  guardarFiltrosDashboard,
+  limpiarFiltrosDashboard,
+} from "../filtrosDashboard";
 
 vi.mock("../api");
+
+beforeEach(() => {
+  seleccionarAula(null);
+  limpiarFiltrosDashboard();
+});
 
 const AULA = {
   id: 10,
@@ -534,5 +544,92 @@ describe("Filtros de grado y competencia (T-287)", () => {
     expect(api.listarDashboardAula).toHaveBeenLastCalledWith("10", {
       gradoId: "1",
     });
+  });
+});
+
+describe("Persistencia de filtros (T-288)", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    api.listarAulas.mockResolvedValue([AULA]);
+  });
+
+  it("restaura el grado y la competencia al volver a la pantalla", async () => {
+    api.listarDashboardAula
+      .mockResolvedValueOnce(DASHBOARD)
+      .mockResolvedValueOnce(DASHBOARD_GRADO_UNO)
+      .mockResolvedValueOnce(DASHBOARD_LECTURA)
+      .mockResolvedValueOnce(DASHBOARD_LECTURA);
+    const { unmount } = mostrar();
+
+    expect(await screen.findByText("minji prueba")).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Grado"), "1");
+    expect(await screen.findByText("Ester Zavala")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText("minji prueba")).not.toBeInTheDocument()
+    );
+
+    await userEvent.selectOptions(screen.getByLabelText("Competencia"), "lectura");
+    expect(
+      await screen.findByRole("region", {
+        name: "Promedio de lectura del aula",
+      })
+    ).toBeInTheDocument();
+
+    unmount();
+    mostrar();
+
+    expect(await screen.findByText("minji prueba")).toBeInTheDocument();
+    expect(screen.getByLabelText("Grado")).toHaveValue("1");
+    expect(screen.getByLabelText("Competencia")).toHaveValue("lectura");
+    expect(api.listarDashboardAula).toHaveBeenLastCalledWith("10", {
+      gradoId: "1",
+      competencia: "lectura",
+    });
+  });
+
+  it("restaura el aula guardada para que el grado siga siendo válido", async () => {
+    seleccionarAula("20");
+    guardarFiltrosDashboard({ gradoId: "2", competencia: "" });
+    api.listarAulas.mockResolvedValue([AULA, AULA2]);
+    api.listarDashboardAula.mockResolvedValue(DASHBOARD2);
+
+    mostrar();
+
+    expect(await screen.findByText("Luis Costa")).toBeInTheDocument();
+    expect(screen.getByLabelText("Aula")).toHaveValue("20");
+    expect(screen.getByLabelText("Grado")).toHaveValue("2");
+    expect(api.listarDashboardAula).toHaveBeenLastCalledWith("20", {
+      gradoId: "2",
+    });
+  });
+
+  it("no restaura el grado de un aula anterior al volver", async () => {
+    api.listarAulas.mockResolvedValue([AULA, AULA2]);
+    api.listarDashboardAula
+      .mockResolvedValueOnce(DASHBOARD)
+      .mockResolvedValueOnce(DASHBOARD_GRADO_UNO)
+      .mockResolvedValueOnce(DASHBOARD2)
+      .mockResolvedValueOnce(DASHBOARD2);
+    const { unmount } = mostrar();
+
+    expect(await screen.findByText("minji prueba")).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText("Grado"), "1");
+    expect(await screen.findByText("Ester Zavala")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText("minji prueba")).not.toBeInTheDocument()
+    );
+
+    await userEvent.selectOptions(screen.getByLabelText("Aula"), "20");
+    expect(await screen.findByText("Luis Costa")).toBeInTheDocument();
+    expect(screen.getByLabelText("Grado")).toHaveValue("");
+
+    unmount();
+    mostrar();
+
+    expect(await screen.findByText("Luis Costa")).toBeInTheDocument();
+    expect(screen.getByLabelText("Aula")).toHaveValue("20");
+    expect(screen.getByLabelText("Grado")).toHaveValue("");
+    expect(api.listarDashboardAula).toHaveBeenLastCalledWith("20", {});
   });
 });

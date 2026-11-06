@@ -2,9 +2,14 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listarAulas, listarDashboardAula } from "../api";
 import {
+  obtenerAulaSeleccionada,
   refrescarAulaSeleccionada,
   seleccionarAula,
 } from "../aulaSeleccionada";
+import {
+  guardarFiltrosDashboard,
+  obtenerFiltrosDashboard,
+} from "../filtrosDashboard";
 
 // T-279 (US-27): dashboard del aula con tarjetas por estudiante.
 // Consume el endpoint de T-278 y reutiliza la regla del semáforo de T-277.
@@ -83,17 +88,26 @@ export default function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [recarga, setRecarga] = useState(0);
-  const [gradoId, setGradoId] = useState("");
-  const [competencia, setCompetencia] = useState("");
+  const [gradoId, setGradoId] = useState(
+    () => obtenerFiltrosDashboard().gradoId
+  );
+  const [competencia, setCompetencia] = useState(
+    () => obtenerFiltrosDashboard().competencia
+  );
 
   const aula = aulas.find((a) => String(a.id) === String(aulaId));
+
+  // T-288: conserva los filtros al salir y volver a la pantalla.
+  useEffect(() => {
+    guardarFiltrosDashboard({ gradoId, competencia });
+  }, [gradoId, competencia]);
 
   // T-284: comparte el aula activa para que el menú muestre su contador en rojo.
   useEffect(() => {
     if (aulaId) seleccionarAula(aulaId);
   }, [aulaId]);
 
-  // Al abrir la pantalla se cargan las aulas y se elige la primera.
+  // Al abrir la pantalla se cargan las aulas y se restaura la última elegida.
   useEffect(() => {
     let vigente = true;
 
@@ -102,7 +116,10 @@ export default function Dashboard() {
         if (!vigente) return;
         setAulas(data);
         if (data.length > 0) {
-          setAulaId(String(data[0].id));
+          const aulaGuardada = obtenerAulaSeleccionada();
+          const inicial =
+            data.find((a) => String(a.id) === String(aulaGuardada)) || data[0];
+          setAulaId(String(inicial.id));
         } else {
           setCargando(false);
         }
