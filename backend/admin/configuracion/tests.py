@@ -5,7 +5,8 @@ from rest_framework.test import APITestCase
 
 from usuarios.models import Rol, Usuario
 from django.db import IntegrityError
-from .models import ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion, PalabraPermitida
+from .models import (ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion,
+                PalabraPermitida, ReglaPuntuacion)
 
 
 class ConfiguracionEvaluacionTests(TestCase):
@@ -322,3 +323,34 @@ class ConfiguracionOrtografiaAPITests(APITestCase):
         self.assertEqual(agregar.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(quitar.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue(PalabraPermitida.objects.filter(id=palabra.id).exists())
+
+
+
+
+class ReglaPuntuacionModelTests(TestCase):
+    """T-259: modelo de reglas de puntuación y sus datos iniciales."""
+
+    def test_hay_una_regla_por_tipo_de_reto(self):
+        tipos = set(ReglaPuntuacion.objects.values_list('tipo_reto', flat=True))
+        self.assertEqual(tipos, {'lectura', 'escritura', 'oralidad'})
+
+    def test_valores_iniciales_de_lectura(self):
+        regla = ReglaPuntuacion.objects.get(tipo_reto='lectura')
+        self.assertEqual(
+            (regla.puntos, regla.umbral_1_estrella, regla.umbral_2_estrellas, regla.umbral_3_estrellas),
+            (10, 50, 70, 90),
+        )
+
+    def test_estrellas_segun_el_porcentaje(self):
+        regla = ReglaPuntuacion.objects.get(tipo_reto='lectura')  # 50 / 70 / 90
+        self.assertEqual([regla.estrellas_para(p) for p in (30, 50, 75, 90, 100)], [0, 1, 2, 3, 3])
+
+    def test_puntos_fuera_de_rango_no_son_validos(self):
+        regla = ReglaPuntuacion.objects.get(tipo_reto='oralidad')
+        regla.puntos = 0
+        with self.assertRaises(ValidationError):
+            regla.full_clean()
+
+    def test_str_muestra_tipo_puntos_y_umbrales(self):
+        self.assertEqual(str(ReglaPuntuacion.objects.get(tipo_reto='escritura')),
+                         'Escritura · 15 pts · ★50 ★★70 ★★★90')

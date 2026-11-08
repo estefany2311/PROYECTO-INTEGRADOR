@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.functions import Lower
+from catalogo.models import Lectura
 
 
 class ConfiguracionEvaluacion(models.Model):
@@ -157,3 +158,57 @@ class PalabraPermitida(models.Model):
 
     def __str__(self):
         return self.palabra
+
+
+
+
+class ReglaPuntuacion(models.Model):
+    """US-53: puntos y umbrales de estrellas por tipo de reto."""
+
+    tipo_reto = models.CharField(max_length=20, choices=Lectura.TIPOS_RETO, unique=True)
+    puntos = models.PositiveSmallIntegerField(
+        default=10,
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        help_text='Puntos que gana el alumno al completar el reto (1 a 100).',
+    )
+    umbral_1_estrella = models.PositiveSmallIntegerField(
+        default=50, validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text='Porcentaje mínimo para ganar 1 estrella.',
+    )
+    umbral_2_estrellas = models.PositiveSmallIntegerField(
+        default=70, validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text='Porcentaje mínimo para ganar 2 estrellas.',
+    )
+    umbral_3_estrellas = models.PositiveSmallIntegerField(
+        default=90, validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text='Porcentaje mínimo para ganar 3 estrellas.',
+    )
+    actualizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reglas_puntuacion',
+    )
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        # Nombre claro para que la app del estudiante (Spring Boot) la pueda leer
+        db_table = 'reglas_puntuacion'
+        ordering = ['id']
+        verbose_name = 'Regla de puntuación'
+        verbose_name_plural = 'Reglas de puntuación'
+
+    def estrellas_para(self, porcentaje):
+        """Cuántas estrellas gana un alumno con ese porcentaje (0 a 3)."""
+        if porcentaje >= self.umbral_3_estrellas:
+            return 3
+        if porcentaje >= self.umbral_2_estrellas:
+            return 2
+        if porcentaje >= self.umbral_1_estrella:
+            return 1
+        return 0
+
+    def __str__(self):
+        return (f'{self.get_tipo_reto_display()} · {self.puntos} pts · '
+f'★{self.umbral_1_estrella} ★★{self.umbral_2_estrellas} ★★★{self.umbral_3_estrellas}')
