@@ -116,3 +116,9 @@ export const agregarPalabraPermitida = (palabra) =>
 
 export const quitarPalabraPermitida = (id) =>
   pedir(`/configuracion/palabras/${id}/`, { method: "DELETE" });
+
+
+export const listarReglasPuntuacion = () => pedir("/configuracion/reglas/");
+
+export const actualizarReglaPuntuacion = (tipoReto, datos) =>
+pedir(`/configuracion/reglas/${tipoReto}/`, { method: "PATCH", body: JSON.stringify(datos) });

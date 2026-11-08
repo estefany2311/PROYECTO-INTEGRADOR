@@ -30,6 +30,7 @@ const SECCIONES = [
         enlaces: [
       { id: "configuracion", icono: "bi-mic", texto: "Evaluación de voz", disponible: true },
       { id: "ortografia", modulo: "configuracion", icono: "bi-spellcheck", texto: "Ortografía", disponible: true },
+      { id: "puntuacion", modulo: "configuracion", icono: "bi-star", texto: "Puntos y estrellas", disponible: true },
     ],
   },
 ];

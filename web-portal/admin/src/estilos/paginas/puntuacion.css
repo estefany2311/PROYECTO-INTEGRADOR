@@ -1,0 +1,47 @@
+/* =====================================================================
+   PESTAÑA: CONFIGURACIÓN IA · PUNTOS Y ESTRELLAS (US-53)
+   Todo lo que cambies aquí afecta SOLO a esta pestaña.
+   ===================================================================== */
+
+/* 1) PANEL DE COLORES: cambia el valor y guarda (Ctrl + S) */
+.main.pagina-puntuacion {
+  --fondo: #F4FAFF;                    /* fondo de la pestaña */
+  --titulo: #1D3557;                   /* color del título grande */
+  --titulo-tamano: 22px;               /* tamaño del título grande */
+  --subtitulo: #5F6F86;                /* texto debajo del título (ruta) */
+  --tarjeta-fondo: #FFFFFF;            /* fondo de las tarjetas y tablas */
+  --tarjeta-borde: #E1E8F0;            /* borde de las tarjetas */
+  --tarjeta-radio: 14px;               /* qué tan redondas son las esquinas */
+  --tarjeta-titulo: #1D3557;           /* títulos dentro de las tarjetas */
+  --tabla-encabezado-fondo: #FAFBFC;   /* fila de títulos de la tabla: fondo */
+  --tabla-encabezado-texto: #5F6F86;   /* fila de títulos de la tabla: texto */
+  --boton: #0A8378;                    /* botones principales */
+  --boton-hover: #08665E;              /* botones principales al pasar el mouse */
+  --nota: #5F6F86;                     /* textos pequeños grises */
+  --fila-cambios: #FFF8E7;             /* fila con cambios sin guardar */
+  --estrella: #FFC233;                 /* estrellas ganadas */
+  --estrella-apagada: #E1E8F0;         /* estrellas no ganadas */
+  --simulador-fondo: #FFF3DD;          /* caja del simulador */
+}
+
+/* 2) REGLAS SOLO DE ESTA PESTAÑA (empieza siempre con .pagina-puntuacion) */
+.pagina-puntuacion .tabla-reglas input { max-width: 90px; text-align: center; font-weight: 600; }
+.pagina-puntuacion .tabla-reglas tr.con-cambios td { background: var(--fila-cambios); }
+
+.pagina-puntuacion .reto {
+  width: 30px; height: 30px; border-radius: 9px; display: inline-grid; place-items: center;
+  color: #fff; margin-right: 8px;
+}
+.pagina-puntuacion .reto-lectura { background: #4EA8DE; }
+.pagina-puntuacion .reto-escritura { background: #9B5DE5; }
+.pagina-puntuacion .reto-oralidad { background: #EF476F; }
+
+.pagina-puntuacion .simulador {
+  background: var(--simulador-fondo); border: 2px dashed #FF9F1C; border-radius: 16px; padding: 16px;
+}
+.pagina-puntuacion .estrellas { font-size: 38px; letter-spacing: 4px; line-height: 1.1; }
+.pagina-puntuacion .estrellas span { color: var(--estrella); transition: color .2s, transform .2s; display: inline-block; }
+.pagina-puntuacion .estrellas span:not(.apagada) { transform: scale(1.1); }
+.pagina-puntuacion .estrellas span.apagada { color: var(--estrella-apagada); transform: none; }
+.pagina-puntuacion .form-range::-webkit-slider-thumb { background: #FF9F1C; }
+.pagina-puntuacion .form-range::-moz-range-thumb { background: #FF9F1C; }
