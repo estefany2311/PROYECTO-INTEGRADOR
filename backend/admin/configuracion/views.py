@@ -3,12 +3,14 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from usuarios.permissions import TienePermiso
-from .models import ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion, PalabraPermitida
+from .models import (ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion,
+                     PalabraPermitida, ReglaPuntuacion)
 from .serializers import (
     ConfiguracionEvaluacionSerializer,
     ConfiguracionOrtografiaSerializer,
     HistorialConfiguracionSerializer,
     PalabraPermitidaSerializer,
+    ReglaPuntuacionSerializer,
 )
 
 CAMPOS_AUDITADOS = ['umbral_precision', 'tolerancia_pausas', 'palabras_por_minuto']
@@ -80,3 +82,19 @@ class PalabraPermitidaViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(creado_por=self.request.user)
+
+
+
+
+class ReglaPuntuacionViewSet(viewsets.ModelViewSet):
+    """US-53: puntos y umbrales de estrellas por tipo de reto. Solo se consulta y se actualiza."""
+    permission_classes = [TienePermiso]
+    modulo = 'configuracion'
+    serializer_class = ReglaPuntuacionSerializer
+    queryset = ReglaPuntuacion.objects.select_related('actualizado_por')
+    lookup_field = 'tipo_reto'
+    lookup_value_regex = 'lectura|escritura|oralidad'
+    http_method_names = ['get', 'put', 'patch']
+
+    def perform_update(self, serializer):
+        serializer.save(actualizado_por=self.request.user)

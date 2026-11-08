@@ -2,7 +2,8 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from .models import ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion, PalabraPermitida
+from .models import (ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion,
+PalabraPermitida, ReglaPuntuacion)
 
 # Límites permitidos (los mismos del modelo y de la pantalla)
 PRECISION = (0, 100)
@@ -101,3 +102,17 @@ class PalabraPermitidaSerializer(serializers.ModelSerializer):
         if PalabraPermitida.objects.filter(palabra__iexact=palabra).exists():
             raise serializers.ValidationError('Esa palabra ya está en la lista.')
         return palabra
+
+
+
+
+class ReglaPuntuacionSerializer(serializers.ModelSerializer):
+    actualizado_por = serializers.CharField(source='actualizado_por.username', read_only=True, default=None)
+    tipo_reto_texto = serializers.CharField(source='get_tipo_reto_display', read_only=True)
+
+    class Meta:
+        model = ReglaPuntuacion
+        fields = ['tipo_reto', 'tipo_reto_texto', 'puntos', 'umbral_1_estrella', 'umbral_2_estrellas',
+                  'umbral_3_estrellas', 'actualizado_por', 'actualizado_en']
+        # Cada regla es de un tipo de reto fijo
+        read_only_fields = ['tipo_reto', 'actualizado_por', 'actualizado_en']

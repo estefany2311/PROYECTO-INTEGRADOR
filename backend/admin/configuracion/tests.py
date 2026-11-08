@@ -354,3 +354,36 @@ class ReglaPuntuacionModelTests(TestCase):
     def test_str_muestra_tipo_puntos_y_umbrales(self):
         self.assertEqual(str(ReglaPuntuacion.objects.get(tipo_reto='escritura')),
                          'Escritura · 15 pts · ★50 ★★70 ★★★90')
+
+
+
+
+class ReglaPuntuacionAPITests(APITestCase):
+    """T-260: consultar y actualizar las reglas (solo administrador)."""
+    URL = '/api/configuracion/reglas/'
+
+    def setUp(self):
+        rol_admin, _ = Rol.objects.get_or_create(nombre='ADMIN')
+        rol_docente, _ = Rol.objects.get_or_create(nombre='DOCENTE')
+        self.admin = Usuario.objects.create_user(
+            username='admin', email='admin@test.pe', password='clave-segura-1', rol=rol_admin)
+        self.docente = Usuario.objects.create_user(
+            username='rquispe', email='rquispe@test.pe', password='clave-segura-1', rol=rol_docente)
+        self.client.force_authenticate(self.admin)
+
+    def test_admin_lista_las_3_reglas(self):
+        resp = self.client.get(self.URL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual({r['tipo_reto'] for r in resp.data}, {'lectura', 'escritura', 'oralidad'})
+
+    def test_admin_actualiza_los_puntos_y_queda_registrado_quien(self):
+        resp = self.client.patch(f'{self.URL}lectura/', {'puntos': 12}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        regla = ReglaPuntuacion.objects.get(tipo_reto='lectura')
+        self.assertEqual((regla.puntos, regla.actualizado_por), (12, self.admin))
+
+    def test_docente_no_puede_ver_ni_editar(self):
+        self.client.force_authenticate(self.docente)
+        self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_403_FORBIDDEN)
+        resp = self.client.patch(f'{self.URL}lectura/', {'puntos': 99}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
