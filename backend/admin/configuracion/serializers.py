@@ -104,11 +104,15 @@ class PalabraPermitidaSerializer(serializers.ModelSerializer):
         return palabra
 
 
-
-
 class ReglaPuntuacionSerializer(serializers.ModelSerializer):
     actualizado_por = serializers.CharField(source='actualizado_por.username', read_only=True, default=None)
     tipo_reto_texto = serializers.CharField(source='get_tipo_reto_display', read_only=True)
+
+    # T-261: rangos con mensajes claros (el %% se muestra como %)
+    puntos = serializers.IntegerField(min_value=1, max_value=100, error_messages=mensajes(1, 100, 'puntos'))
+    umbral_1_estrella = serializers.IntegerField(min_value=0, max_value=100, error_messages=mensajes(0, 100, '%%'))
+    umbral_2_estrellas = serializers.IntegerField(min_value=0, max_value=100, error_messages=mensajes(0, 100, '%%'))
+    umbral_3_estrellas = serializers.IntegerField(min_value=0, max_value=100, error_messages=mensajes(0, 100, '%%'))
 
     class Meta:
         model = ReglaPuntuacion
@@ -116,3 +120,21 @@ class ReglaPuntuacionSerializer(serializers.ModelSerializer):
                   'umbral_3_estrellas', 'actualizado_por', 'actualizado_en']
         # Cada regla es de un tipo de reto fijo
         read_only_fields = ['tipo_reto', 'actualizado_por', 'actualizado_en']
+
+    def validate(self, attrs):
+        """T-261: los umbrales deben subir: 1 ★ < 2 ★ < 3 ★."""
+        def valor(campo):
+            # Con PATCH puede llegar solo un umbral: se completa con el valor guardado
+            if campo in attrs:
+                return attrs[campo]
+            return getattr(self.instance, campo) if self.instance else None
+
+        una, dos, tres = valor('umbral_1_estrella'), valor('umbral_2_estrellas'), valor('umbral_3_estrellas')
+        errores = {}
+        if None not in (una, dos) and dos <= una:
+            errores['umbral_2_estrellas'] = f'Debe ser mayor que el umbral de 1 estrella ({una} %).'
+        if None not in (dos, tres) and tres <= dos:
+            errores['umbral_3_estrellas'] = f'Debe ser mayor que el umbral de 2 estrellas ({dos} %).'
+        if errores:
+            raise serializers.ValidationError(errores)
+        return attrs

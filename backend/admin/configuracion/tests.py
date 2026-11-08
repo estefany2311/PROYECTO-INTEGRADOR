@@ -387,3 +387,38 @@ class ReglaPuntuacionAPITests(APITestCase):
         self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_403_FORBIDDEN)
         resp = self.client.patch(f'{self.URL}lectura/', {'puntos': 99}, format='json')
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    
+    # --- T-261: umbrales crecientes y rangos ---
+    def test_umbral_2_menor_que_el_1_devuelve_400(self):
+        resp = self.client.patch(f'{self.URL}lectura/', {'umbral_2_estrellas': 40}, format='json')  # ★ = 50
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['umbral_2_estrellas'][0]), 'Debe ser mayor que el umbral de 1 estrella (50 %).')
+
+    def test_umbral_3_igual_al_2_devuelve_400(self):
+        resp = self.client.patch(f'{self.URL}escritura/', {'umbral_3_estrellas': 70}, format='json')  # ★★ = 70
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('mayor que el umbral de 2 estrellas', str(resp.data['umbral_3_estrellas'][0]))
+
+    def test_subir_el_umbral_1_por_encima_del_2_devuelve_400(self):
+        resp = self.client.patch(f'{self.URL}oralidad/', {'umbral_1_estrella': 80}, format='json')  # ★★ = 75
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('umbral_2_estrellas', resp.data)
+        self.assertEqual(ReglaPuntuacion.objects.get(tipo_reto='oralidad').umbral_1_estrella, 55)
+
+    def test_cambiar_los_tres_umbrales_juntos_en_orden_se_guarda(self):
+        datos = {'umbral_1_estrella': 40, 'umbral_2_estrellas': 60, 'umbral_3_estrellas': 85}
+        resp = self.client.patch(f'{self.URL}lectura/', datos, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        regla = ReglaPuntuacion.objects.get(tipo_reto='lectura')
+        self.assertEqual((regla.umbral_1_estrella, regla.umbral_2_estrellas, regla.umbral_3_estrellas), (40, 60, 85))
+
+    def test_umbral_mayor_a_100_devuelve_400_con_mensaje(self):
+        resp = self.client.patch(f'{self.URL}lectura/', {'umbral_3_estrellas': 120}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['umbral_3_estrellas'][0]), 'Debe estar entre 0 y 100 %.')
+
+    def test_puntos_en_cero_devuelve_400(self):
+        resp = self.client.patch(f'{self.URL}lectura/', {'puntos': 0}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['puntos'][0]), 'Debe estar entre 1 y 100 puntos.')
