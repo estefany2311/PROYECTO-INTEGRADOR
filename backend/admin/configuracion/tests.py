@@ -422,3 +422,57 @@ class ReglaPuntuacionAPITests(APITestCase):
         resp = self.client.patch(f'{self.URL}lectura/', {'puntos': 0}, format='json')
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(str(resp.data['puntos'][0]), 'Debe estar entre 1 y 100 puntos.')
+
+
+
+    # --- T-263: permisos ---
+    def test_sin_token_devuelve_401(self):
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_docente_no_puede_usar_put(self):
+        self.client.force_authenticate(self.docente)
+        datos = {'puntos': 10, 'umbral_1_estrella': 50, 'umbral_2_estrellas': 70, 'umbral_3_estrellas': 90}
+        resp = self.client.put(f'{self.URL}lectura/', datos, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_no_se_pueden_crear_ni_borrar_reglas(self):
+        crear = self.client.post(self.URL, {'tipo_reto': 'dibujo', 'puntos': 5}, format='json')
+        borrar = self.client.delete(f'{self.URL}lectura/')
+        self.assertIn(crear.status_code, (status.HTTP_403_FORBIDDEN, status.HTTP_405_METHOD_NOT_ALLOWED))
+        self.assertEqual(borrar.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(ReglaPuntuacion.objects.count(), 3)
+
+    def test_tipo_de_reto_que_no_existe_devuelve_404(self):
+        self.assertEqual(self.client.get(f'{self.URL}dibujo/').status_code, status.HTTP_404_NOT_FOUND)
+
+    # --- T-263: validación ---
+    def test_put_con_umbrales_que_no_suben_devuelve_400(self):
+        datos = {'puntos': 10, 'umbral_1_estrella': 60, 'umbral_2_estrellas': 60, 'umbral_3_estrellas': 50}
+        resp = self.client.put(f'{self.URL}lectura/', datos, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('umbral_2_estrellas', resp.data)
+        self.assertIn('umbral_3_estrellas', resp.data)
+
+    def test_put_valido_se_guarda(self):
+        datos = {'puntos': 20, 'umbral_1_estrella': 45, 'umbral_2_estrellas': 65, 'umbral_3_estrellas': 85}
+        resp = self.client.put(f'{self.URL}oralidad/', datos, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        regla = ReglaPuntuacion.objects.get(tipo_reto='oralidad')
+        self.assertEqual((regla.puntos, regla.umbral_3_estrellas), (20, 85))
+
+    def test_texto_en_vez_de_numero_devuelve_400(self):
+        resp = self.client.patch(f'{self.URL}lectura/', {'puntos': 'muchos'}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['puntos'][0]), 'Ingresa un número válido.')
+
+    def test_no_se_puede_cambiar_el_tipo_de_reto(self):
+        self.client.patch(f'{self.URL}lectura/', {'tipo_reto': 'dibujo'}, format='json')
+        self.assertTrue(ReglaPuntuacion.objects.filter(tipo_reto='lectura').exists())
+        self.assertFalse(ReglaPuntuacion.objects.filter(tipo_reto='dibujo').exists())
+
+    # --- T-263: cálculo de estrellas (casos borde) ---
+    def test_estrellas_en_los_bordes_de_cada_umbral(self):
+        regla = ReglaPuntuacion.objects.get(tipo_reto='oralidad')  # 55 / 75 / 90
+        casos = {0: 0, 54: 0, 55: 1, 74: 1, 75: 2, 89: 2, 90: 3, 100: 3}
+        self.assertEqual({p: regla.estrellas_para(p) for p in casos}, casos)
