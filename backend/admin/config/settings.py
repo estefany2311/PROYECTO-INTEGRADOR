@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'instituciones',
     'catalogo',
     'configuracion',
+'reportes',
 
 
 ]
