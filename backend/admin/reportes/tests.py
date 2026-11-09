@@ -1,6 +1,10 @@
 from unittest import mock
 
 from django.db import connection
+from io import StringIO
+
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase
 
 from instituciones.models import AsignacionDocente, Colegio
@@ -97,3 +101,55 @@ class ConsultasAgregacionTests(TestCase):
         self.assertEqual(consultas.alumnos_por_semaforo(),
                          {'verde': 0, 'amarillo': 0, 'rojo': 0, 'sin_evaluar': 0})
         self.assertTrue(all(r['promedio'] is None for r in consultas.promedio_por_competencia()))
+
+
+
+
+
+class CargarDatosReportesTests(TestCase):
+    """T-265: comando que carga y borra evaluaciones de prueba."""
+
+    def setUp(self):
+        with connection.cursor() as c:
+            for sql in TABLAS:
+                c.execute(sql)
+            c.execute('INSERT INTO aula VALUES (201, %s, NULL)', ['Aula prueba'])
+            c.execute("""INSERT INTO estudiante (id, nombres, apellidos, aula_id, grado_id, activo) VALUES
+                (11, 'A', 'A', 201, 1, TRUE), (12, 'B', 'B', 201, 1, TRUE),
+                (13, 'C', 'C', 201, 1, TRUE), (14, 'D', 'D', 201, 1, FALSE)""")
+            # Una evaluación "real" de la app, que el comando nunca debe tocar
+            c.execute("INSERT INTO evaluacion (estudiante_id, competencia, puntaje, evaluado_en) "
+                      "VALUES (11, 'lectura', 99, '2026-10-01 10:00:00')")
+
+    def contar(self, where='TRUE'):
+        with connection.cursor() as c:
+            c.execute(f'SELECT COUNT(*) FROM evaluacion WHERE {where}')
+            return c.fetchone()[0]
+
+    def cargar(self, *args):
+        call_command('cargar_datos_reportes', *args, stdout=StringIO())
+
+    def test_carga_9_evaluaciones_por_alumno_activo(self):
+        self.cargar()
+        self.assertEqual(self.contar("evaluado_en::time = '07:26:05'"), 3 * 9)  # 3 activos x 3 competencias x 3
+
+    def test_el_semaforo_muestra_los_tres_colores(self):
+        self.cargar()
+        semaforo = consultas.alumnos_por_semaforo(aula_id=201)
+        self.assertEqual((semaforo['verde'] + semaforo['amarillo'] + semaforo['rojo']), 3)
+        self.assertGreaterEqual(semaforo['rojo'], 1)
+
+    def test_correrlo_dos_veces_no_duplica(self):
+        self.cargar()
+        self.cargar()
+        self.assertEqual(self.contar("evaluado_en::time = '07:26:05'"), 27)
+
+    def test_borrar_quita_solo_los_datos_de_prueba(self):
+        self.cargar()
+        self.cargar('--borrar')
+        self.assertEqual(self.contar(), 1)  # queda solo la evaluación "real"
+
+    @mock.patch('reportes.management.commands.cargar_datos_reportes.tablas_disponibles', return_value=False)
+    def test_sin_tablas_muestra_un_error_claro(self, _tablas):
+        with self.assertRaises(CommandError):
+            self.cargar()
