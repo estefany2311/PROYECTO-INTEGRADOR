@@ -105,6 +105,38 @@ class ConsultasAgregacionTests(TestCase):
 
 
 
+    # --- T-266: rendimiento por colegio ---
+    def por_colegio(self):
+        return {r['nombre']: r for r in consultas.rendimiento_por_colegio()}
+
+    def test_rendimiento_del_colegio_a(self):
+        a = self.por_colegio()['IE Ccollpa']
+        self.assertEqual((a['alumnos'], a['evaluaciones']), (2, 4))          # Ana y Luis (Inés inactiva)
+        self.assertEqual(a['promedios'], {'lectura': 70.0, 'escritura': 70.0, 'oralidad': 40.0})
+        self.assertEqual(a['promedio_general'], 62.5)                       # (80 + 70 + 60 + 40) / 4
+        self.assertEqual(a['semaforo'], {'verde': 1, 'amarillo': 1, 'rojo': 0, 'sin_evaluar': 0})
+
+    def test_rendimiento_del_colegio_b(self):
+        b = self.por_colegio()['IE Huaccana']
+        self.assertEqual((b['alumnos'], b['evaluaciones']), (2, 1))
+        self.assertEqual(b['promedios'], {'lectura': 30.0, 'escritura': None, 'oralidad': None})
+        self.assertEqual(b['semaforo'], {'verde': 0, 'amarillo': 0, 'rojo': 1, 'sin_evaluar': 1})
+
+    def test_colegio_sin_alumnos_sale_en_cero(self):
+        Colegio.objects.create(codigo_modular='3333333', nombre='IE Nueva', region='Puno')
+        nueva = self.por_colegio()['IE Nueva']
+        self.assertEqual((nueva['alumnos'], nueva['promedio_general']), (0, None))
+
+    def test_colegio_inactivo_no_sale(self):
+        Colegio.objects.create(codigo_modular='4444444', nombre='IE Cerrada', region='Puno', activo=False)
+        self.assertNotIn('IE Cerrada', self.por_colegio())
+
+    def test_filtrar_un_solo_colegio(self):
+        filas = consultas.rendimiento_por_colegio(colegio_id=self.colegio_b.id)
+        self.assertEqual([f['nombre'] for f in filas], ['IE Huaccana'])
+
+
+
 
 class CargarDatosReportesTests(TestCase):
     """T-265: comando que carga y borra evaluaciones de prueba."""

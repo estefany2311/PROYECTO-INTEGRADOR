@@ -96,3 +96,87 @@ def alumnos_por_semaforo(colegio_id=None, aula_id=None, grado=None):
         for _, promedio in cursor.fetchall():
             conteo[color_semaforo(None if promedio is None else float(promedio))] += 1
     return conteo
+
+
+
+
+def _numero(valor):
+    return None if valor is None else float(valor)
+
+
+def rendimiento_por_colegio(colegio_id=None):
+    """T-266: una fila por colegio activo con alumnos, promedios por competencia y semáforo.
+
+    Un alumno pertenece al colegio del docente de su aula (colegio_docentes).
+    """
+    from instituciones.models import Colegio
+
+    colegios = Colegio.objects.filter(activo=True)
+    if colegio_id is not None:
+        colegios = colegios.filter(id=colegio_id)
+
+    vacio = {'alumnos': 0, 'evaluaciones': 0, 'promedio_general': None,
+             'promedios': {c: None for c in COMPETENCIAS},
+             'semaforo': {'verde': 0, 'amarillo': 0, 'rojo': 0, 'sin_evaluar': 0}}
+    resultado = {
+        c.id: {'colegio_id': c.id, 'nombre': c.nombre, 'codigo_modular': c.codigo_modular,
+               'region': c.region, **{k: (v.copy() if isinstance(v, dict) else v) for k, v in vacio.items()}}
+        for c in colegios
+    }
+    if not resultado or not tablas_disponibles():
+        return list(resultado.values())
+
+    sql = """
+        WITH alumnos AS (
+            SELECT e.id AS estudiante_id, cd.colegio_id
+            FROM estudiante e
+            JOIN aula a ON a.id = e.aula_id
+            JOIN colegio_docentes cd ON cd.docente_id = a.docente_id
+            WHERE e.activo AND cd.colegio_id = ANY(%s)
+        ),
+        promedio_alumno AS (
+            SELECT al.colegio_id, al.estudiante_id, AVG(ev.puntaje) AS promedio
+            FROM alumnos al
+            LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id
+            GROUP BY al.colegio_id, al.estudiante_id
+        ),
+        por_competencia AS (
+            SELECT al.colegio_id,
+                   COUNT(ev.id) AS evaluaciones,
+                   ROUND(AVG(ev.puntaje)::numeric, 1) AS general,
+                   ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'lectura'))::numeric, 1) AS lectura,
+                   ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'escritura'))::numeric, 1) AS escritura,
+                   ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'oralidad'))::numeric, 1) AS oralidad
+            FROM alumnos al
+            LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id
+            GROUP BY al.colegio_id
+        ),
+        semaforo AS (
+            SELECT colegio_id,
+                   COUNT(*) AS alumnos,
+                   COUNT(*) FILTER (WHERE promedio >= %s) AS verde,
+                   COUNT(*) FILTER (WHERE promedio >= %s AND promedio < %s) AS amarillo,
+                   COUNT(*) FILTER (WHERE promedio < %s) AS rojo,
+                   COUNT(*) FILTER (WHERE promedio IS NULL) AS sin_evaluar
+            FROM promedio_alumno
+            GROUP BY colegio_id
+        )
+        SELECT s.colegio_id, s.alumnos, p.evaluaciones, p.general, p.lectura, p.escritura, p.oralidad,
+               s.verde, s.amarillo, s.rojo, s.sin_evaluar
+        FROM semaforo s
+        JOIN por_competencia p ON p.colegio_id = s.colegio_id
+    """
+    parametros = [list(resultado), UMBRAL_VERDE, UMBRAL_AMARILLO, UMBRAL_VERDE, UMBRAL_AMARILLO]
+    with connection.cursor() as cursor:
+        cursor.execute(sql, parametros)
+        for (cid, alumnos, evaluaciones, general, lectura, escritura, oralidad,
+             verde, amarillo, rojo, sin_evaluar) in cursor.fetchall():
+            resultado[cid].update(
+                alumnos=alumnos,
+                evaluaciones=evaluaciones,
+                promedio_general=_numero(general),
+                promedios={'lectura': _numero(lectura), 'escritura': _numero(escritura),
+                           'oralidad': _numero(oralidad)},
+                semaforo={'verde': verde, 'amarillo': amarillo, 'rojo': rojo, 'sin_evaluar': sin_evaluar},
+            )
+    return list(resultado.values())
