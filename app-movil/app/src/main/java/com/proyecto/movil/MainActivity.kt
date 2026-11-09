@@ -17,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.view.PantallaCodigoAula
+import com.proyecto.movil.view.PantallaConsigna
 import com.proyecto.movil.model.TipoReto
 import com.proyecto.movil.view.PantallaDetalleNivel
 import com.proyecto.movil.view.PantallaGrabacion
@@ -103,17 +104,16 @@ class MainActivity : ComponentActivity() {
                             "nivel/{nivelId}",
                             arguments = listOf(navArgument("nivelId") { type = NavType.IntType })
                         ) { backStackEntry ->
-                            val contexto = LocalContext.current
                             PantallaDetalleNivel(
                                 nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
                                 onVolver = { navController.popBackStack() },
                                 onComenzar = { detalle ->
                                     // T-219: los retos de lectura y de oralidad empiezan leyendo un texto.
-                                    // El reto de escritura (consigna y editor) llega en US-17 y US-18.
-                                    if (detalle.reto == TipoReto.LECTURA || detalle.reto == TipoReto.ORALIDAD) {
-                                        navController.navigate("lectura/${detalle.id}")
-                                    } else {
-                                        Toast.makeText(contexto, "El reto de escritura se abre en la próxima versión", Toast.LENGTH_SHORT).show()
+                                    // T-321: el reto de escritura empieza con su consigna.
+                                    when (detalle.reto) {
+                                        TipoReto.LECTURA, TipoReto.ORALIDAD -> navController.navigate("lectura/${detalle.id}")
+                                        TipoReto.ESCRITURA -> navController.navigate("consigna/${detalle.id}")
+                                        TipoReto.DESCONOCIDO -> Unit
                                     }
                                 }
                             )
@@ -127,6 +127,21 @@ class MainActivity : ComponentActivity() {
                                 nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
                                 onVolver = { navController.popBackStack() },
                                 onGrabar = { lectura -> navController.navigate("grabar/${lectura.nivelId}") }
+                            )
+                        }
+                        // T-321 (US-17): la consigna del nivel de escritura, con su ilustración
+                        composable(
+                            "consigna/{nivelId}",
+                            arguments = listOf(navArgument("nivelId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val contexto = LocalContext.current
+                            PantallaConsigna(
+                                nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
+                                onVolver = { navController.popBackStack() },
+                                onEmpezar = {
+                                    // El editor (T-323) se conecta en la siguiente tarea
+                                    Toast.makeText(contexto, "El editor se abre en la siguiente versión", Toast.LENGTH_SHORT).show()
+                                }
                             )
                         }
                         // US-11: grabar la lectura. T-313 pide antes el permiso del micrófono
@@ -144,4 +159,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
+}

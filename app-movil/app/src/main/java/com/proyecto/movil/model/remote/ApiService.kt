@@ -1,6 +1,7 @@
 package com.proyecto.movil.model.remote
 
 import com.proyecto.movil.model.CompletarNivelRequest
+import com.proyecto.movil.model.ConsignaNivel
 import com.proyecto.movil.model.InicioSesionRequest
 import com.proyecto.movil.model.LecturaNivel
 import com.proyecto.movil.model.NivelDetalle
@@ -34,6 +35,10 @@ interface ApiService {
     // T-219: el texto que el niño lee en el nivel (T-218). Response<> para leer el 403 y el 404
     @GET("api/estudiante/niveles/{nivelId}/lectura")
     suspend fun obtenerLectura(@Path("nivelId") nivelId: Int): Response<LecturaNivel>
+
+    // T-321: la consigna de un nivel de escritura (T-320). Response<> para leer el 403 y el 404
+    @GET("api/estudiante/niveles/{nivelId}/consigna")
+    suspend fun obtenerConsigna(@Path("nivelId") nivelId: Int): Response<ConsignaNivel>
 
     // T-216: terminar un reto (T-198/T-309). Al volver, el mapa se refresca y anima lo desbloqueado
     @POST("api/estudiante/niveles/{nivelId}/completar")
