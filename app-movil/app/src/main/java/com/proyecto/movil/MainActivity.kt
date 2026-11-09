@@ -20,6 +20,7 @@ import com.proyecto.movil.view.PantallaCodigoAula
 import com.proyecto.movil.view.PantallaConsigna
 import com.proyecto.movil.model.TipoReto
 import com.proyecto.movil.view.PantallaDetalleNivel
+import com.proyecto.movil.view.PantallaEditor
 import com.proyecto.movil.view.PantallaGrabacion
 import com.proyecto.movil.view.PantallaLectura
 import com.proyecto.movil.view.PantallaMapa
@@ -134,13 +135,24 @@ class MainActivity : ComponentActivity() {
                             "consigna/{nivelId}",
                             arguments = listOf(navArgument("nivelId") { type = NavType.IntType })
                         ) { backStackEntry ->
-                            val contexto = LocalContext.current
                             PantallaConsigna(
                                 nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
                                 onVolver = { navController.popBackStack() },
-                                onEmpezar = {
-                                    // El editor (T-323) se conecta en la siguiente tarea
-                                    Toast.makeText(contexto, "El editor se abre en la siguiente versión", Toast.LENGTH_SHORT).show()
+                                onEmpezar = { consigna -> navController.navigate("escribir/${consigna.nivelId}") }
+                            )
+                        }
+                        // T-323 (US-18): el editor donde el niño escribe su texto
+                        composable(
+                            "escribir/{nivelId}",
+                            arguments = listOf(navArgument("nivelId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val contexto = LocalContext.current
+                            PantallaEditor(
+                                nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
+                                onVolver = { navController.popBackStack() },
+                                onEnviar = {
+                                    // Enviar el texto para evaluarlo llega en una próxima historia
+                                    Toast.makeText(contexto, "Enviar tu texto llega en la próxima versión", Toast.LENGTH_SHORT).show()
                                 }
                             )
                         }
@@ -159,4 +171,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
+}

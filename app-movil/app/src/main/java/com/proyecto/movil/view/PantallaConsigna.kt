@@ -64,7 +64,7 @@ fun ContenidoConsigna(
     onReintentar: () -> Unit
 ) {
     Column(Modifier.fillMaxSize().background(ColoresAventura.Cielo)) {
-        Cabecera(
+        CabeceraEscritura(
             titulo = (estado as? ConsignaUiState.Exito)?.consigna?.nombreNivel,
             onVolver = onVolver
         )
@@ -85,9 +85,10 @@ fun ContenidoConsigna(
     }
 }
 
-// Barra de arriba: volver, nombre del nivel y la etiqueta "Escritura" (como en el mockup)
+// Barra de arriba: volver, nombre del nivel y la etiqueta "Escritura" (como en el mockup).
+// T-323: la usa también el editor
 @Composable
-private fun Cabecera(titulo: String?, onVolver: () -> Unit) {
+fun CabeceraEscritura(titulo: String?, onVolver: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -225,8 +226,9 @@ private fun descripcionIlustracion(clave: String) = when (clave.lowercase()) {
     else -> "un lápiz"
 }
 
+// T-323: la usa también el editor
 @Composable
-private fun ErrorConsigna(estado: ConsignaUiState.Error, onReintentar: () -> Unit, onVolver: () -> Unit) {
+fun ErrorConsigna(estado: ConsignaUiState.Error, onReintentar: () -> Unit, onVolver: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 32.dp)) {
         Koala(tamano = 160.dp, saludando = false)
         Spacer(Modifier.height(16.dp))
