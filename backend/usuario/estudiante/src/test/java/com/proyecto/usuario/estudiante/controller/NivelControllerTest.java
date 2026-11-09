@@ -1,12 +1,15 @@
 package com.proyecto.usuario.estudiante.controller;
 
 import com.proyecto.usuario.estudiante.dto.CompletarNivelResponse;
+import com.proyecto.usuario.estudiante.dto.ConsignaNivelResponse;
 import com.proyecto.usuario.estudiante.dto.NivelDetalleResponse;
+import com.proyecto.usuario.estudiante.exception.ConsignaNoDisponibleException;
 import com.proyecto.usuario.estudiante.exception.ManejadorErrores;
 import com.proyecto.usuario.estudiante.exception.NivelBloqueadoException;
 import com.proyecto.usuario.estudiante.exception.NivelNoEncontradoException;
 import com.proyecto.usuario.estudiante.exception.SesionVencidaException;
 import com.proyecto.usuario.estudiante.service.AutenticadorTablet;
+import com.proyecto.usuario.estudiante.service.ConsignaService;
 import com.proyecto.usuario.estudiante.service.LecturaService;
 import com.proyecto.usuario.estudiante.service.NivelService;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,13 +35,16 @@ class NivelControllerTest {
 
     private AutenticadorTablet autenticador;
     private NivelService service;
+    private ConsignaService consignaService;
     private MockMvc mvc;
 
     @BeforeEach
     void preparar() {
         autenticador = mock(AutenticadorTablet.class);
         service = mock(NivelService.class);
-        mvc = MockMvcBuilders.standaloneSetup(new NivelController(autenticador, service, mock(LecturaService.class)))
+        consignaService = mock(ConsignaService.class);
+        mvc = MockMvcBuilders.standaloneSetup(
+                        new NivelController(autenticador, service, mock(LecturaService.class), consignaService))
                 .setControllerAdvice(new ManejadorErrores())
                 .build();
         when(autenticador.estudianteDe(TOKEN)).thenReturn(1L);
@@ -147,5 +153,39 @@ class NivelControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"puntos\": 10, \"estrellas\": 2}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.nivelAnterior").value("Primeros pasos"));
+    }
+
+    // ---------- T-320 (US-17): GET /api/estudiante/niveles/{id}/consigna ----------
+
+    @Test
+    void consignaDeUnNivelDeEscritura() throws Exception {
+        when(consignaService.consignaDelNivel(1L, 2)).thenReturn(new ConsignaNivelResponse(
+                2, "Palabras nuevas", "Escribe tres oraciones sobre tu animal favorito.",
+                "Cuenta cómo es, qué come y dónde vive.", "animal", 15));
+
+        mvc.perform(get("/api/estudiante/niveles/2/consigna").header("Authorization", TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombreNivel").value("Palabras nuevas"))
+                .andExpect(jsonPath("$.consigna").value("Escribe tres oraciones sobre tu animal favorito."))
+                .andExpect(jsonPath("$.ilustracion").value("animal"))
+                .andExpect(jsonPath("$.palabrasMinimas").value(15));
+    }
+
+    @Test
+    void consignaDeUnNivelQueNoEsDeEscrituraResponde404() throws Exception {
+        when(consignaService.consignaDelNivel(1L, 1)).thenThrow(ConsignaNoDisponibleException.noEsDeEscritura());
+
+        mvc.perform(get("/api/estudiante/niveles/1/consigna").header("Authorization", TOKEN))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje").value("Este nivel no es de escritura"));
+    }
+
+    @Test
+    void consignaDeUnNivelBloqueadoResponde403() throws Exception {
+        when(consignaService.consignaDelNivel(1L, 5)).thenThrow(new NivelBloqueadoException("Idea principal"));
+
+        mvc.perform(get("/api/estudiante/niveles/5/consigna").header("Authorization", TOKEN))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.nivelAnterior").value("Idea principal"));
     }
 }
