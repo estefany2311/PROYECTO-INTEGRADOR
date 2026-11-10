@@ -39,13 +39,7 @@ import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.viewmodel.LecturaUiState
 import com.proyecto.movil.viewmodel.LecturaViewModel
 
-/**
- * T-219 (US-10): el niño ve el texto que tiene que leer, con letra grande, antes de grabar su voz.
- * Se abre con "Comenzar" desde el detalle de un nivel de lectura u oralidad.
- * T-311: botones A− / A+ para el tamaño de letra; si el texto es largo, solo el texto se desliza
- * y el botón "Estoy listo, grabar" queda siempre a la vista. Un aviso indica que falta leer más abajo.
- * La grabación (botón "Estoy listo, grabar") es la US-11.
- */
+
 @Composable
 fun PantallaLectura(
     nivelId: Int,

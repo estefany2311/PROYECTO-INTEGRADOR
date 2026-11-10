@@ -2,18 +2,7 @@ package com.proyecto.movil.model.audio
 
 import java.io.File
 
-/*
- * T-317 (US-11): guarda la grabación en la tablet hasta que se envíe para evaluar (US-13).
- *
- * - Va en la carpeta privada de la app (filesDir), no en la caché: Android puede vaciar la caché
- *   cuando falta espacio y el niño perdería su lectura antes de enviarla.
- *   Ninguna otra app puede leerla, no necesita permisos y se borra si se desinstala la app.
- * - Una carpeta por estudiante, porque varios niños usan la misma tablet:
- *   grabaciones/est_<estudianteId>/nivel_<nivelId>.wav
- * - Se graba primero en "nivel_X_grabando.wav". Solo si sale bien reemplaza a la anterior,
- *   así un intento fallido no borra la grabación que ya tenía.
- * - Es temporal: lo que tenga más de 7 días se borra al abrir la app, y US-13 la borra al enviarla.
- */
+
 class AlmacenGrabaciones(
     private val raiz: File,
     private val ahora: () -> Long = System::currentTimeMillis

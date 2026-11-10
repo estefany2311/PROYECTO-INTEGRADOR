@@ -36,10 +36,6 @@ import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.viewmodel.DetalleNivelUiState
 import com.proyecto.movil.viewmodel.DetalleNivelViewModel
 
-/**
- * T-215 (US-07): al tocar un nivel disponible en el mapa se abre esta pantalla.
- * Muestra qué tipo de reto es y un botón grande "Comenzar".
- */
 @Composable
 fun PantallaDetalleNivel(
     nivelId: Int,

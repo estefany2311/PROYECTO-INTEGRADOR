@@ -48,6 +48,7 @@ import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.viewmodel.ConsignaUiState
 import com.proyecto.movil.viewmodel.ConsignaViewModel
 import com.proyecto.movil.viewmodel.EditorViewModel
+import com.proyecto.movil.viewmodel.EstadoGuardado
 
 //T-323 (US-18): el niño escribe su texto con letra grande. Se abre con "Empezar a escribir" (T-321)
  //Teclado en español y SIN autocorrector: lo que se evalúa es cómo escribe el niño, así que la tablet
@@ -63,8 +64,12 @@ fun PantallaEditor(
 ) {
     val consigna by consignaViewModel.uiState.collectAsState()
     val texto by editorViewModel.texto.collectAsState()
+    val guardado by editorViewModel.guardado.collectAsState()
 
-    LaunchedEffect(nivelId) { consignaViewModel.cargar(nivelId) }
+    LaunchedEffect(nivelId) {
+        consignaViewModel.cargar(nivelId)
+        editorViewModel.abrir(nivelId)      // T-325: recupera el borrador si lo había
+    }
 
     ContenidoEditor(
         consigna = consigna,
@@ -72,7 +77,8 @@ fun PantallaEditor(
         onEscribir = editorViewModel::escribir,
         onVolver = onVolver,
         onEnviar = { onEnviar(texto) },
-        onReintentar = consignaViewModel::reintentar
+        onReintentar = consignaViewModel::reintentar,
+        guardado = guardado
     )
 }
 
@@ -84,7 +90,8 @@ fun ContenidoEditor(
     onEscribir: (String) -> Unit,
     onVolver: () -> Unit,
     onEnviar: () -> Unit,
-    onReintentar: () -> Unit
+    onReintentar: () -> Unit,
+    guardado: EstadoGuardado = EstadoGuardado.NADA
 ) {
     Column(
         Modifier
@@ -102,13 +109,19 @@ fun ContenidoEditor(
             is ConsignaUiState.Error -> Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 ErrorConsigna(consigna, onReintentar, onVolver)
             }
-            is ConsignaUiState.Exito -> Hoja(consigna.consigna, texto, onEscribir, onEnviar)
+            is ConsignaUiState.Exito -> Hoja(consigna.consigna, texto, guardado, onEscribir, onEnviar)
         }
     }
 }
 
 @Composable
-private fun ColumnScope.Hoja(consigna: ConsignaNivel, texto: String, onEscribir: (String) -> Unit, onEnviar: () -> Unit) {
+private fun ColumnScope.Hoja(
+    consigna: ConsignaNivel,
+    texto: String,
+    guardado: EstadoGuardado,
+    onEscribir: (String) -> Unit,
+    onEnviar: () -> Unit
+) {
     Column(
         Modifier
             .weight(1f)
@@ -168,7 +181,7 @@ private fun ColumnScope.Hoja(consigna: ConsignaNivel, texto: String, onEscribir:
         // T-324: cuántas palabras lleva y cuántas le faltan
         val palabras = remember(texto) { contarPalabras(texto) }
         val llego = palabras >= consigna.palabrasMinimas
-        ContadorPalabras(palabras, consigna.palabrasMinimas)
+        ContadorPalabras(palabras, consigna.palabrasMinimas, guardado)
         Spacer(Modifier.height(20.dp))
         // T-324: se activa recién al llegar al mínimo de palabras de la consigna
         Button(
@@ -186,16 +199,12 @@ private fun ColumnScope.Hoja(consigna: ConsignaNivel, texto: String, onEscribir:
     }
 }
 
-/**
- * T-324: "8 de 15 palabras" con una barra que se llena. Debajo le dice cuántas le faltan
- * y, al llegar, que ya puede enviar (aunque puede seguir escribiendo).
- */
 @Composable
-private fun ContadorPalabras(palabras: Int, minimo: Int) {
+private fun ContadorPalabras(palabras: Int, minimo: Int, guardado: EstadoGuardado) {
     val llego = palabras >= minimo
     val faltan = (minimo - palabras).coerceAtLeast(0)
     Column(Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 "$palabras de $minimo palabras",
                 fontSize = 22.sp,
@@ -212,6 +221,8 @@ private fun ContadorPalabras(palabras: Int, minimo: Int) {
                     Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
                 }
             }
+            Spacer(Modifier.weight(1f))
+            IndicadorGuardado(guardado)
         }
         Spacer(Modifier.height(8.dp))
         LinearProgressIndicator(
@@ -237,6 +248,25 @@ private fun ContadorPalabras(palabras: Int, minimo: Int) {
     }
 }
 
+// T-325: como en el mockup, a la derecha del contador. Le da tranquilidad saber que no pierde su texto
+@Composable
+private fun IndicadorGuardado(guardado: EstadoGuardado) {
+    when (guardado) {
+        EstadoGuardado.NADA -> Unit
+        EstadoGuardado.GUARDANDO -> Text(
+            "Guardando…",
+            fontSize = 18.sp,
+            color = ColoresAventura.TextoOscuro,
+            modifier = Modifier.testTag("estado_guardado")
+        )
+        EstadoGuardado.GUARDADO -> Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("estado_guardado")) {
+            Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = ColoresAventura.Turquesa, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.width(4.dp))
+            Text("Guardado", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = ColoresAventura.TextoOscuro)
+        }
+    }
+}
+
 private val CONSIGNA_EDITOR = ConsignaNivel(
     2, "Palabras nuevas", "Escribe tres oraciones sobre tu animal favorito.",
     "Cuenta cómo es, qué come y dónde vive.", "animal", 15
@@ -257,7 +287,8 @@ fun PantallaEditorListoPreview() {
         ContenidoEditor(
             ConsignaUiState.Exito(CONSIGNA_EDITOR),
             "Mi animal favorito es el perro. Se llama Toby y es muy juguetón. Come croquetas y vive en mi casa con mi familia.",
-            {}, {}, {}, {}
+            {}, {}, {}, {},
+            guardado = EstadoGuardado.GUARDADO
         )
     }
 }

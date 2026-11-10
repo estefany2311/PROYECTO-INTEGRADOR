@@ -29,11 +29,6 @@ interface IAlmacenSesion {
     fun leerCodigoAula(): String?
 }
 
-/**
- * T-205: el token se cifra con AES-GCM usando una clave del Android Keystore.
- * La clave nunca sale del dispositivo: aunque alguien copie el archivo de preferencias,
- * no puede leer el token.
- */
 class AlmacenSesionSeguro(context: Context) : IAlmacenSesion {
 
     private val prefs = context.getSharedPreferences(ARCHIVO, Context.MODE_PRIVATE)

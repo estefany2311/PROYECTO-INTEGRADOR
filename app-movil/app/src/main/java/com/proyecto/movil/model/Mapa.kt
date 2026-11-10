@@ -1,11 +1,5 @@
 package com.proyecto.movil.model
 
-/*
- * T-209 (US-05): modelo de niveles y progreso del mapa de aventura.
- * Coincide con la respuesta de GET /api/estudiante/mapa (backend docente, T-197 de Noemí).
- * Las tablas nivel y progreso, y los 6 niveles semilla, los crea la migración V7 del backend docente.
- */
-
 // Tipos de reto de cada nivel. El backend los manda en minúsculas: "lectura", "escritura", "oralidad"
 enum class TipoReto {
     LECTURA, ESCRITURA, ORALIDAD, DESCONOCIDO;
@@ -16,13 +10,7 @@ enum class TipoReto {
     }
 }
 
-/*
- * T-213 (US-06): estado de un nivel para el alumno, tal como lo manda el backend en "estado":
- *   "bloqueado"    → todavía no puede entrar (le falta completar el nivel anterior)
- *   "desbloqueado" → puede jugarlo ahora
- *   "completado"   → ya lo terminó (puede volver a jugarlo)
- * El backend docente (T-197) calcula el estado con el progreso del alumno; la app solo lo lee.
- */
+
 enum class EstadoNivel {
     BLOQUEADO, DESBLOQUEADO, COMPLETADO;
 

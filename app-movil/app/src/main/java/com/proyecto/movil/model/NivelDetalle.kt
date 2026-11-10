@@ -1,9 +1,5 @@
 package com.proyecto.movil.model
 
-/*
- * T-215 (US-07): detalle de un nivel. Coincide con la respuesta de
- * GET /api/estudiante/niveles/{id} del backend estudiante (T-214).
- */
 data class NivelDetalle(
     val id: Int,
     val orden: Int,

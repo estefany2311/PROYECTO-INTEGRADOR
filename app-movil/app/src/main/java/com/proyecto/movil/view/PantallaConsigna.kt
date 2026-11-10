@@ -182,10 +182,6 @@ private fun TarjetaConsigna(consigna: ConsignaNivel, onEmpezar: () -> Unit) {
     }
 }
 
-/**
- * Ilustración de la consigna: Kiko con un dibujo del tema (huella, libro o lápiz).
- * El nombre viene de los datos semilla (T-319); si llega uno que la app no conoce, se usa el lápiz.
- */
 @Composable
 private fun IlustracionConsigna(clave: String) {
     Box(

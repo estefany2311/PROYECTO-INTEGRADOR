@@ -137,15 +137,6 @@ fun PantallaMapa(
     }
 }
 
-/**
- * T-237 (US-04): confirmación antes de cerrar la sesión, con la cara del alumno
- * para que vea que es SU sesión la que se cierra. Así un toque sin querer no lo saca.
- * Botones grandes y con palabras completas: "Sí, salir" / "No, quedarme".
- *
- * Diálogo propio en vez del estándar: con el móvil horizontal hay poca altura y el estándar
- * cortaba el texto y apilaba los botones. Aquí el avatar se achica en pantallas bajas,
- * los botones van siempre lado a lado y, si no cabe, el contenido se desliza.
- */
 @Composable
 fun DialogoSalir(
     nombre: String,
@@ -320,11 +311,6 @@ fun RecorridoNiveles(
     }
 }
 
-/**
- * T-211: el camino se dibuja con Canvas (una línea de puntos blancos con curvas)
- * en vez de imágenes: no pesa nada y se ve nítido en cualquier tamaño de tablet.
- * Cada círculo se coloca justo sobre su punto del camino.
- */
 @Composable
 private fun CaminoDeNiveles(
     niveles: List<NivelMapa>,
@@ -422,12 +408,6 @@ private fun ResumenAvance(completados: Int, total: Int, puntos: Int) {
     }
 }
 
-/**
- * Un nivel: círculo del color de su reto con el ícono del reto,
- * el número en una insignia arriba a la izquierda y el nombre debajo.
- * T-239 (US-06): si está bloqueado, el círculo es gris, lleva un candado en lugar del ícono
- * y el nombre se ve más suave. Así el niño distingue de un vistazo qué puede jugar.
- */
 @Composable
 private fun NodoNivel(
     nivel: NivelMapa,
@@ -525,10 +505,6 @@ private fun NodoNivel(
     }
 }
 
-/**
- * T-240 (US-06): tarjeta abajo de la pantalla con el candado y el mensaje.
- * Se oculta sola a los 4 s o al tocarla. liveRegion: TalkBack la lee apenas aparece.
- */
 @Composable
 private fun AvisoNivelBloqueado(mensaje: String, onCerrar: () -> Unit, modifier: Modifier = Modifier) {
     Row(

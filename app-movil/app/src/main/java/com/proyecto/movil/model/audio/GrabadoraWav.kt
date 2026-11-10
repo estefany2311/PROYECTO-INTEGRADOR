@@ -12,10 +12,6 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.abs
 
-/*
- * T-314 (US-11): graba la voz del niño en el formato que acordó el equipo para el motor de IA
- * (decisión de T-327): WAV, PCM de 16 bits, mono, 16 kHz. Pesa unos 32 KB por segundo (≈2 MB por minuto).
- */
 
 // Resultado de una grabación terminada
 data class Grabacion(val archivo: File, val duracionMs: Long)

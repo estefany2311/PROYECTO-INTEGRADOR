@@ -1,9 +1,7 @@
 package com.proyecto.movil.model
 
-/*
- * T-321 (US-17): lo que el niño tiene que escribir en un nivel de escritura.
- * Coincide con GET /api/estudiante/niveles/{id}/consigna del backend estudiante (T-320).
- */
+//T-321 (US-17): lo que el niño tiene que escribir en un nivel de escritura.
+
 data class ConsignaNivel(
     val nivelId: Int,
     val nombreNivel: String,

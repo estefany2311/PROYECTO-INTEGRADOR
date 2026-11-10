@@ -39,23 +39,12 @@ import androidx.core.content.ContextCompat
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
 
-/*
- * T-313 (US-11): permiso de micrófono explicado para niños.
- * Antes de que Android muestre su ventana de permiso, Kiko explica para qué se usa el micrófono.
- * Si el niño dice que no, se le explica otra vez; si Android ya no deja volver a preguntar
- * ("no volver a preguntar"), se le pide ayuda a su profesor para activarlo en Ajustes.
- */
-
 enum class EstadoPermiso {
     SIN_PEDIR,          // todavía no se pidió
     DENEGADO,           // dijo que no, pero se puede volver a preguntar
     DENEGADO_SIEMPRE    // Android ya no muestra la ventana: hay que ir a Ajustes
 }
 
-/**
- * Muestra [contenido] solo cuando la app ya tiene permiso para usar el micrófono.
- * Mientras no lo tenga, muestra la explicación de Kiko.
- */
 @Composable
 fun ConPermisoMicrofono(onAhoraNo: () -> Unit, contenido: @Composable () -> Unit) {
     val contexto = LocalContext.current

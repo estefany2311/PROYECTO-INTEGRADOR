@@ -25,17 +25,6 @@ import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.view.Koala
 
-/*
- * T-334: mockups del sprint 3 (grabación de voz y escritura). Solo se ven en el panel Preview (tamaño tablet).
- *   1. Lectura con letra grande ............ US-10
- *   2. Permiso de micrófono ................ US-11
- *   3. Grabando (indicador y tiempo) ....... US-11
- *   4. Consigna de escritura ............... US-17
- *   5. Editor con contador y errores ....... US-18, US-19
- *   6. Nivel completado (desbloqueo) ....... US-08
- * Usan los mismos colores y la mascota de la app para que el diseño final sea consistente.
- */
-
 private val Fondo = ColoresAventura.Cielo
 private val Texto = ColoresAventura.TextoOscuro
 

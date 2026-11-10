@@ -1,9 +1,5 @@
 package com.proyecto.movil.model
 
-/*
- * T-219 (US-10): el texto que el niño lee en un nivel.
- * Coincide con GET /api/estudiante/niveles/{id}/lectura del backend estudiante (T-218).
- */
 data class LecturaNivel(
     val nivelId: Int,
     val lecturaId: Long,

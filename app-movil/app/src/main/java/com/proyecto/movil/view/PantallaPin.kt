@@ -197,11 +197,6 @@ private fun TarjetaError(titulo: String, detalle: String?, tipo: TipoError?) {
 // Ida y vuelta cada vez más corta, como cuando alguien dice "no" con la cabeza (en dp)
 private val PASOS_SACUDIDA = listOf(-24f, 24f, -16f, 16f, -8f, 8f, 0f)
 
-/**
- * 4 círculos: rellenos los números ya escritos. El PIN nunca se muestra.
- * T-234: cada vez que [sacudidas] cambia, la fila se sacude y la tablet vibra.
- * Mientras [enError], los círculos llenos se ven en rojo; el ViewModel los borra al terminar.
- */
 @Composable
 private fun CirculosPin(cantidadEscrita: Int, sacudidas: Int = 0, enError: Boolean = false) {
     val desplazamiento = remember { Animatable(0f) }

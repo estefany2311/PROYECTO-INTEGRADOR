@@ -47,15 +47,6 @@ import com.proyecto.movil.viewmodel.GrabacionViewModel
 import com.proyecto.movil.viewmodel.LecturaUiState
 import com.proyecto.movil.viewmodel.LecturaViewModel
 
-/**
- * US-11: el niño graba su voz mientras lee el texto. Se abre con "Estoy listo, grabar" (T-219).
- * T-313: primero se asegura el permiso del micrófono con la explicación de Kiko.
- * T-314: graba en WAV, mono, 16 kHz (decisión de T-327). El texto sigue a la vista mientras graba.
- * T-315: indicador visual mientras graba (micrófono que late con la voz, punto rojo y barra de tiempo).
- * T-316: a los 2 minutos se detiene sola; en los últimos 15 s avisa cuánto queda.
- * T-317: la grabación queda guardada en la tablet (por estudiante) hasta que se envíe.
- * Llegan después: escuchar y enviar la grabación (US-12, US-13).
- */
 @Composable
 fun PantallaGrabacion(
     nivelId: Int,
@@ -217,10 +208,6 @@ private fun ControlesGrabacion(
     }
 }
 
-/**
- * T-315: el micrófono rojo con un aro que crece con la voz del niño. Así ve que la tablet lo está escuchando:
- * si habla bajito el aro casi no se mueve, si lee fuerte y claro el aro se agranda.
- */
 @Composable
 private fun IndicadorGrabando(nivelVoz: Float) {
     // Se suaviza para que no tiemble; con poca voz igual "respira" un poco

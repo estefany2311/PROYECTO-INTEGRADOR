@@ -38,12 +38,6 @@ import androidx.compose.ui.unit.sp
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
 
-/*
- * Mascota de la plataforma: el koala leyendo un libro.
- * Es el mismo dibujo del portal Admin (web-portal/admin/src/components/Koala.jsx, de Daniela),
- * pasado a Compose: se dibuja con Canvas sobre una cuadrícula de 200 x 200, igual que el SVG.
- * Animación (la misma del portal): flota de arriba abajo y saluda con la mano.
- */
 
 private val GrisOreja = Color(0xFF9AA6B2)
 private val RosaOreja = Color(0xFFF6C6D0)

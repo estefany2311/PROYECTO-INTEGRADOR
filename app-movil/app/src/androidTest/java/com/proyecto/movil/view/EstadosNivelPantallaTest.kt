@@ -17,11 +17,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * T-241 (US-06): la pantalla distingue los estados de cada nivel (T-239)
- * y avisa qué nivel se tocó (T-240).
- * Mapa de prueba: 1 completado, 2 desbloqueado, 3 a 6 bloqueados.
- */
+//T-241 (US-06): la pantalla distingue los estados de cada nivel (T-239)
+
 @RunWith(AndroidJUnit4::class)
 class EstadosNivelPantallaTest {
 

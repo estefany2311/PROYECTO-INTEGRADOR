@@ -40,11 +40,6 @@ class MapaViewModel(
     private val _aviso = MutableStateFlow<String?>(null)
     val aviso: StateFlow<String?> = _aviso
 
-    /**
-     * T-240 (US-06): el niño tocó un nivel del mapa.
-     * Si está bloqueado se le explica, con cariño, qué nivel tiene que terminar antes.
-     * Los niveles disponibles todavía no abren nada: los retos llegan en otro sprint.
-     */
     fun tocarNivel(nivel: NivelMapa) {
         if (!nivel.bloqueado) return
         val niveles = (_uiState.value as? MapaUiState.Exito)?.mapa?.niveles.orEmpty()
@@ -86,12 +81,6 @@ class MapaViewModel(
         if (estado.recienDesbloqueados.isNotEmpty()) _uiState.value = estado.copy(recienDesbloqueados = emptySet())
     }
 
-    /**
-      * T-208: borra el token del dispositivo y devuelve el código del aula,
-     * para volver a "¿Quién eres?" del mismo salón y que entre otro compañero.
-     * T-236: antes avisa al backend para que el token deje de servir. Si no hay conexión
-     * se espera como máximo [ESPERA_CIERRE_MS]: el niño nunca se queda atrapado en su sesión.
-     */
     fun salir(alTerminar: (codigoAula: String?) -> Unit) {
         viewModelScope.launch {
             // Primero el backend: el interceptor todavía encuentra el token guardado
