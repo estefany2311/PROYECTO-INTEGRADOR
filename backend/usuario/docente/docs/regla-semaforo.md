@@ -65,6 +65,7 @@ El color se decide con el promedio ya redondeado: 79.5 pasa a 80 (verde) y 59.5 
 | T-287 | Selectores de grado y competencia en el dashboard. |
 | T-288 | Persistencia de los filtros y del aula activa al volver al dashboard. |
 | T-289 | Pruebas de combinaciones de grado, competencia y `soloRojo`. |
+| T-290 | El detalle del estudiante devuelve el color de cada competencia y el color general. |
 
 El parámetro `soloRojo=true` del endpoint (T-282) filtra solo la lista de tarjetas;
 el resumen y los promedios del aula se calculan con los alumnos activos que pasan los
@@ -75,8 +76,8 @@ El color nunca debe ser la única señal: siempre va acompañado de ícono y tex
 ## 7. Fuera de alcance
 
 - Umbrales configurables por el administrador: en este sprint quedan fijos.
-- Semáforo por competencia en el detalle del estudiante (US-29): reutiliza esta misma
-  regla, pero se implementa en T-292.
+- Semáforo por competencia en el detalle del estudiante (US-29): el endpoint de T-290
+  ya devuelve el color de cada competencia con esta misma regla; la pantalla llega en T-292.
 
 ## 8. Implementación de la leyenda (T-280)
 
@@ -126,3 +127,14 @@ aula activa para que el grado guardado siga perteneciendo al aula mostrada.
 Las combinaciones de grado, competencia y `soloRojo` se cubren con pruebas de servicio y
 de controlador (T-289): el resumen y los promedios se calculan con los filtros de grado y
 competencia, y `soloRojo` únicamente limita las tarjetas visibles.
+
+## 12. Detalle del estudiante (T-290)
+
+El endpoint `GET /api/docente/aulas/{aulaId}/estudiantes/{estudianteId}/detalle`
+devuelve, para cada competencia con evaluaciones, el promedio, la cantidad de
+evaluaciones, el último puntaje y el color calculado con esta misma regla. También
+incluye el promedio general y su color, los niveles del mapa y las últimas diez
+evaluaciones. El contrato completo está en `docs/detalle-estudiante.md`.
+
+La pantalla de detalle (T-292) reutiliza esos colores y no vuelve a calcular el semáforo
+en el frontend. La validación de que el alumno pertenece al aula se completa en T-291.

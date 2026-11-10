@@ -1,5 +1,6 @@
 package com.proyecto.usuario.docente.repository;
 
+import com.proyecto.usuario.docente.model.Evaluacion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,5 +77,18 @@ class EvaluacionRepositoryTest {
         assertEquals(-3001L, promedios.get(2).getEstudianteId());
         assertEquals("lectura", promedios.get(2).getCompetencia());
         assertEquals(85.0, promedios.get(2).getPromedio(), 0.001);
+    }
+
+    @Test
+    void devuelveElHistorialDelAlumnoDeLaEvaluacionMasRecienteALaMasAntigua() {
+        List<Evaluacion> historial = evaluacionRepository
+                .findByEstudianteIdOrderByEvaluadoEnDescIdDesc(-3001L);
+
+        assertEquals(3, historial.size());
+        assertEquals(-4001L, historial.get(0).getId());
+        assertEquals("lectura", historial.get(0).getCompetencia());
+        assertEquals(-4002L, historial.get(1).getId());
+        assertEquals(-4003L, historial.get(2).getId());
+        assertEquals("escritura", historial.get(2).getCompetencia());
     }
 }

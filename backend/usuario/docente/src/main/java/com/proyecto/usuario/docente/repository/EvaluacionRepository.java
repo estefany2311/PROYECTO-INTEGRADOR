@@ -9,6 +9,7 @@ import java.util.List;
 
 /**
  * T-276 (US-27): promedio por competencia de los alumnos activos de un aula.
+ * T-290 (US-29): historial de evaluaciones de un alumno para el detalle.
  */
 public interface EvaluacionRepository extends JpaRepository<Evaluacion, Long> {
 
@@ -23,4 +24,10 @@ public interface EvaluacionRepository extends JpaRepository<Evaluacion, Long> {
             order by e.estudiante.id, e.competencia
             """)
     List<PromedioCompetenciaProjection> promediosPorAula(@Param("aulaId") Long aulaId);
+
+    /**
+     * T-290 (US-29): evaluaciones del alumno de la más reciente a la más antigua.
+     * El detalle calcula los promedios por competencia y muestra las últimas evidencias.
+     */
+    List<Evaluacion> findByEstudianteIdOrderByEvaluadoEnDescIdDesc(Long estudianteId);
 }

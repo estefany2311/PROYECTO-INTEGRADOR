@@ -50,10 +50,12 @@ npm run preview -- --port 4173
 | `GET /api/docente/aulas/9/dashboard?gradoId=1&competencia=lectura` | 200 · 1 estudiante (Ester) · 1 promedio de lectura · general 55 · rojo |
 | `GET /api/docente/aulas/9/dashboard?gradoId=99` | 400 · `El grado no corresponde a esta aula` |
 | `GET /api/docente/aulas/9/dashboard?competencia=matematica` | 400 · `La competencia no es válida` |
+| `GET /api/docente/aulas/9/estudiantes/{id}/detalle` | 200 · niveles, 3 competencias y últimas evidencias |
+| `GET /api/docente/aulas/9/estudiantes/999/detalle` | 404 · `El alumno no existe` |
 | `GET /api/docente/aulas/5/estudiantes` | 200 |
 | `GET /api/docente/aulas/5/lecturas` | 200 · 3 lecturas |
 | `GET /api/docente/aulas/5/grupos` | 200 |
-| `GET /v3/api-docs` | 200 · `API Docente` 1.0.0 · 14 rutas |
+| `GET /v3/api-docs` | 200 · `API Docente` 1.0.0 · 15 rutas |
 | `GET /swagger-ui.html` | 200 |
 | Frontend `/`, `/alumnos`, `/grupos`, `/catalogo`, `/dashboard` | 200 y sin errores de consola |
 | Leyenda del semáforo en `/dashboard` | 4 estados visibles · color + ícono + texto |
@@ -66,5 +68,8 @@ npm run preview -- --port 4173
 | Backend `SemaforoServiceTest` | 8/8 · límites, redondeo y sin evaluaciones |
 | Backend `RendimientoServiceTest` | 7/7 · filtros combinados, validaciones y `soloRojo` |
 | Backend `DashboardAulaControllerTest` | 6/6 · reenvío de filtros combinados y errores |
-| Backend `test` | 163/163 |
+| Backend `DetalleEstudianteServiceTest` | 6/6 · niveles, promedios, últimas diez evidencias y errores |
+| Backend `DetalleEstudianteControllerTest` | 3/3 · ruta, respuesta y errores HTTP |
+| Backend `EvaluacionRepositoryTest` | 2/2 · promedio por aula e historial del alumno |
+| Backend `test` | 173/173 |
 | Frontend `test`, `lint`, `build` | 62/62 · OK · OK |
