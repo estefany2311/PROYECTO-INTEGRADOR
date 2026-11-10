@@ -3,9 +3,11 @@ from rest_framework.test import APITestCase
 from unittest import mock
 
 from django.db import connection
- 
+from django.db import IntegrityError
+from django.test import TestCase
+
 from usuarios.models import Rol, Usuario
-from .models import Lectura
+from .models import Lectura, RecursoOficial
  
  
 class LecturaModelTests(APITestCase):
@@ -281,3 +283,31 @@ class LecturaEdicionYBorradoTests(APITestCase):
         self.assertTrue(lectura_esta_asignada(self.lectura.id))
         otra = Lectura.objects.create(titulo='Sin asignar', texto=self.TEXTO, tipo_reto='lectura')
         self.assertFalse(lectura_esta_asignada(otra.id))
+
+
+
+
+class RecursoOficialModelTests(TestCase):
+    """T-440: tabla de recursos oficiales."""
+
+    def crear(self, **datos):
+        base = {'uuid': '137b172b-9330-4bb7-a780-2184391d1810', 'titulo': 'El zorro y el cuy',
+                'url_recurso': 'https://bibliotecaescolar.minedu.gob.pe/handle/123456789/191'}
+        return RecursoOficial.objects.create(**{**base, **datos})
+
+    def test_recurso_nuevo_no_esta_importado(self):
+        self.assertFalse(self.crear().importado)
+
+    def test_al_vincular_una_lectura_queda_importado(self):
+        lectura = Lectura.objects.create(titulo='El zorro y el cuy', tipo_reto='lectura',
+                                         texto='Había una vez un zorro y un cuy que vivían en el campo.')
+        self.assertTrue(self.crear(lectura=lectura).importado)
+
+    def test_no_se_repite_el_mismo_uuid(self):
+        self.crear()
+        with self.assertRaises(IntegrityError):
+            self.crear(titulo='Otro título')
+
+    def test_str_muestra_titulo_y_grado(self):
+        self.assertEqual(str(self.crear(grado=2)), 'El zorro y el cuy (2.° grado)')
+        self.assertEqual(str(self.crear(uuid='otro-uuid')), 'El zorro y el cuy (sin grado)')
