@@ -2,6 +2,8 @@ package com.proyecto.movil.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -122,13 +124,20 @@ private fun ColumnScope.Hoja(
     onEscribir: (String) -> Unit,
     onEnviar: () -> Unit
 ) {
-    Column(
+    // Con poca altura (celular en horizontal o teclado abierto) la hoja tiene un alto fijo y todo se desliza
+    BoxWithConstraints(
         Modifier
             .weight(1f)
             .align(Alignment.CenterHorizontally)
             .widthIn(max = 720.dp)
             .fillMaxWidth()
-            .padding(24.dp)
+    ) {
+    val compacto = maxHeight < ALTO_COMPACTO
+    Column(
+        Modifier
+            .fillMaxSize()
+            .then(if (compacto) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+            .padding(if (compacto) 16.dp else 24.dp)
     ) {
         // La consigna queda arriba para que no olvide qué tiene que escribir
         Text(
@@ -156,14 +165,14 @@ private fun ColumnScope.Hoja(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .then(if (compacto) Modifier.height(ALTO_HOJA_COMPACTA) else Modifier.weight(1f))
                 .clip(RoundedCornerShape(24.dp))
                 .background(Color.White)
                 .border(3.dp, ColoresAventura.Naranja, RoundedCornerShape(24.dp))
                 .semantics { contentDescription = "Escribe tu texto aquí" }
                 .testTag("campo_texto"),
             decorationBox = { campo ->
-                Box(Modifier.fillMaxSize().padding(24.dp)) {
+                Box(Modifier.fillMaxSize().padding(if (compacto) 16.dp else 24.dp)) {
                     if (texto.isEmpty()) {
                         Text(
                             "Toca aquí y empieza a escribir…",
@@ -197,7 +206,11 @@ private fun ColumnScope.Hoja(
             Text("Enviar mi texto", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
         }
     }
+    }
 }
+
+private val ALTO_COMPACTO = 560.dp
+private val ALTO_HOJA_COMPACTA = 200.dp
 
 @Composable
 private fun ContadorPalabras(palabras: Int, minimo: Int, guardado: EstadoGuardado) {

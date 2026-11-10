@@ -30,6 +30,7 @@ class EditorViewModel(
 
     private var nivelId: Int? = null
     private var guardadoPendiente: Job? = null
+    private var sinGuardar = false
 
     // Al abrir el editor: si había un borrador de este nivel, se recupera
     fun abrir(nivelId: Int) {
@@ -46,6 +47,7 @@ class EditorViewModel(
         val texto = nuevo.take(MAX_CARACTERES)
         if (texto == _texto.value) return
         _texto.value = texto
+        sinGuardar = true
         programarGuardado()
     }
 
@@ -58,17 +60,16 @@ class EditorViewModel(
             delay(ESPERA_GUARDADO_MS)
             val texto = _texto.value
             withContext(io) { almacen.guardar(estudianteId(), nivel, texto) }
+            if (texto == _texto.value) sinGuardar = false
             _guardado.value = if (texto.isBlank()) EstadoGuardado.NADA else EstadoGuardado.GUARDADO
         }
     }
 
-    // Al salir del editor se guarda en ese momento lo que faltaba (el archivo es pequeño)
+    // Al salir del editor se guarda en ese momento lo que faltaba (el archivo es pequeño).
+    // Se usa sinGuardar porque Android cancela viewModelScope antes de llamar a onCleared()
     override fun onCleared() {
         val nivel = nivelId ?: return
-        if (guardadoPendiente?.isActive == true) {
-            guardadoPendiente?.cancel()
-            almacen.guardar(estudianteId(), nivel, _texto.value)
-        }
+        if (sinGuardar) almacen.guardar(estudianteId(), nivel, _texto.value)
     }
 
     companion object {
