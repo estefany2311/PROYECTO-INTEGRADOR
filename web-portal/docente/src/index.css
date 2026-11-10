@@ -2173,6 +2173,74 @@ legend {
   font-size: 1rem;
 }
 
+.grafico-evolucion {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 4px;
+}
+
+.grafico-eje-texto {
+  fill: var(--muted);
+  font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.grafico-punto-texto {
+  fill: #374151;
+  font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.grafico-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.grafico-leyenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.grafico-leyenda-punto {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.grafico-zonas {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.grafico-nota {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #F8F5EE;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.grafico-nota i {
+  color: var(--naranja);
+}
+
 .detalle-evaluaciones th {
   color: var(--muted);
   font-size: 0.66rem;

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { obtenerDetalleEstudiante } from "../api";
 import { seleccionarAula } from "../aulaSeleccionada";
+import GraficoEvolucion from "../components/GraficoEvolucion";
 
 // T-292 (US-29): pantalla de detalle del estudiante con el resumen por
 // competencia que devuelve el endpoint de T-290. El semáforo no se recalcula
@@ -283,6 +284,8 @@ export default function DetalleEstudiante() {
               </div>
             </section>
           </section>
+
+          <GraficoEvolucion evidencias={evidencias} nombre={nombre} />
 
           <section className="panel" aria-label="Ruta de aprendizaje">
             <div className="detalle-seccion-head">

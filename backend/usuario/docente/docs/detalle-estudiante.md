@@ -80,7 +80,7 @@ valida que el alumno pertenezca a esa aula; si no, responde `404` con
 | El aula es de otro docente | `403` | `El aula no pertenece al docente` |
 | El alumno no existe o pertenece a otra aula | `404` | `El alumno no existe en esta aula` |
 
-## 5. Pantalla de detalle (T-292)
+## 5. Pantalla de detalle (T-292 y T-293)
 
 El frontend abre el detalle desde cada tarjeta del dashboard con la ruta
 `/dashboard/aulas/{aulaId}/estudiantes/{estudianteId}`. La pantalla muestra:
@@ -92,6 +92,10 @@ El frontend abre el detalle desde cada tarjeta del dashboard con la ruta
 - La ruta de aprendizaje con el estado de cada nivel (`completado`, `desbloqueado` o
   `bloqueado`).
 - Las últimas evaluaciones con competencia, puntaje y fecha.
+- El gráfico de evolución (T-293), que ordena las últimas evaluaciones de la más antigua
+  a la más reciente. Cada punto se colorea según la competencia, muestra su puntaje y
+  usa las zonas del semáforo como fondo; si no hay evaluaciones se muestra un estado
+  vacío y, con una sola, un aviso de que todavía no hay tendencia.
 
 Cuando el alumno no tiene evaluaciones, las tres competencias se muestran en gris con
 el texto **Sin evaluaciones** y el promedio general aparece como `—`. Si el endpoint
@@ -108,3 +112,4 @@ permite reintentar o volver al dashboard. Las pruebas de la pantalla están en
 | `EvaluacionRepositoryTest` | El historial del alumno llega de la evaluación más reciente a la más antigua. |
 | T-291 | El alumno debe pertenecer al aula indicada; un alumno de otra aula devuelve `404`. |
 | `DetalleEstudiante.test.jsx` | Resumen por competencia, promedio general, niveles, últimas evaluaciones, estado sin datos y error con reintento (T-292). |
+| `GraficoEvolucion.test.jsx` | Orden cronológico, puntos por competencia, leyenda, etiqueta accesible, estado vacío y una sola evaluación (T-293). |

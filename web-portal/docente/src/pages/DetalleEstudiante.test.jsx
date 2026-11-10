@@ -193,6 +193,15 @@ describe("Detalle del estudiante (T-292)", () => {
     expect(within(niveles).getByText("Bloqueado")).toBeInTheDocument();
     expect(within(niveles).getByText("10 puntos")).toBeInTheDocument();
 
+    const evolucion = screen.getByRole("region", {
+      name: "Evolución de puntajes",
+    });
+    expect(
+      within(evolucion).getByRole("img", {
+        name: /gráfico de evolución de minji prueba/i,
+      })
+    ).toBeInTheDocument();
+
     const evidencias = screen.getByRole("region", {
       name: "Últimas evaluaciones",
     });
@@ -224,6 +233,9 @@ describe("Detalle del estudiante (T-292)", () => {
 
     expect(
       screen.getByText(/el mapa de niveles todavía no tiene información/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/aún no hay evaluaciones para mostrar la evolución/i)
     ).toBeInTheDocument();
     expect(
       screen.getByText(/todavía no hay evaluaciones registradas/i)

@@ -68,6 +68,7 @@ El color se decide con el promedio ya redondeado: 79.5 pasa a 80 (verde) y 59.5 
 | T-290 | El detalle del estudiante devuelve el color de cada competencia y el color general. |
 | T-291 | El detalle valida que el alumno pertenezca al aula del docente. |
 | T-292 | Pantalla de detalle con el resumen por competencia y el semáforo de cada una. |
+| T-293 | Gráfico de evolución de los puntajes con las zonas del semáforo. |
 
 El parámetro `soloRojo=true` del endpoint (T-282) filtra solo la lista de tarjetas;
 el resumen y los promedios del aula se calculan con los alumnos activos que pasan los
@@ -78,9 +79,7 @@ El color nunca debe ser la única señal: siempre va acompañado de ícono y tex
 ## 7. Fuera de alcance
 
 - Umbrales configurables por el administrador: en este sprint quedan fijos.
-- El detalle del estudiante ya muestra el semáforo por competencia (T-292); las
-  fortalezas/dificultades (T-294) y el gráfico de evolución (T-293) quedan para
-  las siguientes tareas de US-29.
+- Las fortalezas/dificultades del detalle (T-294) quedan para la siguiente tarea de US-29.
 
 ## 8. Implementación de la leyenda (T-280)
 
@@ -152,3 +151,14 @@ que devuelve el endpoint; el color siempre va acompañado de ícono y texto. Cua
 competencia no tiene evaluaciones se muestra en gris con el texto **Sin evaluaciones**.
 La pantalla también incluye el promedio general, la ruta de aprendizaje y las últimas
 evaluaciones. El enlace se abre desde cada tarjeta del dashboard.
+
+## 14. Gráfico de evolución (T-293)
+
+El detalle muestra un gráfico SVG con las últimas evaluaciones ordenadas de la más
+antigua a la más reciente. El eje vertical va de 0 a 100 y el fondo usa las zonas del
+semáforo (rojo 0-59, amarillo 60-79, verde 80-100). Cada punto toma el color de su
+competencia y muestra su puntaje; la leyenda solo lista las competencias presentes.
+La etiqueta accesible resume la cantidad de evaluaciones, el rango de fechas y el rango
+de puntajes. Sin evaluaciones se muestra un estado vacío y con una sola se avisa que
+todavía no hay tendencia. La tabla de últimas evaluaciones sigue disponible como
+alternativa textual.

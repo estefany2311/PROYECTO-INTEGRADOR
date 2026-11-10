@@ -65,6 +65,7 @@ npm run preview -- --port 4173
 | Filtros de grado y competencia en `/dashboard` (aula 9) | Grado 1.º → Ester · Lectura → solo lectura · sin alumnos → aviso de filtros |
 | Persistencia de filtros en `/dashboard` | Salir y volver conserva grado y competencia · el aula activa se restaura |
 | Detalle del alumno en `/dashboard/aulas/9/estudiantes/{id}` | 200 · resumen por competencia, niveles y últimas evaluaciones · vuelve al dashboard |
+| Gráfico de evolución en el detalle del alumno | visible · puntos ordenados por fecha · leyenda por competencia · zonas del semáforo |
 | Build de producción con `npm run preview` | 200 |
 | CORS desde `http://localhost:5173` | 200 · `Access-Control-Allow-Origin` correcto |
 | Backend `SemaforoServiceTest` | 8/8 · límites, redondeo y sin evaluaciones |
@@ -75,4 +76,5 @@ npm run preview -- --port 4173
 | Backend `EvaluacionRepositoryTest` | 2/2 · promedio por aula e historial del alumno |
 | Backend `test` | 175/175 |
 | Frontend `DetalleEstudiante.test.jsx` | 7/7 · resumen por competencia, sin datos y error con reintento |
-| Frontend `test`, `lint`, `build` | 70/70 · OK · OK |
+| Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
+| Frontend `test`, `lint`, `build` | 75/75 · OK · OK |
