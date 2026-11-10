@@ -23,12 +23,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * T-217 (US-08): pruebas del desbloqueo al completar un reto.
- * Cubre T-198 (completar y desbloquear), T-308 (registrar el intento),
- * T-309 (al menos 1 estrella) y T-310 (repetir sin desbloquear dos veces ni perder puntos).
- * Niveles de prueba como la semilla V7: 1 "Primeros pasos" y 2 "Palabras nuevas".
- */
 @ExtendWith(MockitoExtension.class)
 class DesbloqueoServiceTest {
 

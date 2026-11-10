@@ -8,10 +8,6 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
-/**
- * T-214: averigua qué alumno hace la petición a partir de "Authorization: Bearer <token>".
- * El id del alumno sale siempre del token, nunca de la URL: así nadie ve los datos de otro niño.
- */
 @Component
 public class AutenticadorTablet {
 

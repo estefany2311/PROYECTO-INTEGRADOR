@@ -15,14 +15,6 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-/**
- * T-214 (US-07): detalle de un nivel para el alumno que tiene la sesión.
- *
- * Misma regla de estado que el mapa del backend docente (T-197):
- *  - si el alumno tiene una fila de progreso en el nivel, manda esa fila;
- *  - si no: el primer nivel está desbloqueado y los demás solo si el anterior está completado.
- * Un nivel bloqueado NO se abre (403), aunque alguien escriba su id a mano.
- */
 @Service
 public class NivelService {
 
@@ -59,15 +51,6 @@ public class NivelService {
                 nivel.descripcion(), estado, puntos);
     }
 
-    /**
-     * T-198 (US-08): el alumno terminó el reto del nivel.
-     * Solo se puede terminar un nivel abierto para él (el mismo control que el detalle: 403 si está bloqueado).
-     * T-308: primero registra el intento (fecha, puntos y estrellas), siempre.
-     * T-309: si sacó las estrellas mínimas (por defecto 1), el nivel queda completado y se desbloquea
-     * el siguiente. Si no, solo queda el intento: puede volver a intentarlo.
-     * T-310: repetir un reto no desbloquea dos veces ni hace perder lo ganado (se guarda el mejor puntaje).
-     * Todo en una sola transacción.
-     */
     @Transactional
     public CompletarNivelResponse completar(long estudianteId, int nivelId, int puntos, int estrellas) {
         NivelDetalleResponse nivel = detalle(estudianteId, nivelId);    // 404 si no existe, 403 si está bloqueado

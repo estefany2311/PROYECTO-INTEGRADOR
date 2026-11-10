@@ -7,13 +7,6 @@ import com.proyecto.usuario.estudiante.model.Lectura;
 import com.proyecto.usuario.estudiante.repository.LecturaRepository;
 import org.springframework.stereotype.Service;
 
-/**
- * T-218 (US-10): qué texto lee el alumno en un nivel.
- *  1. El nivel tiene que estar abierto para él (mismo control que el detalle: 403 bloqueado, 404 no existe).
- *  2. Si su docente le asignó una lectura de ese tipo de reto, se usa la más reciente.
- *  3. Si no, una lectura activa del catálogo para su grado, empezando por las básicas.
- *  4. Si no hay ninguna: 404 con un mensaje amable.
- */
 @Service
 public class LecturaService {
 

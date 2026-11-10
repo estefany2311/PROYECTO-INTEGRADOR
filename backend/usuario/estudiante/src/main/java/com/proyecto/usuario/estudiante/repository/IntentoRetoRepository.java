@@ -5,10 +5,6 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 
-/**
- * T-308 (US-08): historial de intentos de cada reto (tabla intento_reto, migración V3).
- * Se guarda un intento por cada vez que el alumno termina un reto, con su fecha y su puntaje.
- */
 @Repository
 public class IntentoRetoRepository {
 

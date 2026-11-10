@@ -25,10 +25,6 @@ public class SesionController {
         return sesionService.iniciarSesion(request.estudianteId(), request.pin());
     }
 
-    /**
-     * T-236 (US-04): DELETE /api/estudiante/sesion con "Authorization: Bearer <token>".
-     * Responde 204 (sin cuerpo) y el token queda invalidado. Sin token responde 401.
-     */
     @DeleteMapping
     public ResponseEntity<Void> cerrar(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {

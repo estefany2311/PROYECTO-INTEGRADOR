@@ -43,11 +43,6 @@ public class SesionService {
         this.reglas = reglas;
     }
 
-    /**
-     * Valida el PIN del perfil elegido y crea una sesión nueva.
-     * Si el estudiante no existe, está inactivo o no tiene PIN, responde igual que un PIN incorrecto
-     * para no dar pistas de qué cuentas existen.
-     */
     public SesionResponse iniciarSesion(long estudianteId, String pin) {
         LocalDateTime ahora = LocalDateTime.now(reloj);
 
@@ -72,11 +67,6 @@ public class SesionService {
         return new SesionResponse(token, estudiante.id(), estudiante.nombre(), estudiante.avatarUrl());
     }
 
-    /**
-     * T-236 (US-04): "Salir" en la tablet. Se borra la sesión de la base, así el token
-     * deja de servir aunque alguien lo haya copiado. Si ya no existía (venció o se cerró antes)
-     * no es un error: el resultado es el mismo, la sesión queda cerrada.
-     */
     public void cerrarSesion(String token) {
         sesiones.eliminar(generadorToken.hash(token));
     }

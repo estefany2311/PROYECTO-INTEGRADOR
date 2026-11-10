@@ -21,10 +21,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/**
- * T-243 (US-07): detalle del nivel y la regla "un nivel bloqueado no se abre".
- * Niveles de prueba como la semilla V7: 1 "Primeros pasos" (lectura), 2 "Palabras nuevas" (escritura).
- */
 @ExtendWith(MockitoExtension.class)
 class NivelServiceTest {
 

@@ -7,12 +7,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/**
- * T-218 (US-10): elige el texto que el alumno va a leer en un nivel. Solo lee:
- *  - `lecturas`: catálogo del módulo Admin (Daniela)
- *  - `asignacion`: lecturas que el docente asignó a un alumno (Noemí, V6)
- *  - `estudiante`: para saber el grado del alumno (Noemí, V2)
- */
 @Repository
 public class LecturaRepository {
 

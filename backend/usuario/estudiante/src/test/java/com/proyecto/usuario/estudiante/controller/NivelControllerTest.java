@@ -25,10 +25,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * T-243 (US-07): forma de las respuestas de GET /api/estudiante/niveles/{id}
- * que lee la tablet (NivelRepository de la app, T-215).
- */
 class NivelControllerTest {
 
     private static final String TOKEN = "Bearer token-de-ana";

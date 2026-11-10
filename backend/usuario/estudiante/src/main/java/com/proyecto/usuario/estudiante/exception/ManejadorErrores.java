@@ -12,13 +12,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/*
- * Todas las respuestas de error tienen la forma {"mensaje": "..."}.
- * T-233 · Errores del PIN que lee la tablet (SesionRepository de la app):
- *   401 {"mensaje": "El PIN no es correcto", "intentosRestantes": 3}
- *   423 {"mensaje": "Demasiados intentos. Espera un momento", "segundosRestantes": 120}
- *       + cabecera Retry-After con los mismos segundos (estándar HTTP)
- */
 @RestControllerAdvice
 public class ManejadorErrores {
 
