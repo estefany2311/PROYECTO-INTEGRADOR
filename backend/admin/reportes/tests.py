@@ -7,6 +7,9 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase
 
+from rest_framework import status
+from rest_framework.test import APITestCase
+
 from instituciones.models import AsignacionDocente, Colegio
 from usuarios.models import Rol, Usuario
 from . import consultas
@@ -185,3 +188,48 @@ class CargarDatosReportesTests(TestCase):
     def test_sin_tablas_muestra_un_error_claro(self, _tablas):
         with self.assertRaises(CommandError):
             self.cargar()
+
+
+
+
+class ReporteColegiosAPITests(APITestCase):
+    """T-267: endpoint de reporte por colegio."""
+    URL = '/api/reportes/colegios/'
+
+    def setUp(self):
+        ConsultasAgregacionTests.setUp(self)  # reutiliza los mismos datos de T-264
+        rol_admin, _ = Rol.objects.get_or_create(nombre='ADMIN')
+        self.admin = Usuario.objects.create_user(
+            username='admin', email='admin@test.pe', password='clave-segura-1', rol=rol_admin)
+        self.client.force_authenticate(self.admin)
+
+    def test_admin_ve_resumen_y_colegios(self):
+        resp = self.client.get(self.URL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['resumen']['alumnos'], 4)  # sin la alumna inactiva
+        self.assertEqual(resp.data['resumen']['promedios']['lectura'], 56.7)
+        self.assertEqual({c['nombre'] for c in resp.data['colegios']}, {'IE Ccollpa', 'IE Huaccana'})
+
+    def test_filtrar_por_un_colegio(self):
+        resp = self.client.get(self.URL, {'colegio': self.colegio_b.id})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual([c['nombre'] for c in resp.data['colegios']], ['IE Huaccana'])
+        self.assertEqual(resp.data['resumen']['semaforo'],
+                         {'verde': 0, 'amarillo': 0, 'rojo': 1, 'sin_evaluar': 1})
+
+    def test_colegio_con_letras_devuelve_400(self):
+        self.assertEqual(self.client.get(self.URL, {'colegio': 'abc'}).status_code,
+                         status.HTTP_400_BAD_REQUEST)
+
+    def test_colegio_que_no_existe_devuelve_404(self):
+        self.assertEqual(self.client.get(self.URL, {'colegio': 99999}).status_code,
+                         status.HTTP_404_NOT_FOUND)
+
+    def test_sin_token_devuelve_401(self):
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_docente_no_puede_ver_el_reporte(self):
+        docente = Usuario.objects.get(username='doc_a')
+        self.client.force_authenticate(docente)
+        self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_403_FORBIDDEN)
