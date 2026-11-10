@@ -3,23 +3,30 @@ package com.proyecto.movil.view
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -33,7 +40,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.proyecto.movil.R
 import com.proyecto.movil.model.ConsignaNivel
+import com.proyecto.movil.model.contarPalabras
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.viewmodel.ConsignaUiState
@@ -155,11 +164,16 @@ private fun ColumnScope.Hoja(consigna: ConsignaNivel, texto: String, onEscribir:
                 }
             }
         )
+        Spacer(Modifier.height(16.dp))
+        // T-324: cuántas palabras lleva y cuántas le faltan
+        val palabras = remember(texto) { contarPalabras(texto) }
+        val llego = palabras >= consigna.palabrasMinimas
+        ContadorPalabras(palabras, consigna.palabrasMinimas)
         Spacer(Modifier.height(20.dp))
-        // Por ahora se activa al escribir algo; T-324 lo activará al llegar al mínimo de palabras
+        // T-324: se activa recién al llegar al mínimo de palabras de la consigna
         Button(
             onClick = onEnviar,
-            enabled = texto.isNotBlank(),
+            enabled = llego,
             colors = ButtonDefaults.buttonColors(
                 containerColor = ColoresAventura.Naranja,
                 disabledContainerColor = ColoresAventura.Gris
@@ -169,6 +183,57 @@ private fun ColumnScope.Hoja(consigna: ConsignaNivel, texto: String, onEscribir:
         ) {
             Text("Enviar mi texto", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
         }
+    }
+}
+
+/**
+ * T-324: "8 de 15 palabras" con una barra que se llena. Debajo le dice cuántas le faltan
+ * y, al llegar, que ya puede enviar (aunque puede seguir escribiendo).
+ */
+@Composable
+private fun ContadorPalabras(palabras: Int, minimo: Int) {
+    val llego = palabras >= minimo
+    val faltan = (minimo - palabras).coerceAtLeast(0)
+    Column(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "$palabras de $minimo palabras",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = ColoresAventura.TextoOscuro,
+                modifier = Modifier.testTag("contador_palabras")
+            )
+            if (llego) {
+                Spacer(Modifier.width(10.dp))
+                Box(
+                    Modifier.size(30.dp).clip(CircleShape).background(ColoresAventura.Turquesa),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { (palabras.toFloat() / minimo).coerceIn(0f, 1f) },
+            color = if (llego) ColoresAventura.Turquesa else ColoresAventura.Naranja,
+            trackColor = Color.White,
+            modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)).testTag("barra_palabras")
+        )
+        Spacer(Modifier.height(8.dp))
+        // liveRegion: TalkBack lee el aviso cuando cambia
+        Text(
+            when {
+                llego -> "¡Llegaste al mínimo! Ya puedes enviar tu texto."
+                faltan == 1 -> "Te falta 1 palabra"
+                else -> "Te faltan $faltan palabras"
+            },
+            fontSize = 18.sp,
+            color = ColoresAventura.TextoOscuro,
+            modifier = Modifier
+                .semantics { liveRegion = LiveRegionMode.Polite }
+                .testTag("aviso_palabras")
+        )
     }
 }
 
@@ -185,13 +250,25 @@ fun PantallaEditorVacioPreview() {
     }
 }
 
+@Preview(name = "Editor · llegó al mínimo", widthDp = 800, heightDp = 1280, showBackground = true)
+@Composable
+fun PantallaEditorListoPreview() {
+    AppMovilTheme(dynamicColor = false) {
+        ContenidoEditor(
+            ConsignaUiState.Exito(CONSIGNA_EDITOR),
+            "Mi animal favorito es el perro. Se llama Toby y es muy juguetón. Come croquetas y vive en mi casa con mi familia.",
+            {}, {}, {}, {}
+        )
+    }
+}
+
 @Preview(name = "Editor · escribiendo", widthDp = 800, heightDp = 1280, showBackground = true)
 @Composable
 fun PantallaEditorEscribiendoPreview() {
     AppMovilTheme(dynamicColor = false) {
         ContenidoEditor(
             ConsignaUiState.Exito(CONSIGNA_EDITOR),
-            "Mi animal favorito es el perro. Se llama Toby y es muy juguetón. Come croquetas y vive en mi casa.",
+            "Mi animal favorito es el perro. Se llama Toby.",
             {}, {}, {}, {}
         )
     }
