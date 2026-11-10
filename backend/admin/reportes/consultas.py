@@ -180,3 +180,85 @@ def rendimiento_por_colegio(colegio_id=None):
                 semaforo={'verde': verde, 'amarillo': amarillo, 'rojo': rojo, 'sin_evaluar': sin_evaluar},
             )
     return list(resultado.values())
+
+
+
+
+def rendimiento_por_aula(colegio_id):
+    """T-268: una fila por aula del colegio, con alumnos, promedios por competencia y semáforo."""
+    if not tablas_disponibles():
+        return []
+
+    sql = """
+        WITH aulas AS (
+            SELECT a.id, a.nombre, a.docente_id
+            FROM aula a
+            JOIN colegio_docentes cd ON cd.docente_id = a.docente_id
+            WHERE cd.colegio_id = %s
+        ),
+        alumnos AS (
+            SELECT e.id AS estudiante_id, e.aula_id
+            FROM estudiante e
+            JOIN aulas au ON au.id = e.aula_id
+            WHERE e.activo
+        ),
+        promedio_alumno AS (
+            SELECT al.aula_id, al.estudiante_id, AVG(ev.puntaje) AS promedio
+            FROM alumnos al
+            LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id
+            GROUP BY al.aula_id, al.estudiante_id
+        ),
+        por_competencia AS (
+            SELECT al.aula_id,
+                   COUNT(ev.id) AS evaluaciones,
+                   ROUND(AVG(ev.puntaje)::numeric, 1) AS general,
+                   ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'lectura'))::numeric, 1) AS lectura,
+                   ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'escritura'))::numeric, 1) AS escritura,
+                   ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'oralidad'))::numeric, 1) AS oralidad
+            FROM alumnos al
+            LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id
+            GROUP BY al.aula_id
+        ),
+        semaforo AS (
+            SELECT aula_id,
+                   COUNT(*) AS alumnos,
+                   COUNT(*) FILTER (WHERE promedio >= %s) AS verde,
+                   COUNT(*) FILTER (WHERE promedio >= %s AND promedio < %s) AS amarillo,
+                   COUNT(*) FILTER (WHERE promedio < %s) AS rojo,
+                   COUNT(*) FILTER (WHERE promedio IS NULL) AS sin_evaluar
+            FROM promedio_alumno
+            GROUP BY aula_id
+        )
+        SELECT au.id, au.nombre, au.docente_id,
+               COALESCE(s.alumnos, 0), COALESCE(p.evaluaciones, 0),
+               p.general, p.lectura, p.escritura, p.oralidad,
+               COALESCE(s.verde, 0), COALESCE(s.amarillo, 0), COALESCE(s.rojo, 0), COALESCE(s.sin_evaluar, 0)
+        FROM aulas au
+        LEFT JOIN semaforo s ON s.aula_id = au.id
+        LEFT JOIN por_competencia p ON p.aula_id = au.id
+        ORDER BY au.nombre
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(sql, [colegio_id, UMBRAL_VERDE, UMBRAL_AMARILLO, UMBRAL_VERDE, UMBRAL_AMARILLO])
+        filas = cursor.fetchall()
+
+    # Nombres de los docentes (tabla usuarios de Django)
+    from usuarios.models import Usuario
+    docentes = {u.id: (u.get_full_name() or u.username)
+                for u in Usuario.objects.filter(id__in=[f[2] for f in filas])}
+
+    return [
+        {
+            'aula_id': aula_id,
+            'nombre': nombre,
+            'docente': docentes.get(docente_id),
+            'alumnos': alumnos,
+            'evaluaciones': evaluaciones,
+            'promedio_general': _numero(general),
+            'promedios': {'lectura': _numero(lectura), 'escritura': _numero(escritura),
+                          'oralidad': _numero(oralidad)},
+            'semaforo': {'verde': verde, 'amarillo': amarillo, 'rojo': rojo, 'sin_evaluar': sin_evaluar},
+        }
+        for (aula_id, nombre, docente_id, alumnos, evaluaciones, general, lectura, escritura, oralidad,
+             verde, amarillo, rojo, sin_evaluar) in filas
+    ]

@@ -233,3 +233,55 @@ class ReporteColegiosAPITests(APITestCase):
         docente = Usuario.objects.get(username='doc_a')
         self.client.force_authenticate(docente)
         self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_403_FORBIDDEN)
+
+
+
+
+
+class ReporteAulasAPITests(APITestCase):
+    """T-268: endpoint de reporte por aula dentro del colegio."""
+
+    def setUp(self):
+        ConsultasAgregacionTests.setUp(self)  # mismos datos de T-264
+        with connection.cursor() as c:
+            # Un aula del colegio A sin alumnos
+            docente_a = Usuario.objects.get(username='doc_a')
+            c.execute('INSERT INTO aula VALUES (103, %s, %s)', ['Aula C vacía', docente_a.id])
+        rol_admin, _ = Rol.objects.get_or_create(nombre='ADMIN')
+        self.admin = Usuario.objects.create_user(
+            username='admin', email='admin@test.pe', password='clave-segura-1', rol=rol_admin)
+        self.client.force_authenticate(self.admin)
+
+    def url(self, colegio_id):
+        return f'/api/reportes/colegios/{colegio_id}/aulas/'
+
+    def test_aulas_del_colegio_a(self):
+        resp = self.client.get(self.url(self.colegio_a.id))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['colegio']['nombre'], 'IE Ccollpa')
+        aulas = {a['nombre']: a for a in resp.data['aulas']}
+        self.assertEqual(set(aulas), {'Aula A', 'Aula C vacía'})
+        a = aulas['Aula A']
+        self.assertEqual((a['alumnos'], a['evaluaciones'], a['docente']), (2, 4, 'doc_a'))
+        self.assertEqual(a['promedios'], {'lectura': 70.0, 'escritura': 70.0, 'oralidad': 40.0})
+        self.assertEqual(a['semaforo'], {'verde': 1, 'amarillo': 1, 'rojo': 0, 'sin_evaluar': 0})
+
+    def test_aula_sin_alumnos_sale_en_cero(self):
+        aulas = {a['nombre']: a for a in self.client.get(self.url(self.colegio_a.id)).data['aulas']}
+        vacia = aulas['Aula C vacía']
+        self.assertEqual((vacia['alumnos'], vacia['promedio_general']), (0, None))
+
+    def test_solo_salen_las_aulas_de_ese_colegio(self):
+        resp = self.client.get(self.url(self.colegio_b.id))
+        self.assertEqual([a['nombre'] for a in resp.data['aulas']], ['Aula B'])
+
+    def test_colegio_que_no_existe_devuelve_404(self):
+        self.assertEqual(self.client.get(self.url(99999)).status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_docente_no_puede_ver_el_reporte(self):
+        self.client.force_authenticate(Usuario.objects.get(username='doc_a'))
+        self.assertEqual(self.client.get(self.url(self.colegio_a.id)).status_code, status.HTTP_403_FORBIDDEN)
+
+    @mock.patch('reportes.consultas.tablas_disponibles', return_value=False)
+    def test_sin_tablas_devuelve_lista_vacia(self, _tablas):
+        self.assertEqual(self.client.get(self.url(self.colegio_a.id)).data['aulas'], [])
