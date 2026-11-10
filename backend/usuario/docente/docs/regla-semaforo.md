@@ -66,6 +66,8 @@ El color se decide con el promedio ya redondeado: 79.5 pasa a 80 (verde) y 59.5 
 | T-288 | Persistencia de los filtros y del aula activa al volver al dashboard. |
 | T-289 | Pruebas de combinaciones de grado, competencia y `soloRojo`. |
 | T-290 | El detalle del estudiante devuelve el color de cada competencia y el color general. |
+| T-291 | El detalle valida que el alumno pertenezca al aula del docente. |
+| T-292 | Pantalla de detalle con el resumen por competencia y el semáforo de cada una. |
 
 El parámetro `soloRojo=true` del endpoint (T-282) filtra solo la lista de tarjetas;
 el resumen y los promedios del aula se calculan con los alumnos activos que pasan los
@@ -76,8 +78,9 @@ El color nunca debe ser la única señal: siempre va acompañado de ícono y tex
 ## 7. Fuera de alcance
 
 - Umbrales configurables por el administrador: en este sprint quedan fijos.
-- Semáforo por competencia en el detalle del estudiante (US-29): el endpoint de T-290
-  ya devuelve el color de cada competencia con esta misma regla; la pantalla llega en T-292.
+- El detalle del estudiante ya muestra el semáforo por competencia (T-292); las
+  fortalezas/dificultades (T-294) y el gráfico de evolución (T-293) quedan para
+  las siguientes tareas de US-29.
 
 ## 8. Implementación de la leyenda (T-280)
 
@@ -139,3 +142,13 @@ evaluaciones. El contrato completo está en `docs/detalle-estudiante.md`.
 La pantalla de detalle (T-292) reutiliza esos colores y no vuelve a calcular el semáforo
 en el frontend. T-291 valida que el alumno pertenezca al aula del docente antes de
 devolver el detalle.
+
+## 13. Pantalla de detalle (T-292)
+
+La ruta `/dashboard/aulas/:aulaId/estudiantes/:estudianteId` muestra el resumen del
+alumno. Cada competencia (`lectura`, `escritura`, `oralidad`) se presenta como una
+tarjeta con el promedio, la cantidad de evaluaciones, el último puntaje y el semáforo
+que devuelve el endpoint; el color siempre va acompañado de ícono y texto. Cuando una
+competencia no tiene evaluaciones se muestra en gris con el texto **Sin evaluaciones**.
+La pantalla también incluye el promedio general, la ruta de aprendizaje y las últimas
+evaluaciones. El enlace se abre desde cada tarjeta del dashboard.

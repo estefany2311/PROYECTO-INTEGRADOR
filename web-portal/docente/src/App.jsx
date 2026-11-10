@@ -3,6 +3,7 @@ import Layout from "./components/Layout";
 import Alumnos from "./pages/Alumnos";
 import Catalogo from "./pages/Catalogo";
 import Dashboard from "./pages/Dashboard";
+import DetalleEstudiante from "./pages/DetalleEstudiante";
 import Grupos from "./pages/Grupos";
 import FormularioAula from "./FormularioAula";
 
@@ -16,6 +17,10 @@ export default function App() {
         <Route path="/grupos" element={<Grupos />} />
         <Route path="/catalogo" element={<Catalogo />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route
+          path="/dashboard/aulas/:aulaId/estudiantes/:estudianteId"
+          element={<DetalleEstudiante />}
+        />
       </Route>
     </Routes>
   );

@@ -407,6 +407,7 @@ export default function Dashboard() {
                 <TarjetaEstudiante
                   key={estudiante.id}
                   estudiante={estudiante}
+                  aulaId={aulaId}
                   aulaNombre={aulaNombre}
                   competencia={competencia}
                 />
@@ -481,7 +482,7 @@ function SeccionRefuerzo({ estudiantes }) {
   );
 }
 
-function TarjetaEstudiante({ estudiante, aulaNombre, competencia }) {
+function TarjetaEstudiante({ estudiante, aulaId, aulaNombre, competencia }) {
   const semaforo = datosSemaforo(estudiante.color);
   const nombre = nombreCompleto(estudiante);
   const competenciaTexto =
@@ -490,10 +491,16 @@ function TarjetaEstudiante({ estudiante, aulaNombre, competencia }) {
     ? COMPETENCIAS.filter(({ clave }) => clave === competencia)
     : COMPETENCIAS;
   const sinDatos = !estudiante.competencias || estudiante.competencias.length === 0;
+  // T-292: abre el detalle del alumno manteniendo el aula de la tarjeta.
+  const enlaceDetalle = `/dashboard/aulas/${aulaId}/estudiantes/${estudiante.id}`;
 
   return (
     <article className={`alumno-card semaforo-${semaforo.clase}`}>
-      <div className="alumno-card-head">
+      <Link
+        to={enlaceDetalle}
+        className="alumno-card-head alumno-card-link"
+        aria-label={`Ver detalle de ${nombre}`}
+      >
         <span
           className="alumno-avatar"
           style={{ background: colorAvatar(estudiante.id) }}
@@ -507,7 +514,8 @@ function TarjetaEstudiante({ estudiante, aulaNombre, competencia }) {
             {estudiante.gradoNombre || "Sin grado"} · {aulaNombre}
           </div>
         </div>
-      </div>
+        <i className="bi bi-arrow-right alumno-card-arrow" aria-hidden="true" />
+      </Link>
 
       <div className="alumno-promedio-line">
         <div className="alumno-promedio">

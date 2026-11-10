@@ -300,6 +300,16 @@ describe("Pantalla del dashboard (T-279)", () => {
     expect(within(panelAula).getByText("73")).toBeInTheDocument();
   });
 
+  it("enlaza cada tarjeta con el detalle del estudiante (T-292)", async () => {
+    api.listarDashboardAula.mockResolvedValue(DASHBOARD);
+    mostrar();
+
+    expect(await screen.findByText("minji prueba")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Ver detalle de minji prueba" })
+    ).toHaveAttribute("href", "/dashboard/aulas/10/estudiantes/1");
+  });
+
   it("muestra la leyenda accesible del semáforo", async () => {
     api.listarDashboardAula.mockResolvedValue(DASHBOARD);
     mostrar();

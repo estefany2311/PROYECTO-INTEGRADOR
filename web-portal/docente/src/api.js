@@ -31,6 +31,11 @@ export const listarDashboardAula = (aulaId, filtros = {}) => {
 export const crearAula = (datos) =>
   pedir("/api/docente/aulas", { method: "POST", body: JSON.stringify(datos) });
 
+// T-292: detalle del estudiante (endpoint de T-290). Incluye niveles,
+// resumen por competencia y últimas evaluaciones en una sola llamada.
+export const obtenerDetalleEstudiante = (aulaId, estudianteId) =>
+  pedir(`/api/docente/aulas/${aulaId}/estudiantes/${estudianteId}/detalle`);
+
 export const listarEstudiantes = (aulaId) =>
   pedir(`/api/docente/aulas/${aulaId}/estudiantes`);
 export const crearEstudiante = (aulaId, datos) =>
