@@ -210,6 +210,31 @@ describe("Detalle del estudiante (T-292)", () => {
     expect(within(evidencias).getByText("65/100")).toBeInTheDocument();
   });
 
+  it("muestra fortalezas y dificultades a partir del resumen", async () => {
+    api.obtenerDetalleEstudiante.mockResolvedValue(DETALLE);
+    mostrar();
+
+    const panel = await screen.findByRole("region", {
+      name: "Fortalezas y dificultades",
+    });
+
+    const fortalezas = within(panel).getByRole("region", { name: "Fortalezas" });
+    expect(within(fortalezas).getByText("Lectura")).toBeInTheDocument();
+    expect(within(fortalezas).getByText("En nivel esperado")).toBeInTheDocument();
+
+    const dificultades = within(panel).getByRole("region", {
+      name: "Dificultades",
+    });
+    expect(within(dificultades).getByText("Oralidad")).toBeInTheDocument();
+    expect(
+      within(dificultades).getByText("Necesita refuerzo")
+    ).toBeInTheDocument();
+
+    expect(
+      within(panel).getByText(/en proceso \(amarillo\): escritura 70\/100/i)
+    ).toBeInTheDocument();
+  });
+
   it("muestra las competencias en gris cuando no hay evaluaciones", async () => {
     api.obtenerDetalleEstudiante.mockResolvedValue(SIN_EVALUACIONES);
     mostrar();
@@ -236,6 +261,11 @@ describe("Detalle del estudiante (T-292)", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(/aún no hay evaluaciones para mostrar la evolución/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /aún no hay evaluaciones para identificar fortalezas y dificultades/i
+      )
     ).toBeInTheDocument();
     expect(
       screen.getByText(/todavía no hay evaluaciones registradas/i)

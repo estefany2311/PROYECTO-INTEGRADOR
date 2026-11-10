@@ -69,6 +69,7 @@ El color se decide con el promedio ya redondeado: 79.5 pasa a 80 (verde) y 59.5 
 | T-291 | El detalle valida que el alumno pertenezca al aula del docente. |
 | T-292 | Pantalla de detalle con el resumen por competencia y el semáforo de cada una. |
 | T-293 | Gráfico de evolución de los puntajes con las zonas del semáforo. |
+| T-294 | Fortalezas (verde) y dificultades (rojo) del estudiante; el amarillo queda en proceso. |
 
 El parámetro `soloRojo=true` del endpoint (T-282) filtra solo la lista de tarjetas;
 el resumen y los promedios del aula se calculan con los alumnos activos que pasan los
@@ -79,7 +80,6 @@ El color nunca debe ser la única señal: siempre va acompañado de ícono y tex
 ## 7. Fuera de alcance
 
 - Umbrales configurables por el administrador: en este sprint quedan fijos.
-- Las fortalezas/dificultades del detalle (T-294) quedan para la siguiente tarea de US-29.
 
 ## 8. Implementación de la leyenda (T-280)
 
@@ -162,3 +162,20 @@ La etiqueta accesible resume la cantidad de evaluaciones, el rango de fechas y e
 de puntajes. Sin evaluaciones se muestra un estado vacío y con una sola se avisa que
 todavía no hay tendencia. La tabla de últimas evaluaciones sigue disponible como
 alternativa textual.
+
+## 15. Fortalezas y dificultades (T-294)
+
+El detalle reutiliza `puntajesPorCompetencia` para clasificar cada competencia:
+
+| Color | Clasificación |
+|---|---|
+| Verde | Fortaleza (nivel esperado). |
+| Rojo | Dificultad (necesita refuerzo). |
+| Amarillo | En proceso: se lista aparte y no cuenta como fortaleza ni dificultad. |
+| Gris | Sin evaluaciones: se ignora. |
+
+El panel muestra dos grupos, **Fortalezas** y **Dificultades**, con el promedio y la
+cantidad de evaluaciones de cada competencia. Si un grupo queda vacío se muestra un
+mensaje; si el estudiante no tiene evaluaciones, el panel completo muestra un estado
+vacío. El color siempre va acompañado de ícono y texto, igual que en el resto del
+detalle.
