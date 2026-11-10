@@ -51,7 +51,8 @@ npm run preview -- --port 4173
 | `GET /api/docente/aulas/9/dashboard?gradoId=99` | 400 · `El grado no corresponde a esta aula` |
 | `GET /api/docente/aulas/9/dashboard?competencia=matematica` | 400 · `La competencia no es válida` |
 | `GET /api/docente/aulas/9/estudiantes/{id}/detalle` | 200 · niveles, 3 competencias y últimas evidencias |
-| `GET /api/docente/aulas/9/estudiantes/999/detalle` | 404 · `El alumno no existe` |
+| `GET /api/docente/aulas/9/estudiantes/999/detalle` | 404 · `El alumno no existe en esta aula` |
+| `GET /api/docente/aulas/9/estudiantes/{id de otra aula}/detalle` | 404 · `El alumno no existe en esta aula` |
 | `GET /api/docente/aulas/5/estudiantes` | 200 |
 | `GET /api/docente/aulas/5/lecturas` | 200 · 3 lecturas |
 | `GET /api/docente/aulas/5/grupos` | 200 |
@@ -68,8 +69,8 @@ npm run preview -- --port 4173
 | Backend `SemaforoServiceTest` | 8/8 · límites, redondeo y sin evaluaciones |
 | Backend `RendimientoServiceTest` | 7/7 · filtros combinados, validaciones y `soloRojo` |
 | Backend `DashboardAulaControllerTest` | 6/6 · reenvío de filtros combinados y errores |
-| Backend `DetalleEstudianteServiceTest` | 6/6 · niveles, promedios, últimas diez evidencias y errores |
-| Backend `DetalleEstudianteControllerTest` | 3/3 · ruta, respuesta y errores HTTP |
+| Backend `DetalleEstudianteServiceTest` | 7/7 · niveles, promedios, últimas diez evidencias y errores |
+| Backend `DetalleEstudianteControllerTest` | 4/4 · ruta, respuesta y errores HTTP |
 | Backend `EvaluacionRepositoryTest` | 2/2 · promedio por aula e historial del alumno |
-| Backend `test` | 173/173 |
+| Backend `test` | 175/175 |
 | Frontend `test`, `lint`, `build` | 62/62 · OK · OK |

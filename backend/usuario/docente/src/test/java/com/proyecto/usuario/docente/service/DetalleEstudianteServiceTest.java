@@ -76,7 +76,7 @@ class DetalleEstudianteServiceTest {
     @Test
     void devuelveNivelesPuntajesPorCompetenciaYUltimasEvidencias() {
         when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
-        when(estudianteRepository.findById(7L)).thenReturn(Optional.of(estudiante));
+        when(estudianteRepository.findByIdAndAulaId(7L, 10L)).thenReturn(Optional.of(estudiante));
 
         Evaluacion evaluacionOralidad = evaluacion(3L, "oralidad", (short) 80, "2026-11-03T10:00");
         Evaluacion evaluacionEscritura = evaluacion(2L, "escritura", (short) 85, "2026-11-02T10:00");
@@ -131,7 +131,7 @@ class DetalleEstudianteServiceTest {
     @Test
     void sinEvaluacionesDevuelveGrisYListasVacias() {
         when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
-        when(estudianteRepository.findById(7L)).thenReturn(Optional.of(estudiante));
+        when(estudianteRepository.findByIdAndAulaId(7L, 10L)).thenReturn(Optional.of(estudiante));
         when(evaluacionRepository.findByEstudianteIdOrderByEvaluadoEnDescIdDesc(7L))
                 .thenReturn(List.of());
         when(mapaEstudianteService.nivelesDe(7L)).thenReturn(List.of());
@@ -148,7 +148,7 @@ class DetalleEstudianteServiceTest {
     @Test
     void limitaLasEvidenciasAUltimasDiez() {
         when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
-        when(estudianteRepository.findById(7L)).thenReturn(Optional.of(estudiante));
+        when(estudianteRepository.findByIdAndAulaId(7L, 10L)).thenReturn(Optional.of(estudiante));
 
         List<Evaluacion> evaluaciones = new ArrayList<>();
         for (int i = 12; i >= 1; i--) {
@@ -171,13 +171,25 @@ class DetalleEstudianteServiceTest {
     @Test
     void alumnoInexistenteDevuelve404() {
         when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
-        when(estudianteRepository.findById(99L)).thenReturn(Optional.empty());
+        when(estudianteRepository.findByIdAndAulaId(99L, 10L)).thenReturn(Optional.empty());
 
         ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
                 () -> service.detalle(1L, 10L, 99L));
 
         assertEquals(HttpStatus.NOT_FOUND, error.getEstado());
-        assertEquals("El alumno no existe", error.getMessage());
+        assertEquals("El alumno no existe en esta aula", error.getMessage());
+    }
+
+    @Test
+    void alumnoDeOtraAulaDevuelve404() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(7L, 10L)).thenReturn(Optional.empty());
+
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                () -> service.detalle(1L, 10L, 7L));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getEstado());
+        assertEquals("El alumno no existe en esta aula", error.getMessage());
     }
 
     @Test

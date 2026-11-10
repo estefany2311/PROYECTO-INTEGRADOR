@@ -137,4 +137,5 @@ incluye el promedio general y su color, los niveles del mapa y las últimas diez
 evaluaciones. El contrato completo está en `docs/detalle-estudiante.md`.
 
 La pantalla de detalle (T-292) reutiliza esos colores y no vuelve a calcular el semáforo
-en el frontend. La validación de que el alumno pertenece al aula se completa en T-291.
+en el frontend. T-291 valida que el alumno pertenezca al aula del docente antes de
+devolver el detalle.

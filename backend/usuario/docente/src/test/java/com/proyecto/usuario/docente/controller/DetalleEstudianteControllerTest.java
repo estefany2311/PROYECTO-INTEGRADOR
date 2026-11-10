@@ -88,12 +88,25 @@ class DetalleEstudianteControllerTest {
     @Test
     void alumnoInexistenteDevuelve404() throws Exception {
         when(service.detalle(1L, 10L, 99L))
-                .thenThrow(new ReglaNegocioException("El alumno no existe", HttpStatus.NOT_FOUND));
+                .thenThrow(new ReglaNegocioException(
+                        "El alumno no existe en esta aula", HttpStatus.NOT_FOUND));
 
         mvc.perform(get("/api/docente/aulas/10/estudiantes/99/detalle")
                         .header("X-Docente-Id", 1))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.mensaje").value("El alumno no existe"));
+                .andExpect(jsonPath("$.mensaje").value("El alumno no existe en esta aula"));
+    }
+
+    @Test
+    void alumnoDeOtraAulaDevuelve404() throws Exception {
+        when(service.detalle(1L, 10L, 7L))
+                .thenThrow(new ReglaNegocioException(
+                        "El alumno no existe en esta aula", HttpStatus.NOT_FOUND));
+
+        mvc.perform(get("/api/docente/aulas/10/estudiantes/7/detalle")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje").value("El alumno no existe en esta aula"));
     }
 
     @Test

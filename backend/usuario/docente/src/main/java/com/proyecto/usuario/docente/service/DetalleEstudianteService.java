@@ -54,10 +54,10 @@ public class DetalleEstudianteService {
     @Transactional(readOnly = true)
     public DetalleEstudianteResponse detalle(Long docenteId, Long aulaId, Long estudianteId) {
         buscarAulaDelDocente(docenteId, aulaId);
-        // T-291 completará la validación de que el alumno pertenece a esta aula.
-        Estudiante estudiante = estudianteRepository.findById(estudianteId)
+        // T-291 (US-29): el alumno debe pertenecer al aula indicada, que ya es del docente.
+        Estudiante estudiante = estudianteRepository.findByIdAndAulaId(estudianteId, aulaId)
                 .orElseThrow(() -> new ReglaNegocioException(
-                        "El alumno no existe", HttpStatus.NOT_FOUND));
+                        "El alumno no existe en esta aula", HttpStatus.NOT_FOUND));
 
         List<Evaluacion> evaluaciones = evaluacionRepository
                 .findByEstudianteIdOrderByEvaluadoEnDescIdDesc(estudianteId);

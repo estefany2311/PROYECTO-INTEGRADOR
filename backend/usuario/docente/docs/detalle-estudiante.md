@@ -16,8 +16,9 @@ GET /api/docente/aulas/{aulaId}/estudiantes/{estudianteId}/detalle
 X-Docente-Id: 1
 ```
 
-La ruta vive bajo el aula para validar que el aula pertenece al docente. La validación
-de que el alumno pertenece a esa aula se completa en T-291.
+La ruta vive bajo el aula para validar que el aula pertenece al docente. Además, T-291
+valida que el alumno pertenezca a esa aula; si no, responde `404` con
+`El alumno no existe en esta aula`.
 
 ## 3. Respuesta
 
@@ -77,7 +78,7 @@ de que el alumno pertenece a esa aula se completa en T-291.
 |---|---|---|
 | El aula no existe | `404` | `El aula no existe` |
 | El aula es de otro docente | `403` | `El aula no pertenece al docente` |
-| El alumno no existe | `404` | `El alumno no existe` |
+| El alumno no existe o pertenece a otra aula | `404` | `El alumno no existe en esta aula` |
 
 ## 5. Pruebas
 
@@ -86,3 +87,4 @@ de que el alumno pertenece a esa aula se completa en T-291.
 | `DetalleEstudianteServiceTest` | Niveles, promedios por competencia, color, últimas diez evidencias, sin evaluaciones y errores. |
 | `DetalleEstudianteControllerTest` | Ruta, forma de la respuesta y traducción de errores a HTTP. |
 | `EvaluacionRepositoryTest` | El historial del alumno llega de la evaluación más reciente a la más antigua. |
+| T-291 | El alumno debe pertenecer al aula indicada; un alumno de otra aula devuelve `404`. |
