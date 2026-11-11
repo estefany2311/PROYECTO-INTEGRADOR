@@ -112,10 +112,11 @@ permite reintentar o volver al dashboard. Las pruebas de la pantalla están en
 
 | Prueba | Cobertura |
 |---|---|
-| `DetalleEstudianteServiceTest` | Niveles, promedios por competencia, color, últimas diez evidencias, sin evaluaciones y errores. |
-| `DetalleEstudianteControllerTest` | Ruta, forma de la respuesta y traducción de errores a HTTP. |
+| `DetalleEstudianteServiceTest` | Niveles, promedios y color por competencia, redondeo, competencias sin evaluaciones, últimas diez evidencias, sin evaluaciones y errores. |
+| `DetalleEstudianteControllerTest` | Ruta, forma de la respuesta, estado vacío, header obligatorio y traducción de errores a HTTP. |
 | `EvaluacionRepositoryTest` | El historial del alumno llega de la evaluación más reciente a la más antigua. |
 | T-291 | El alumno debe pertenecer al aula indicada; un alumno de otra aula devuelve `404`. |
-| `DetalleEstudiante.test.jsx` | Resumen por competencia, fortalezas/dificultades, promedio general, niveles, últimas evaluaciones, estado sin datos y error con reintento (T-292 y T-294). |
+| `DetalleEstudiante.test.jsx` | Resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, promedio general, niveles, últimas evaluaciones, estado sin datos y error con reintento (T-292, T-294 y T-295). |
 | `GraficoEvolucion.test.jsx` | Orden cronológico, puntos por competencia, leyenda, etiqueta accesible, estado vacío y una sola evaluación (T-293). |
 | `FortalezasDificultades.test.jsx` | Clasificación verde/rojo, ausencia de dificultades, competencias en proceso y estado vacío (T-294). |
+| T-295 | Pruebas del detalle: color por competencia, redondeo, competencias sin evaluaciones, estado vacío, header obligatorio y competencias parciales en la pantalla. |

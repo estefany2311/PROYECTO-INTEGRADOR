@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import DetalleEstudiante from "./DetalleEstudiante";
 import * as api from "../api";
-import { seleccionarAula } from "../aulaSeleccionada";
+import { seleccionarAula, obtenerAulaSeleccionada } from "../aulaSeleccionada";
 
 vi.mock("../api");
 
@@ -95,6 +95,14 @@ const SIN_EVALUACIONES = {
   niveles: [],
   puntajesPorCompetencia: [],
   ultimasEvidencias: [],
+};
+
+const SOLO_LECTURA = {
+  ...DETALLE,
+  promedioGeneral: 90,
+  colorGeneral: "verde",
+  puntajesPorCompetencia: [DETALLE.puntajesPorCompetencia[0]],
+  ultimasEvidencias: [DETALLE.ultimasEvidencias[0]],
 };
 
 const mostrar = (ruta = "/dashboard/aulas/10/estudiantes/1") =>
@@ -270,6 +278,53 @@ describe("Detalle del estudiante (T-292)", () => {
     expect(
       screen.getByText(/todavía no hay evaluaciones registradas/i)
     ).toBeInTheDocument();
+  });
+
+  it("sincroniza el aula activa con el aula de la ruta", async () => {
+    api.obtenerDetalleEstudiante.mockResolvedValue(DETALLE);
+    mostrar("/dashboard/aulas/10/estudiantes/1");
+
+    await screen.findByRole("heading", { level: 1, name: "Minji Prueba" });
+
+    expect(obtenerAulaSeleccionada()).toBe("10");
+  });
+
+  it("muestra en gris las competencias que todavía no tienen evaluaciones", async () => {
+    api.obtenerDetalleEstudiante.mockResolvedValue(SOLO_LECTURA);
+    mostrar();
+
+    const resumen = await screen.findByRole("region", {
+      name: "Resumen por competencia",
+    });
+
+    const lectura = within(resumen).getByRole("article", {
+      name: "Competencia Lectura",
+    });
+    expect(lectura).toHaveClass("semaforo-verde");
+    expect(within(lectura).getByText("90")).toBeInTheDocument();
+
+    const escritura = within(resumen).getByRole("article", {
+      name: "Competencia Escritura",
+    });
+    expect(escritura).toHaveClass("semaforo-gris");
+    expect(within(escritura).getByText("Sin evaluaciones")).toBeInTheDocument();
+    expect(within(escritura).getAllByText("—")).toHaveLength(2);
+
+    const oralidad = within(resumen).getByRole("article", {
+      name: "Competencia Oralidad",
+    });
+    expect(oralidad).toHaveClass("semaforo-gris");
+
+    const fortalezas = screen.getByRole("region", { name: "Fortalezas" });
+    expect(within(fortalezas).getByText("Lectura")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("region", { name: "Dificultades" })).getByText(
+        /no se identifican dificultades/i
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/en proceso \(amarillo\)/i)
+    ).not.toBeInTheDocument();
   });
 
   it("muestra el error del endpoint y permite reintentar", async () => {

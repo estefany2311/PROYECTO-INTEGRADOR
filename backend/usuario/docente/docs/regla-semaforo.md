@@ -70,6 +70,7 @@ El color se decide con el promedio ya redondeado: 79.5 pasa a 80 (verde) y 59.5 
 | T-292 | Pantalla de detalle con el resumen por competencia y el semáforo de cada una. |
 | T-293 | Gráfico de evolución de los puntajes con las zonas del semáforo. |
 | T-294 | Fortalezas (verde) y dificultades (rojo) del estudiante; el amarillo queda en proceso. |
+| T-295 | Pruebas del detalle: color por competencia, redondeo, competencias sin evaluaciones y estado vacío. |
 
 El parámetro `soloRojo=true` del endpoint (T-282) filtra solo la lista de tarjetas;
 el resumen y los promedios del aula se calculan con los alumnos activos que pasan los

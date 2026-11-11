@@ -216,6 +216,83 @@ class DetalleEstudianteServiceTest {
         assertEquals("El aula no pertenece al docente", error.getMessage());
     }
 
+    @Test
+    void asignaElColorDeCadaCompetenciaYElPromedioGeneral() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(7L, 10L)).thenReturn(Optional.of(estudiante));
+
+        Evaluacion lecturaReciente = evaluacion(5L, "lectura", (short) 95, "2026-11-05T10:00");
+        Evaluacion lecturaAntigua = evaluacion(4L, "lectura", (short) 85, "2026-11-03T10:00");
+        Evaluacion escritura = evaluacion(3L, "escritura", (short) 70, "2026-11-02T10:00");
+        Evaluacion oralidad = evaluacion(2L, "oralidad", (short) 50, "2026-11-01T10:00");
+        when(evaluacionRepository.findByEstudianteIdOrderByEvaluadoEnDescIdDesc(7L))
+                .thenReturn(List.of(lecturaReciente, lecturaAntigua, escritura, oralidad));
+        when(mapaEstudianteService.nivelesDe(7L)).thenReturn(List.of());
+
+        DetalleEstudianteResponse detalle = service.detalle(1L, 10L, 7L);
+
+        assertEquals(3, detalle.puntajesPorCompetencia().size());
+
+        PuntajeCompetenciaResponse lectura = detalle.puntajesPorCompetencia().get(0);
+        assertEquals("lectura", lectura.competencia());
+        assertEquals(90.0, lectura.promedio(), 0.001);
+        assertEquals(2, lectura.evaluaciones());
+        assertEquals(95, lectura.ultimoPuntaje());
+        assertEquals(ColorSemaforo.VERDE, lectura.color());
+
+        PuntajeCompetenciaResponse escrituraResumen = detalle.puntajesPorCompetencia().get(1);
+        assertEquals("escritura", escrituraResumen.competencia());
+        assertEquals(70.0, escrituraResumen.promedio(), 0.001);
+        assertEquals(70, escrituraResumen.ultimoPuntaje());
+        assertEquals(ColorSemaforo.AMARILLO, escrituraResumen.color());
+
+        PuntajeCompetenciaResponse oralidadResumen = detalle.puntajesPorCompetencia().get(2);
+        assertEquals("oralidad", oralidadResumen.competencia());
+        assertEquals(50.0, oralidadResumen.promedio(), 0.001);
+        assertEquals(ColorSemaforo.ROJO, oralidadResumen.color());
+
+        assertEquals(70, detalle.promedioGeneral().intValue());
+        assertEquals(ColorSemaforo.AMARILLO, detalle.colorGeneral());
+    }
+
+    @Test
+    void redondeaElPromedioDeLaCompetenciaAntesDeAsignarElColor() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(7L, 10L)).thenReturn(Optional.of(estudiante));
+
+        Evaluacion ochenta = evaluacion(2L, "lectura", (short) 80, "2026-11-02T10:00");
+        Evaluacion setentaYNueve = evaluacion(1L, "lectura", (short) 79, "2026-11-01T10:00");
+        when(evaluacionRepository.findByEstudianteIdOrderByEvaluadoEnDescIdDesc(7L))
+                .thenReturn(List.of(ochenta, setentaYNueve));
+        when(mapaEstudianteService.nivelesDe(7L)).thenReturn(List.of());
+
+        DetalleEstudianteResponse detalle = service.detalle(1L, 10L, 7L);
+
+        PuntajeCompetenciaResponse lectura = detalle.puntajesPorCompetencia().get(0);
+        assertEquals(79.5, lectura.promedio(), 0.001);
+        assertEquals(ColorSemaforo.VERDE, lectura.color());
+        assertEquals(80, detalle.promedioGeneral().intValue());
+        assertEquals(ColorSemaforo.VERDE, detalle.colorGeneral());
+    }
+
+    @Test
+    void omiteLasCompetenciasSinEvaluacionesDelResumenYDelPromedioGeneral() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(7L, 10L)).thenReturn(Optional.of(estudiante));
+
+        Evaluacion escritura = evaluacion(1L, "escritura", (short) 70, "2026-11-01T10:00");
+        when(evaluacionRepository.findByEstudianteIdOrderByEvaluadoEnDescIdDesc(7L))
+                .thenReturn(List.of(escritura));
+        when(mapaEstudianteService.nivelesDe(7L)).thenReturn(List.of());
+
+        DetalleEstudianteResponse detalle = service.detalle(1L, 10L, 7L);
+
+        assertEquals(1, detalle.puntajesPorCompetencia().size());
+        assertEquals("escritura", detalle.puntajesPorCompetencia().get(0).competencia());
+        assertEquals(70, detalle.promedioGeneral().intValue());
+        assertEquals(ColorSemaforo.AMARILLO, detalle.colorGeneral());
+    }
+
     private Evaluacion evaluacion(Long id, String competencia, short puntaje, String fecha) {
         Evaluacion evaluacion = new Evaluacion(estudiante, competencia, puntaje);
         ReflectionTestUtils.setField(evaluacion, "id", id);

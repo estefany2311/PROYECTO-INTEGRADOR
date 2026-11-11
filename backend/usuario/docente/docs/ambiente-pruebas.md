@@ -53,6 +53,7 @@ npm run preview -- --port 4173
 | `GET /api/docente/aulas/9/estudiantes/{id}/detalle` | 200 · niveles, 3 competencias y últimas evidencias |
 | `GET /api/docente/aulas/9/estudiantes/999/detalle` | 404 · `El alumno no existe en esta aula` |
 | `GET /api/docente/aulas/9/estudiantes/{id de otra aula}/detalle` | 404 · `El alumno no existe en esta aula` |
+| `GET /api/docente/aulas/9/estudiantes/{id}/detalle` sin `X-Docente-Id` | 400 |
 | `GET /api/docente/aulas/5/estudiantes` | 200 |
 | `GET /api/docente/aulas/5/lecturas` | 200 · 3 lecturas |
 | `GET /api/docente/aulas/5/grupos` | 200 |
@@ -72,11 +73,11 @@ npm run preview -- --port 4173
 | Backend `SemaforoServiceTest` | 8/8 · límites, redondeo y sin evaluaciones |
 | Backend `RendimientoServiceTest` | 7/7 · filtros combinados, validaciones y `soloRojo` |
 | Backend `DashboardAulaControllerTest` | 6/6 · reenvío de filtros combinados y errores |
-| Backend `DetalleEstudianteServiceTest` | 7/7 · niveles, promedios, últimas diez evidencias y errores |
-| Backend `DetalleEstudianteControllerTest` | 4/4 · ruta, respuesta y errores HTTP |
+| Backend `DetalleEstudianteServiceTest` | 10/10 · niveles, promedios, colores, redondeo, últimas diez evidencias y errores |
+| Backend `DetalleEstudianteControllerTest` | 6/6 · ruta, respuesta, estado vacío, header y errores HTTP |
 | Backend `EvaluacionRepositoryTest` | 2/2 · promedio por aula e historial del alumno |
-| Backend `test` | 175/175 |
-| Frontend `DetalleEstudiante.test.jsx` | 8/8 · resumen por competencia, fortalezas/dificultades, sin datos y error con reintento |
+| Backend `test` | 180/180 |
+| Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
-| Frontend `test`, `lint`, `build` | 80/80 · OK · OK |
+| Frontend `test`, `lint`, `build` | 82/82 · OK · OK |

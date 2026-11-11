@@ -120,4 +120,26 @@ class DetalleEstudianteControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.mensaje").value("El aula no pertenece al docente"));
     }
+
+    @Test
+    void devuelveElEstadoVacioCuandoElAlumnoNoTieneEvaluaciones() throws Exception {
+        when(service.detalle(1L, 10L, 7L)).thenReturn(new DetalleEstudianteResponse(
+                7L, "Minji", "Prueba", (short) 5, "5.º", null, ColorSemaforo.GRIS,
+                List.of(), List.of(), List.of()));
+
+        mvc.perform(get("/api/docente/aulas/10/estudiantes/7/detalle")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.promedioGeneral").doesNotExist())
+                .andExpect(jsonPath("$.colorGeneral").value("gris"))
+                .andExpect(jsonPath("$.puntajesPorCompetencia").isEmpty())
+                .andExpect(jsonPath("$.ultimasEvidencias").isEmpty())
+                .andExpect(jsonPath("$.niveles").isEmpty());
+    }
+
+    @Test
+    void exigeElHeaderDelDocente() throws Exception {
+        mvc.perform(get("/api/docente/aulas/10/estudiantes/7/detalle"))
+                .andExpect(status().isBadRequest());
+    }
 }
