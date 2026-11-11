@@ -76,7 +76,8 @@ npm run preview -- --port 4173
 | Backend `DetalleEstudianteServiceTest` | 10/10 · niveles, promedios, colores, redondeo, últimas diez evidencias y errores |
 | Backend `DetalleEstudianteControllerTest` | 6/6 · ruta, respuesta, estado vacío, header y errores HTTP |
 | Backend `EvaluacionRepositoryTest` | 2/2 · promedio por aula e historial del alumno |
-| Backend `test` | 180/180 |
+| Backend `MigracionEvidenciaTest` | 6/6 · tabla, audio/texto, estado de revisión, cascada e índices |
+| Backend `test` | 186/186 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |

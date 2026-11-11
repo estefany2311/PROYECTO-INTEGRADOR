@@ -70,7 +70,7 @@ valida que el alumno pertenezca a esa aula; si no, responde `404` con
 | `color` | Color del semáforo calculado con el promedio de la competencia (`docs/regla-semaforo.md`). |
 | `promedioGeneral` | Media de los promedios de las competencias con evaluaciones, redondeada. Es `null` si no hay evaluaciones. |
 | `colorGeneral` | Color del semáforo del promedio general; `gris` cuando no hay evaluaciones. |
-| `ultimasEvidencias` | Hasta 10 evaluaciones, de la más reciente a la más antigua. La tabla de evidencias con audio/texto y estado de revisión llega en US-31 (T-296); por ahora se muestra el historial de evaluaciones. |
+| `ultimasEvidencias` | Hasta 10 evaluaciones, de la más reciente a la más antigua. La tabla de evidencias con audio/texto y estado de revisión ya existe (T-296, ver `docs/evidencias.md`); el detalle seguirá mostrando el historial de evaluaciones hasta que T-298 exponga las evidencias pendientes. |
 
 ## 4. Errores
 
