@@ -54,10 +54,14 @@ npm run preview -- --port 4173
 | `GET /api/docente/aulas/9/estudiantes/999/detalle` | 404 · `El alumno no existe en esta aula` |
 | `GET /api/docente/aulas/9/estudiantes/{id de otra aula}/detalle` | 404 · `El alumno no existe en esta aula` |
 | `GET /api/docente/aulas/9/estudiantes/{id}/detalle` sin `X-Docente-Id` | 400 |
+| `GET /api/docente/aulas/9/evidencias` | 200 · 6 pendientes (3 audio y 3 texto) |
+| `GET /api/docente/aulas/9/evidencias?tipo=audio` | 200 · 3 audios pendientes |
+| `GET /api/docente/aulas/9/evidencias?tipo=video` | 400 · `El tipo de evidencia no es válido` |
+| `GET /api/docente/aulas/9/evidencias` sin `X-Docente-Id` | 400 |
 | `GET /api/docente/aulas/5/estudiantes` | 200 |
 | `GET /api/docente/aulas/5/lecturas` | 200 · 3 lecturas |
 | `GET /api/docente/aulas/5/grupos` | 200 |
-| `GET /v3/api-docs` | 200 · `API Docente` 1.0.0 · 15 rutas |
+| `GET /v3/api-docs` | 200 · `API Docente` 1.0.0 · 16 rutas |
 | `GET /swagger-ui.html` | 200 |
 | Frontend `/`, `/alumnos`, `/grupos`, `/catalogo`, `/dashboard` | 200 y sin errores de consola |
 | Leyenda del semáforo en `/dashboard` | 4 estados visibles · color + ícono + texto |
@@ -78,7 +82,10 @@ npm run preview -- --port 4173
 | Backend `EvaluacionRepositoryTest` | 2/2 · promedio por aula e historial del alumno |
 | Backend `MigracionEvidenciaTest` | 6/6 · tabla, audio/texto, estado de revisión, cascada e índices |
 | Backend `MigracionEvidenciaDatosPruebaTest` | 5/5 · datos de audio y texto, estados y niveles por orden |
-| Backend `test` | 191/191 |
+| Backend `EvidenciaRepositoryTest` | 2/2 · pendientes por fecha y filtro por tipo |
+| Backend `EvidenciaServiceTest` | 6/6 · mapeo, filtro por tipo, tipo inválido y aula del docente |
+| Backend `EvidenciaControllerTest` | 6/6 · ruta, respuesta, filtro, header y errores |
+| Backend `test` | 205/205 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |

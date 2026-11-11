@@ -43,8 +43,8 @@ Migración: `backend/usuario/docente/src/main/resources/db/migration/V10__eviden
 
 - `model/Evidencia.java`: entidad JPA con las constantes `AUDIO`, `TEXTO`, `PENDIENTE`,
   `APROBADA` y `RECHAZADA`, y las fábricas `Evidencia.audio(...)` y `Evidencia.texto(...)`.
-- `repository/EvidenciaRepository.java`: acceso base a la tabla. La consulta de
-  pendientes por aula se agrega en T-298.
+- `repository/EvidenciaRepository.java`: consultas de pendientes por aula, con el
+  alumno, su grado y el nivel cargados con `@EntityGraph` (T-298).
 
 ## 4. Datos de prueba (T-297)
 
@@ -70,16 +70,60 @@ Resumen para las pruebas de la lista (T-299): **6 pendientes** (3 de audio y 3 d
 texto), **2 aprobadas** y **1 rechazada**. Las pendientes quedan con `revisado_en`
 nulo; las revisadas lo tienen un día después de `creado_en`.
 
-## 5. Siguientes tareas de US-31
+## 5. Endpoint de pendientes (T-298)
+
+```
+GET /api/docente/aulas/{aulaId}/evidencias?tipo=audio|texto
+Header obligatorio: X-Docente-Id
+```
+
+Devuelve **solo** las evidencias en estado `pendiente` del aula, de la más reciente a
+la más antigua (`creado_en DESC`, desempate por `id`). El filtro `tipo` es opcional y
+no distingue mayúsculas; si se omite, llegan audio y texto.
+
+Respuesta (`200`):
+
+```json
+[
+  {
+    "id": 12,
+    "estudianteId": 7,
+    "nombres": "Minji",
+    "apellidos": "Prueba",
+    "gradoId": 5,
+    "gradoNombre": "5.º",
+    "nivelOrden": 1,
+    "nivelNombre": "Primeros pasos",
+    "tipo": "audio",
+    "audioUrl": "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3",
+    "texto": null,
+    "resultadoIa": "Lee con claridad y buen ritmo. Se sugiere practicar las pausas.",
+    "creadoEn": "2026-11-10T09:00:00"
+  }
+]
+```
+
+Errores:
+
+| Caso | Respuesta |
+|---|---|
+| Aula inexistente | `404` · `El aula no existe` |
+| Aula de otro docente | `403` · `El aula no pertenece al docente` |
+| `tipo` distinto de `audio`/`texto` | `400` · `El tipo de evidencia no es válido` |
+| Sin `X-Docente-Id` | `400` |
+
+## 6. Siguientes tareas de US-31
 
 | Tarea | Alcance |
 |---|---|
-| T-298 | Endpoint de evidencias pendientes del aula. |
 | T-299 | Pantalla con la lista de evidencias y filtro por tipo. |
 
-## 6. Pruebas
+## 7. Pruebas
 
 | Prueba | Cobertura |
 |---|---|
 | `MigracionEvidenciaTest` | Tabla, alumno y nivel, audio/texto, contenido según el tipo, resultado IA, estado de revisión, cascada e índices (T-296). |
 | `MigracionEvidenciaDatosPruebaTest` | Audio y texto, los tres alumnos del aula, los tres estados, pendientes sin fecha de revisión y niveles por `orden` (T-297). |
+| `EvidenciaRepositoryTest` | Pendientes de la más reciente a la más antigua y filtro por tipo contra PostgreSQL (T-298). |
+| `EvidenciaServiceTest` | Mapeo de alumno, grado y nivel, filtro por tipo, tipo inválido, lista vacía y validación del aula (T-298). |
+| `EvidenciaControllerTest` | Ruta, forma de la respuesta, filtro por tipo, header obligatorio y errores HTTP (T-298). |
