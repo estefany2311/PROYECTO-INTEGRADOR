@@ -46,16 +46,40 @@ Migración: `backend/usuario/docente/src/main/resources/db/migration/V10__eviden
 - `repository/EvidenciaRepository.java`: acceso base a la tabla. La consulta de
   pendientes por aula se agrega en T-298.
 
-## 4. Siguientes tareas de US-31
+## 4. Datos de prueba (T-297)
+
+Migración: `backend/usuario/docente/src/main/resources/db/migration/V11__evidencia_datos_prueba.sql`.
+
+Carga **9 evidencias** del aula **Noemi De La Cruz**, repartidas entre sus 3 alumnos.
+Los alumnos y los niveles se resuelven por nombre y por `orden`, sin quemar ids, y
+solo se insertan si el aula existe (en el CI la base está vacía).
+
+| Alumno | Nivel | Tipo | Estado | Días atrás |
+|---|---|---|---|---|
+| minji prueba delacruz | 1 · Primeros pasos | audio | pendiente | 0 |
+| minji prueba delacruz | 2 · Palabras nuevas | texto | pendiente | 2 |
+| minji prueba delacruz | 3 · Cuento corto | audio | aprobada | 6 |
+| Breysi Zavala | 1 · Primeros pasos | audio | pendiente | 1 |
+| Breysi Zavala | 2 · Palabras nuevas | texto | pendiente | 3 |
+| Breysi Zavala | 5 · Mi relato | texto | rechazada | 7 |
+| Ester Zavala | 2 · Palabras nuevas | texto | pendiente | 1 |
+| Ester Zavala | 3 · Cuento corto | audio | pendiente | 4 |
+| Ester Zavala | 1 · Primeros pasos | audio | aprobada | 9 |
+
+Resumen para las pruebas de la lista (T-299): **6 pendientes** (3 de audio y 3 de
+texto), **2 aprobadas** y **1 rechazada**. Las pendientes quedan con `revisado_en`
+nulo; las revisadas lo tienen un día después de `creado_en`.
+
+## 5. Siguientes tareas de US-31
 
 | Tarea | Alcance |
 |---|---|
-| T-297 | Datos de prueba de evidencias de audio y texto. |
 | T-298 | Endpoint de evidencias pendientes del aula. |
 | T-299 | Pantalla con la lista de evidencias y filtro por tipo. |
 
-## 5. Pruebas
+## 6. Pruebas
 
 | Prueba | Cobertura |
 |---|---|
 | `MigracionEvidenciaTest` | Tabla, alumno y nivel, audio/texto, contenido según el tipo, resultado IA, estado de revisión, cascada e índices (T-296). |
+| `MigracionEvidenciaDatosPruebaTest` | Audio y texto, los tres alumnos del aula, los tres estados, pendientes sin fecha de revisión y niveles por `orden` (T-297). |
