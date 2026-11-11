@@ -36,6 +36,15 @@ export const crearAula = (datos) =>
 export const obtenerDetalleEstudiante = (aulaId, estudianteId) =>
   pedir(`/api/docente/aulas/${aulaId}/estudiantes/${estudianteId}/detalle`);
 
+// T-299: evidencias pendientes del aula (endpoint de T-298).
+// El filtro por tipo es opcional: "audio" o "texto".
+export const listarEvidenciasPendientes = (aulaId, filtros = {}) => {
+  const params = new URLSearchParams();
+  if (filtros.tipo) params.set("tipo", filtros.tipo);
+  const query = params.toString();
+  return pedir(`/api/docente/aulas/${aulaId}/evidencias${query ? `?${query}` : ""}`);
+};
+
 export const listarEstudiantes = (aulaId) =>
   pedir(`/api/docente/aulas/${aulaId}/estudiantes`);
 export const crearEstudiante = (aulaId, datos) =>

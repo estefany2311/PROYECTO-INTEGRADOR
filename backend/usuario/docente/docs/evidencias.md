@@ -112,13 +112,37 @@ Errores:
 | `tipo` distinto de `audio`/`texto` | `400` · `El tipo de evidencia no es válido` |
 | Sin `X-Docente-Id` | `400` |
 
-## 6. Siguientes tareas de US-31
+## 6. Pantalla de evidencias (T-299)
+
+Ruta: `/evidencias` · entrada **Evidencias** en el menú *Evaluación*.
+
+- **Selector de aula**: comparte el aula activa con el menú y el resto de pantallas
+  (`aulaSeleccionada`). Al entrar se restaura la última usada.
+- **Filtro por tipo**: `Todos los tipos`, `Audio` o `Texto`. Cambiarlo vuelve a llamar
+  al endpoint con `?tipo=`, así el filtro no se recalcula en el navegador.
+- **Tarjeta por evidencia**: alumno con iniciales, grado y nivel, etiqueta de tipo,
+  contenido (enlace **Escuchar audio** o el texto escrito), **Resultado de la IA**,
+  fecha de registro y enlace **Ver detalle del alumno**.
+- **Estados**: carga, error con **Reintentar**, aula sin evidencias y filtro sin
+  resultados (mensaje distinto para audio y texto).
+
+Archivos del frontend:
+
+| Archivo | Cambio |
+|---|---|
+| `web-portal/docente/src/pages/Evidencias.jsx` | Pantalla nueva. |
+| `web-portal/docente/src/api.js` | `listarEvidenciasPendientes(aulaId, { tipo })`. |
+| `web-portal/docente/src/App.jsx` | Ruta `/evidencias`. |
+| `web-portal/docente/src/components/Layout.jsx` | Entrada del menú. |
+| `web-portal/docente/src/index.css` | Estilos `evidencias-*` y `evidencia-*`. |
+
+## 7. Siguientes tareas de US-31
 
 | Tarea | Alcance |
 |---|---|
-| T-299 | Pantalla con la lista de evidencias y filtro por tipo. |
+| T-300 | Pruebas de la lista de evidencias. |
 
-## 7. Pruebas
+## 8. Pruebas
 
 | Prueba | Cobertura |
 |---|---|
@@ -127,3 +151,4 @@ Errores:
 | `EvidenciaRepositoryTest` | Pendientes de la más reciente a la más antigua y filtro por tipo contra PostgreSQL (T-298). |
 | `EvidenciaServiceTest` | Mapeo de alumno, grado y nivel, filtro por tipo, tipo inválido, lista vacía y validación del aula (T-298). |
 | `EvidenciaControllerTest` | Ruta, forma de la respuesta, filtro por tipo, header obligatorio y errores HTTP (T-298). |
+| `Evidencias.test.jsx` | Tarjetas con alumno, nivel, tipo y resultado de la IA, filtro por tipo, aula activa, cambio de aula, estado vacío y error con reintento (T-299). |

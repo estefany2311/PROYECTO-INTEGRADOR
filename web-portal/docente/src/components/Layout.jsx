@@ -27,6 +27,12 @@ const MENU = [
         color: "ico-naranja",
         texto: "Dashboard",
       },
+      {
+        ruta: "/evidencias",
+        icono: "bi-inbox-fill",
+        color: "ico-teal",
+        texto: "Evidencias",
+      },
     ],
   },
   {
@@ -175,7 +181,7 @@ export default function Layout() {
             <div className="sprint-bar">
               <span />
             </div>
-            <small>Dashboard disponible · evidencias en camino</small>
+            <small>Dashboard y evidencias disponibles</small>
           </div>
 
           <div className="sidebar-note">

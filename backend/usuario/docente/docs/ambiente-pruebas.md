@@ -63,7 +63,7 @@ npm run preview -- --port 4173
 | `GET /api/docente/aulas/5/grupos` | 200 |
 | `GET /v3/api-docs` | 200 · `API Docente` 1.0.0 · 16 rutas |
 | `GET /swagger-ui.html` | 200 |
-| Frontend `/`, `/alumnos`, `/grupos`, `/catalogo`, `/dashboard` | 200 y sin errores de consola |
+| Frontend `/`, `/alumnos`, `/grupos`, `/catalogo`, `/dashboard`, `/evidencias` | 200 y sin errores de consola |
 | Leyenda del semáforo en `/dashboard` | 4 estados visibles · color + ícono + texto |
 | Aviso "Necesitan refuerzo" en `/dashboard` (aula 9) | visible · 1 alumno rojo · Ester · 50/100 |
 | Contador de alumnos en rojo en el menú (aula 9) | badge 1 junto a Dashboard |
@@ -72,6 +72,8 @@ npm run preview -- --port 4173
 | Detalle del alumno en `/dashboard/aulas/9/estudiantes/{id}` | 200 · resumen por competencia, niveles y últimas evaluaciones · vuelve al dashboard |
 | Gráfico de evolución en el detalle del alumno | visible · puntos ordenados por fecha · leyenda por competencia · zonas del semáforo |
 | Fortalezas y dificultades en el detalle del alumno | visible · Lectura fortaleza · Oralidad dificultad · Escritura en proceso |
+| Lista de evidencias en `/evidencias` (aula 9) | 6 pendientes · 3 audio y 3 texto · enlace al detalle del alumno |
+| Filtro por tipo en `/evidencias` | Audio → 3 · Texto → 3 · sin resultados → aviso del filtro |
 | Build de producción con `npm run preview` | 200 |
 | CORS desde `http://localhost:5173` | 200 · `Access-Control-Allow-Origin` correcto |
 | Backend `SemaforoServiceTest` | 8/8 · límites, redondeo y sin evaluaciones |
@@ -89,4 +91,5 @@ npm run preview -- --port 4173
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
-| Frontend `test`, `lint`, `build` | 82/82 · OK · OK |
+| Frontend `Evidencias.test.jsx` | 7/7 · tarjetas, filtro por tipo, aula activa, cambio de aula, vacío y error |
+| Frontend `test`, `lint`, `build` | 89/89 · OK · OK |
