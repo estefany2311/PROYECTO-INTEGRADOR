@@ -189,4 +189,99 @@ describe("Pantalla de evidencias pendientes (T-299)", () => {
     );
     expect(obtenerAulaSeleccionada()).toBe("20");
   });
+
+  it("respeta el orden de la respuesta: de la más reciente a la más antigua", async () => {
+    api.listarEvidenciasPendientes.mockResolvedValue([AUDIO, TEXTO]);
+    mostrar();
+
+    await tarjetaDe("Minji Prueba");
+
+    const tarjetas = screen.getAllByRole("article");
+    expect(tarjetas.map((tarjeta) => tarjeta.getAttribute("aria-label"))).toEqual([
+      "Evidencia de Minji Prueba",
+      "Evidencia de Breysi Zavala",
+    ]);
+  });
+
+  it("avisa cuando la IA todavía no generó un resultado", async () => {
+    api.listarEvidenciasPendientes.mockResolvedValue([
+      { ...AUDIO, resultadoIa: null },
+    ]);
+    mostrar();
+
+    const audio = await tarjetaDe("Minji Prueba");
+    expect(
+      within(audio).getByText(/todavía no generó un resultado\./)
+    ).toBeInTheDocument();
+  });
+
+  it("resume cuántas evidencias hay de audio y de texto", async () => {
+    api.listarEvidenciasPendientes.mockResolvedValue([
+      AUDIO,
+      { ...AUDIO, id: 32, estudianteId: 3, nombres: "Karla", apellidos: "Rojas" },
+      TEXTO,
+    ]);
+    mostrar();
+
+    await tarjetaDe("Minji Prueba");
+
+    expect(screen.getByText(/2 audio · 1 texto/)).toBeInTheDocument();
+    expect(screen.getByText(/3 evidencias pendientes/)).toBeInTheDocument();
+  });
+
+  it("vuelve a pedir la lista al pulsar Actualizar", async () => {
+    api.listarEvidenciasPendientes.mockResolvedValue([AUDIO]);
+    mostrar();
+
+    await tarjetaDe("Minji Prueba");
+    expect(api.listarEvidenciasPendientes).toHaveBeenCalledTimes(1);
+
+    api.listarEvidenciasPendientes.mockResolvedValue([AUDIO, TEXTO]);
+    await userEvent.click(screen.getByRole("button", { name: "Actualizar" }));
+
+    await waitFor(() =>
+      expect(api.listarEvidenciasPendientes).toHaveBeenCalledTimes(2)
+    );
+    expect(await tarjetaDe("Breysi Zavala")).toBeInTheDocument();
+  });
+
+  it("invita a registrar un aula cuando el docente no tiene ninguna", async () => {
+    api.listarAulas.mockResolvedValue([]);
+    mostrar();
+
+    expect(
+      await screen.findByText("Aún no tienes aulas registradas.")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Registrar mi primera aula" })
+    ).toHaveAttribute("href", "/aulas");
+    expect(api.listarEvidenciasPendientes).not.toHaveBeenCalled();
+  });
+
+  it("vuelve a todos los tipos después de filtrar", async () => {
+    api.listarEvidenciasPendientes.mockResolvedValue([AUDIO, TEXTO]);
+    mostrar();
+
+    await tarjetaDe("Minji Prueba");
+
+    await userEvent.selectOptions(
+      screen.getByLabelText("Tipo de evidencia"),
+      "texto"
+    );
+    await waitFor(() =>
+      expect(api.listarEvidenciasPendientes).toHaveBeenLastCalledWith("10", {
+        tipo: "texto",
+      })
+    );
+
+    await userEvent.selectOptions(
+      screen.getByLabelText("Tipo de evidencia"),
+      ""
+    );
+
+    await waitFor(() =>
+      expect(api.listarEvidenciasPendientes).toHaveBeenLastCalledWith("10", {})
+    );
+    expect(await tarjetaDe("Minji Prueba")).toBeInTheDocument();
+  });
 });

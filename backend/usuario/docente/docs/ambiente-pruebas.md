@@ -85,11 +85,11 @@ npm run preview -- --port 4173
 | Backend `MigracionEvidenciaTest` | 6/6 · tabla, audio/texto, estado de revisión, cascada e índices |
 | Backend `MigracionEvidenciaDatosPruebaTest` | 5/5 · datos de audio y texto, estados y niveles por orden |
 | Backend `EvidenciaRepositoryTest` | 2/2 · pendientes por fecha y filtro por tipo |
-| Backend `EvidenciaServiceTest` | 6/6 · mapeo, filtro por tipo, tipo inválido y aula del docente |
-| Backend `EvidenciaControllerTest` | 6/6 · ruta, respuesta, filtro, header y errores |
-| Backend `test` | 205/205 |
+| Backend `EvidenciaServiceTest` | 9/9 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo y aula del docente |
+| Backend `EvidenciaControllerTest` | 8/8 · ruta, respuesta de audio y texto, filtro por tipo, header y errores |
+| Backend `test` | 210/210 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
-| Frontend `Evidencias.test.jsx` | 7/7 · tarjetas, filtro por tipo, aula activa, cambio de aula, vacío y error |
-| Frontend `test`, `lint`, `build` | 89/89 · OK · OK |
+| Frontend `Evidencias.test.jsx` | 13/13 · tarjetas, orden, conteo por tipo, filtro y vuelta a todos los tipos, aula activa, cambio de aula, Actualizar, sin aulas, vacío y error |
+| Frontend `test`, `lint`, `build` | 95/95 · OK · OK |

@@ -90,6 +90,42 @@ class EvidenciaControllerTest {
     }
 
     @Test
+    void devuelveUnaEvidenciaDeTextoConSuContenido() throws Exception {
+        when(service.pendientes(1L, 10L, "texto")).thenReturn(List.of(
+                new EvidenciaPendienteResponse(
+                        29L, 8L, "Breysi", "Zavala", (short) 1, "1.º",
+                        (short) 2, "Palabras nuevas", "texto",
+                        null, "Mi mamá prepara sopa. Yo pongo la mesa.",
+                        "Escribe oraciones completas.",
+                        LocalDateTime.of(2026, 11, 9, 15, 30))));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias?tipo=texto")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(29))
+                .andExpect(jsonPath("$[0].tipo").value("texto"))
+                .andExpect(jsonPath("$[0].texto")
+                        .value("Mi mamá prepara sopa. Yo pongo la mesa."))
+                .andExpect(jsonPath("$[0].audioUrl").doesNotExist())
+                .andExpect(jsonPath("$[0].resultadoIa")
+                        .value("Escribe oraciones completas."));
+
+        verify(service).pendientes(1L, 10L, "texto");
+    }
+
+    @Test
+    void reenviaElTipoEnMayusculasAlServicio() throws Exception {
+        when(service.pendientes(1L, 10L, "AUDIO")).thenReturn(List.of());
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias?tipo=AUDIO")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+
+        verify(service).pendientes(1L, 10L, "AUDIO");
+    }
+
+    @Test
     void tipoInvalidoDevuelve400() throws Exception {
         when(service.pendientes(1L, 10L, "video"))
                 .thenThrow(new ReglaNegocioException(

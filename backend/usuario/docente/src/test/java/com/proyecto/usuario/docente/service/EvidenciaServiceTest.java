@@ -148,6 +148,70 @@ class EvidenciaServiceTest {
     }
 
     @Test
+    void unTipoEnBlancoDevuelveTodasLasPendientes() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository
+                .findByEstudianteAulaIdAndEstadoRevisionOrderByCreadoEnDescIdDesc(
+                        10L, Evidencia.PENDIENTE))
+                .thenReturn(List.of());
+
+        assertTrue(service.pendientes(1L, 10L, "   ").isEmpty());
+
+        verify(evidenciaRepository)
+                .findByEstudianteAulaIdAndEstadoRevisionOrderByCreadoEnDescIdDesc(
+                        10L, Evidencia.PENDIENTE);
+        verify(evidenciaRepository, never())
+                .findByEstudianteAulaIdAndEstadoRevisionAndTipoOrderByCreadoEnDescIdDesc(
+                        any(), anyString(), anyString());
+    }
+
+    @Test
+    void filtraPorTextoYDevuelveSoloEseTipo() {
+        Evidencia texto = Evidencia.texto(estudiante, nivelTexto,
+                "Mi mamá prepara sopa. Yo pongo la mesa.");
+        ReflectionTestUtils.setField(texto, "id", 29L);
+        texto.setResultadoIa("Escribe oraciones completas.");
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository
+                .findByEstudianteAulaIdAndEstadoRevisionAndTipoOrderByCreadoEnDescIdDesc(
+                        10L, Evidencia.PENDIENTE, Evidencia.TEXTO))
+                .thenReturn(List.of(texto));
+
+        List<EvidenciaPendienteResponse> pendientes = service.pendientes(1L, 10L, "texto");
+
+        assertEquals(1, pendientes.size());
+        assertEquals(29L, pendientes.get(0).id());
+        assertEquals(Evidencia.TEXTO, pendientes.get(0).tipo());
+        assertEquals("Mi mamá prepara sopa. Yo pongo la mesa.",
+                pendientes.get(0).texto());
+        assertNull(pendientes.get(0).audioUrl());
+        assertEquals("Escribe oraciones completas.", pendientes.get(0).resultadoIa());
+        verify(evidenciaRepository, never())
+                .findByEstudianteAulaIdAndEstadoRevisionOrderByCreadoEnDescIdDesc(
+                        any(), anyString());
+    }
+
+    @Test
+    void unaEvidenciaSinResultadoDeIaSeDevuelveConResultadoNulo() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository
+                .findByEstudianteAulaIdAndEstadoRevisionOrderByCreadoEnDescIdDesc(
+                        10L, Evidencia.PENDIENTE))
+                .thenReturn(List.of(audio));
+
+        List<EvidenciaPendienteResponse> pendientes = service.pendientes(1L, 10L, null);
+
+        assertEquals(1, pendientes.size());
+        assertEquals(Evidencia.AUDIO, pendientes.get(0).tipo());
+        assertNull(pendientes.get(0).resultadoIa());
+    }
+
+    @Test
     void devuelveListaVaciaCuandoNoHayPendientes() {
         when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
         when(evidenciaRepository

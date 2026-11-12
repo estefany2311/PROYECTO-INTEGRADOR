@@ -136,19 +136,19 @@ Archivos del frontend:
 | `web-portal/docente/src/components/Layout.jsx` | Entrada del menú. |
 | `web-portal/docente/src/index.css` | Estilos `evidencias-*` y `evidencia-*`. |
 
-## 7. Siguientes tareas de US-31
+## 7. Pruebas (T-296 a T-300)
 
-| Tarea | Alcance |
-|---|---|
-| T-300 | Pruebas de la lista de evidencias. |
-
-## 8. Pruebas
+T-300 cierra US-31 con las pruebas de la lista de evidencias: el backend cubre
+el tipo en blanco, el filtro por `texto`, el resultado de IA nulo y la respuesta
+de una evidencia de texto; el frontend cubre el orden de las tarjetas, el conteo
+por tipo, el botón **Actualizar**, la vuelta a *Todos los tipos*, el aula sin
+evidencias y el mensaje cuando la IA aún no generó un resultado.
 
 | Prueba | Cobertura |
 |---|---|
 | `MigracionEvidenciaTest` | Tabla, alumno y nivel, audio/texto, contenido según el tipo, resultado IA, estado de revisión, cascada e índices (T-296). |
 | `MigracionEvidenciaDatosPruebaTest` | Audio y texto, los tres alumnos del aula, los tres estados, pendientes sin fecha de revisión y niveles por `orden` (T-297). |
 | `EvidenciaRepositoryTest` | Pendientes de la más reciente a la más antigua y filtro por tipo contra PostgreSQL (T-298). |
-| `EvidenciaServiceTest` | Mapeo de alumno, grado y nivel, filtro por tipo, tipo inválido, lista vacía y validación del aula (T-298). |
-| `EvidenciaControllerTest` | Ruta, forma de la respuesta, filtro por tipo, header obligatorio y errores HTTP (T-298). |
-| `Evidencias.test.jsx` | Tarjetas con alumno, nivel, tipo y resultado de la IA, filtro por tipo, aula activa, cambio de aula, estado vacío y error con reintento (T-299). |
+| `EvidenciaServiceTest` | Mapeo de alumno, grado y nivel, filtro por tipo y texto, tipo en blanco o inválido, lista vacía, resultado IA nulo y validación del aula (T-298, T-300). |
+| `EvidenciaControllerTest` | Ruta, forma de la respuesta de audio y texto, filtro por tipo, header obligatorio y errores HTTP (T-298, T-300). |
+| `Evidencias.test.jsx` | Tarjetas con alumno, nivel, tipo y resultado de la IA, orden, conteo por tipo, filtro y vuelta a todos los tipos, aula activa, cambio de aula, Actualizar, estado vacío, sin aulas y error con reintento (T-299, T-300). |
