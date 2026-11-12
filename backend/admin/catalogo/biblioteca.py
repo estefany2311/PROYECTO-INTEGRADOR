@@ -7,6 +7,9 @@ import re
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
+
+from pypdf import PdfReader
 
 BASE = 'https://bibliotecaescolar.minedu.gob.pe'
 API = f'{BASE}/server/api'
@@ -217,3 +220,78 @@ def enlace_pdf(item):
     except ErrorBiblioteca:
         pass
     return ''
+
+
+# ---------- PDF (T-443) ----------
+
+CARPETA_PDF = Path(__file__).resolve().parent.parent / 'cache_pdf'
+TIEMPO_DESCARGA = 120   # los libros pesan bastante
+MAX_PAGINAS = 10        # páginas que se pueden extraer de una vez
+
+
+def descargar_pdf(url, uuid):
+    """Descarga el PDF una sola vez y lo guarda en cache_pdf/<uuid>.pdf."""
+    CARPETA_PDF.mkdir(exist_ok=True)
+    ruta = CARPETA_PDF / f'{uuid}.pdf'
+    if ruta.exists() and ruta.stat().st_size > 0:
+        return ruta
+    pedido = urllib.request.Request(url, headers={'User-Agent': 'LecturaApp-Admin/1.0'})
+    temporal = ruta.with_suffix('.descargando')
+    try:
+        with urllib.request.urlopen(pedido, timeout=TIEMPO_DESCARGA) as respuesta, open(temporal, 'wb') as archivo:
+            while True:
+                bloque = respuesta.read(256 * 1024)
+                if not bloque:
+                    break
+                archivo.write(bloque)
+    except (urllib.error.URLError, TimeoutError, OSError) as error:
+        temporal.unlink(missing_ok=True)
+        raise ErrorBiblioteca(f'No se pudo descargar el PDF: {error}') from error
+    temporal.replace(ruta)
+    return ruta
+
+
+# Números de página escritos en letras (uno, veintitrés, ciento cinco…)
+_UNIDADES = r'(?:uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve)'
+_NUMERO_EN_LETRAS = re.compile(
+    r'^(?:cero|' + _UNIDADES + r'|diez|once|doce|trece|catorce|quince|dieci(?:séis|seis|siete|ocho|nueve)'
+    r'|veinte|veinti(?:uno|dós|dos|trés|tres|cuatro|cinco|séis|seis|siete|ocho|nueve)'
+    r'|(?:treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa)(?: y ' + _UNIDADES + r')?'
+    r'|cien|ciento(?: .+)?)$',
+    re.IGNORECASE,
+)
+
+
+def es_linea_de_imprenta(linea):
+    """Número de página (8 / ocho) o marca de imprenta (archivo .indd con fecha y hora)."""
+    linea = linea.strip()
+    return (
+        '.indd' in linea.lower()
+        or linea.isdigit()
+        or bool(_NUMERO_EN_LETRAS.match(linea))
+        or bool(re.fullmatch(r'\d{1,2}/\d{1,2}/\d{2,4}\s+\d{1,2}:\d{2}(\s*[AP]M)?', linea, re.IGNORECASE))
+    )
+
+
+def limpiar_texto(texto):
+    """Ordena el texto que sale del PDF: quita números de página y marcas de imprenta,
+    une palabras cortadas y quita espacios de más."""
+    texto = '\n'.join(linea for linea in texto.splitlines() if not es_linea_de_imprenta(linea))
+    texto = re.sub(r'-\n(\w)', r'\1', texto)
+    texto = re.sub(r'[ \t]+', ' ', texto)
+    texto = re.sub(r' *\n *', '\n', texto)
+    texto = re.sub(r'\n{3,}', '\n\n', texto)
+    return texto.strip()
+
+
+def extraer_texto(ruta, desde, hasta):
+    """Texto de las páginas desde..hasta (contando como el visor de PDF) y el total de páginas."""
+    try:
+        lector = PdfReader(str(ruta))
+    except Exception as error:
+        raise ErrorBiblioteca(f'No se pudo abrir el PDF: {error}') from error
+    total = len(lector.pages)
+    if hasta > total:
+        raise ValueError(f'El libro tiene {total} páginas: elige páginas entre 1 y {total}.')
+    partes = [lector.pages[numero - 1].extract_text() or '' for numero in range(desde, hasta + 1)]
+    return limpiar_texto('\n\n'.join(partes)), total
