@@ -69,6 +69,7 @@ fun PantallaEditor(
     val texto by editorViewModel.texto.collectAsState()
     val guardado by editorViewModel.guardado.collectAsState()
     val errores by editorViewModel.errores.collectAsState()
+    val sinRevisar by editorViewModel.sinRevisar.collectAsState()
 
     LaunchedEffect(nivelId) {
         consignaViewModel.cargar(nivelId)
@@ -83,7 +84,8 @@ fun PantallaEditor(
         onEnviar = { onEnviar(texto) },
         onReintentar = consignaViewModel::reintentar,
         guardado = guardado,
-        errores = errores
+        errores = errores,
+        sinRevisar = sinRevisar
     )
 }
 
@@ -97,7 +99,8 @@ fun ContenidoEditor(
     onEnviar: () -> Unit,
     onReintentar: () -> Unit,
     guardado: EstadoGuardado = EstadoGuardado.NADA,
-    errores: List<ErrorOrtografico> = emptyList()
+    errores: List<ErrorOrtografico> = emptyList(),
+    sinRevisar: Boolean = false
 ) {
     Column(
         Modifier
@@ -115,7 +118,7 @@ fun ContenidoEditor(
             is ConsignaUiState.Error -> Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 ErrorConsigna(consigna, onReintentar, onVolver)
             }
-            is ConsignaUiState.Exito -> Hoja(consigna.consigna, texto, guardado, errores, onEscribir, onEnviar)
+            is ConsignaUiState.Exito -> Hoja(consigna.consigna, texto, guardado, errores, sinRevisar, onEscribir, onEnviar)
         }
     }
 }
@@ -126,6 +129,7 @@ private fun ColumnScope.Hoja(
     texto: String,
     guardado: EstadoGuardado,
     errores: List<ErrorOrtografico>,
+    sinRevisar: Boolean,
     onEscribir: (String) -> Unit,
     onEnviar: () -> Unit
 ) {
@@ -207,6 +211,18 @@ private fun ColumnScope.Hoja(
                 modifier = Modifier
                     .semantics { liveRegion = LiveRegionMode.Polite }
                     .testTag("aviso_errores")
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+        // T-332: sin internet se sigue escribiendo (el borrador se guarda en la tablet)
+        if (sinRevisar) {
+            Text(
+                "Sin internet: revisaremos tu ortografía cuando vuelva la conexión",
+                fontSize = 18.sp,
+                color = ColoresAventura.TextoOscuro,
+                modifier = Modifier
+                    .semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("aviso_sin_conexion")
             )
             Spacer(Modifier.height(8.dp))
         }

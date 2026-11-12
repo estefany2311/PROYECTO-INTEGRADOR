@@ -3,9 +3,11 @@ package com.proyecto.movil.viewmodel
 import com.proyecto.movil.model.ErrorOrtografico
 import com.proyecto.movil.model.ResultadoOrtografia
 import com.proyecto.movil.model.local.AlmacenBorradores
+import com.proyecto.movil.model.remote.IMonitorRed
 import com.proyecto.movil.model.repository.IOrtografiaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.*
 import org.junit.After
 import org.junit.Assert.*
@@ -45,8 +47,15 @@ class EditorViewModelTest {
 
     private val ortografia = OrtografiaFalsa()
 
+    // T-332: internet falso que la prueba prende y apaga
+    private class RedFalsa : IMonitorRed {
+        override val conectado = MutableStateFlow(true)
+    }
+
+    private val red = RedFalsa()
+
     private fun nuevoEditor(estudianteId: Long = 7L) =
-        EditorViewModel(almacen, estudianteId = { estudianteId }, io = dispatcher, ortografia = ortografia)
+        EditorViewModel(almacen, estudianteId = { estudianteId }, io = dispatcher, ortografia = ortografia, red = red)
 
     @Test
     fun `sin borrador el editor empieza vacio`() = runTest(dispatcher) {
@@ -240,5 +249,80 @@ class EditorViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf(enPero), vm.errores.value)
+    }
+
+    // ---------- T-332 (US-19): sin conexión ----------
+
+    @Test
+    fun `sin internet no llama al servidor y avisa que falta revisar`() = runTest(dispatcher) {
+        red.conectado.value = false
+        val vm = nuevoEditor()
+        vm.abrir(2)
+
+        vm.escribir("Mi pero")
+        advanceUntilIdle()
+
+        assertTrue(ortografia.recibidos.isEmpty())
+        assertTrue(vm.sinRevisar.value)
+    }
+
+    @Test
+    fun `al volver el internet revisa sola sin que el nino escriba`() = runTest(dispatcher) {
+        val enPero = ErrorOrtografico("pero", 3, 7, "ortografia", null)
+        ortografia.respuesta = { ResultadoOrtografia.Exito(listOf(enPero)) }
+        red.conectado.value = false
+        val vm = nuevoEditor()
+        vm.abrir(2)
+        vm.escribir("Mi pero")
+        advanceUntilIdle()
+
+        red.conectado.value = true
+        advanceUntilIdle()
+
+        assertEquals(listOf("Mi pero"), ortografia.recibidos)
+        assertEquals(listOf(enPero), vm.errores.value)
+        assertFalse(vm.sinRevisar.value)
+    }
+
+    @Test
+    fun `si el servidor no responde queda pendiente y se limpia al revisar bien`() = runTest(dispatcher) {
+        ortografia.respuesta = { ResultadoOrtografia.SinConexion }
+        val vm = nuevoEditor()
+        vm.abrir(2)
+        vm.escribir("Mi pero")
+        advanceUntilIdle()
+        assertTrue(vm.sinRevisar.value)
+
+        ortografia.respuesta = { ResultadoOrtografia.Exito(emptyList()) }
+        vm.escribir("Mi perro")
+        advanceUntilIdle()
+
+        assertFalse(vm.sinRevisar.value)
+    }
+
+    @Test
+    fun `sin internet el borrador se guarda igual`() = runTest(dispatcher) {
+        red.conectado.value = false
+        val vm = nuevoEditor()
+        vm.abrir(2)
+
+        vm.escribir("Mi perro Toby")
+        advanceUntilIdle()
+
+        assertEquals("Mi perro Toby", almacen.leer(7, 2))
+    }
+
+    @Test
+    fun `borrar todo quita el aviso de sin revisar`() = runTest(dispatcher) {
+        red.conectado.value = false
+        val vm = nuevoEditor()
+        vm.abrir(2)
+        vm.escribir("Mi pero")
+        advanceUntilIdle()
+
+        vm.escribir("")
+
+        assertFalse(vm.sinRevisar.value)
+        advanceUntilIdle()
     }
 }

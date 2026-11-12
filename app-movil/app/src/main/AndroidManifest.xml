@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- T-332 (US-19): saber cuándo vuelve el internet para revisar la ortografía -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- T-313 (US-11): grabar la lectura en voz alta del niño -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <application

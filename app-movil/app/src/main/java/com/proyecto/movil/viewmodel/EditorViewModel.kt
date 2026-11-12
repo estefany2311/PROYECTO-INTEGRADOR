@@ -6,6 +6,7 @@ import com.proyecto.movil.Dependencias
 import com.proyecto.movil.model.ErrorOrtografico
 import com.proyecto.movil.model.ResultadoOrtografia
 import com.proyecto.movil.model.local.AlmacenBorradores
+import com.proyecto.movil.model.remote.IMonitorRed
 import com.proyecto.movil.model.repository.IOrtografiaRepository
 import com.proyecto.movil.model.repository.OrtografiaRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -24,7 +25,8 @@ class EditorViewModel(
     private val almacen: AlmacenBorradores = Dependencias.almacenBorradores,
     private val estudianteId: () -> Long = { Dependencias.almacenSesion.leer()?.estudianteId ?: 0L },
     private val io: CoroutineDispatcher = Dispatchers.IO,
-    private val ortografia: IOrtografiaRepository = OrtografiaRepository()
+    private val ortografia: IOrtografiaRepository = OrtografiaRepository(),
+    private val red: IMonitorRed = Dependencias.monitorRed
 ) : ViewModel() {
 
     private val _texto = MutableStateFlow("")
@@ -39,6 +41,18 @@ class EditorViewModel(
 
     private var nivelId: Int? = null
     private var verificacion: Job? = null
+
+    // T-332: true cuando no se pudo revisar por falta de internet; se revisa sola al volver la conexión
+    private val _sinRevisar = MutableStateFlow(false)
+    val sinRevisar: StateFlow<Boolean> = _sinRevisar
+
+    init {
+        viewModelScope.launch {
+            red.conectado.collect { conectado ->
+                if (conectado && _sinRevisar.value) programarVerificacion(espera = 0L)
+            }
+        }
+    }
     private var guardadoPendiente: Job? = null
     private var sinGuardar = false
 
@@ -65,19 +79,31 @@ class EditorViewModel(
     }
 
     // T-330: se verifica cuando el niño deja de escribir un momento, no con cada letra
-    private fun programarVerificacion() {
+    private fun programarVerificacion(espera: Long = ESPERA_VERIFICAR_MS) {
         verificacion?.cancel()
         if (_texto.value.isBlank()) {
             _errores.value = emptyList()
+            _sinRevisar.value = false
             return
         }
         verificacion = viewModelScope.launch {
-            delay(ESPERA_VERIFICAR_MS)
+            delay(espera)
+            // T-332: sin internet ni se intenta; queda pendiente hasta que vuelva
+            if (!red.conectado.value) {
+                _sinRevisar.value = true
+                return@launch
+            }
             val enviado = _texto.value
-            val resultado = ortografia.verificar(enviado)
-            // Si siguió escribiendo mientras llegaba la respuesta, esas posiciones ya no sirven
-            if (resultado is ResultadoOrtografia.Exito && enviado == _texto.value) {
-                _errores.value = resultado.errores
+            when (val resultado = ortografia.verificar(enviado)) {
+                is ResultadoOrtografia.Exito -> {
+                    // Si siguió escribiendo mientras llegaba la respuesta, esas posiciones ya no sirven
+                    if (enviado == _texto.value) {
+                        _errores.value = resultado.errores
+                        _sinRevisar.value = false
+                    }
+                }
+                ResultadoOrtografia.SinConexion -> _sinRevisar.value = true
+                ResultadoOrtografia.SesionVencida -> Unit
             }
         }
     }

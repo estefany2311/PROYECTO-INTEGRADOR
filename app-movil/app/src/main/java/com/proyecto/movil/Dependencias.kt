@@ -5,6 +5,8 @@ import com.proyecto.movil.model.audio.AlmacenGrabaciones
 import com.proyecto.movil.model.local.AlmacenBorradores
 import com.proyecto.movil.model.local.AlmacenSesionSeguro
 import com.proyecto.movil.model.local.IAlmacenSesion
+import com.proyecto.movil.model.remote.IMonitorRed
+import com.proyecto.movil.model.remote.MonitorRed
 import com.proyecto.movil.model.remote.RetrofitClient
 
 // Objetos compartidos por toda la app. Se inicializa una sola vez en AppMovil.onCreate().
@@ -21,6 +23,10 @@ object Dependencias {
     lateinit var almacenBorradores: AlmacenBorradores
         private set
 
+    // T-332: si la tablet tiene internet
+    lateinit var monitorRed: IMonitorRed
+        private set
+
     fun iniciar(context: Context) {
         if (::almacenSesion.isInitialized) return
         almacenSesion = AlmacenSesionSeguro(context.applicationContext)
@@ -29,6 +35,7 @@ object Dependencias {
         almacenGrabaciones.limpiar()
         almacenBorradores = AlmacenBorradores(java.io.File(context.filesDir, "borradores"))
         almacenBorradores.limpiar()   // borra los de más de 30 días
+        monitorRed = MonitorRed(context.applicationContext)
         // T-314 grababa en la caché; esa carpeta ya no se usa
         java.io.File(context.cacheDir, "grabaciones").deleteRecursively()
         // Cada petición a la API lleva el token guardado (si hay sesión)
