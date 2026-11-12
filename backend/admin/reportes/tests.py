@@ -285,3 +285,75 @@ class ReporteAulasAPITests(APITestCase):
     @mock.patch('reportes.consultas.tablas_disponibles', return_value=False)
     def test_sin_tablas_devuelve_lista_vacia(self, _tablas):
         self.assertEqual(self.client.get(self.url(self.colegio_a.id)).data['aulas'], [])
+
+
+class CalculosAgregacionTests(TestCase):
+    """T-271: casos límite de los cálculos que usan los reportes (mismos datos de T-264)."""
+
+    def setUp(self):
+        ConsultasAgregacionTests.setUp(self)
+
+    def ejecutar(self, sql, parametros=None):
+        with connection.cursor() as c:
+            c.execute(sql, parametros or [])
+
+    def por_colegio(self):
+        return {r['nombre']: r for r in consultas.rendimiento_por_colegio()}
+
+    def docente_a_id(self):
+        return AsignacionDocente.objects.get(colegio=self.colegio_a).docente_id
+
+    def test_el_color_usa_el_promedio_sin_redondear(self):
+        # 49 y 50 → promedio 49.5: es rojo, aunque redondeado parecería 50
+        self.ejecutar("INSERT INTO estudiante (id, nombres, apellidos, aula_id, grado_id, activo) "
+                      "VALUES (6, 'Pedro', 'R', 101, 2, TRUE)")
+        self.ejecutar("INSERT INTO evaluacion (estudiante_id, competencia, puntaje) "
+                      "VALUES (6, 'lectura', 49), (6, 'escritura', 50)")
+        self.assertEqual(consultas.alumnos_por_semaforo(aula_id=101)['rojo'], 1)
+        self.assertEqual(self.por_colegio()['IE Ccollpa']['semaforo']['rojo'], 1)
+
+    def test_el_semaforo_suma_lo_mismo_que_los_alumnos(self):
+        for fila in self.por_colegio().values():
+            with self.subTest(colegio=fila['nombre']):
+                self.assertEqual(sum(fila['semaforo'].values()), fila['alumnos'])
+        for aula in consultas.rendimiento_por_aula(self.colegio_a.id):
+            self.assertEqual(sum(aula['semaforo'].values()), aula['alumnos'])
+
+    def test_alumno_sin_evaluaciones_cuenta_como_alumno_pero_no_en_el_promedio(self):
+        b = self.por_colegio()['IE Huaccana']          # Rosa (30) y Juan (sin notas)
+        self.assertEqual(b['alumnos'], 2)
+        self.assertEqual(b['promedio_general'], 30.0)  # Juan no baja el promedio a 15
+
+    def test_el_promedio_general_pesa_cada_evaluacion(self):
+        # Colegio A: (80 + 70 + 60 + 40) / 4 = 62.5, no (70 + 70 + 40) / 3 = 60
+        self.assertEqual(self.por_colegio()['IE Ccollpa']['promedio_general'], 62.5)
+
+    def test_alumnos_de_un_docente_sin_colegio_no_salen_en_ningun_colegio(self):
+        # Aula de un docente que no está asignado a ningún colegio (como los datos de prueba)
+        self.ejecutar('INSERT INTO aula VALUES (103, %s, %s)', ['Aula suelta', 99999])
+        self.ejecutar("INSERT INTO estudiante (id, nombres, apellidos, aula_id, grado_id, activo) "
+                      "VALUES (7, 'Sara', 'L', 103, 3, TRUE)")
+        self.ejecutar("INSERT INTO evaluacion (estudiante_id, competencia, puntaje) VALUES (7, 'lectura', 90)")
+        # En el total general sí cuenta...
+        self.assertEqual(consultas.alumnos_por_semaforo()['verde'], 2)
+        # ...pero no aparece en ningún colegio ni en sus aulas
+        self.assertEqual(sum(f['alumnos'] for f in self.por_colegio().values()), 4)
+        nombres = [a['nombre'] for a in consultas.rendimiento_por_aula(self.colegio_a.id)]
+        self.assertNotIn('Aula suelta', nombres)
+
+    def test_filtro_por_grado_en_el_semaforo(self):
+        self.assertEqual(consultas.alumnos_por_semaforo(grado=4),
+                         {'verde': 0, 'amarillo': 0, 'rojo': 1, 'sin_evaluar': 1})
+
+    def test_rendimiento_por_aula_con_su_docente(self):
+        aula = consultas.rendimiento_por_aula(self.colegio_a.id)[0]
+        self.assertEqual(aula['nombre'], 'Aula A')
+        self.assertEqual(aula['docente'], 'doc_a')
+        self.assertEqual((aula['alumnos'], aula['evaluaciones']), (2, 4))
+        self.assertEqual(aula['promedios'], {'lectura': 70.0, 'escritura': 70.0, 'oralidad': 40.0})
+
+    def test_aula_sin_alumnos_aparece_en_cero(self):
+        self.ejecutar('INSERT INTO aula VALUES (104, %s, %s)', ['Aula vacía', self.docente_a_id()])
+        vacia = next(a for a in consultas.rendimiento_por_aula(self.colegio_a.id) if a['nombre'] == 'Aula vacía')
+        self.assertEqual((vacia['alumnos'], vacia['evaluaciones'], vacia['promedio_general']), (0, 0, None))
+        self.assertEqual(vacia['semaforo'], {'verde': 0, 'amarillo': 0, 'rojo': 0, 'sin_evaluar': 0})
