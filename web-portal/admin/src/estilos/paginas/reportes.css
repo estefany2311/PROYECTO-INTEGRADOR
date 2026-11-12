@@ -94,3 +94,79 @@
 /* Leyenda de abajo */
 .pagina-reportes .leyenda { display: flex; flex-wrap: wrap; gap: 6px 18px; background: transparent; }
 .pagina-reportes .leyenda > span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ===== T-270 · Gráficos ===== */
+.pagina-reportes {
+  --color-lectura: #0A8378;
+  --color-escritura: #4F7CAC;
+  --color-oralidad: #D9822B;
+}
+
+/* Barras por competencia */
+.pagina-reportes .grafico-barras {
+  position: relative;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  gap: 16px;
+  height: 240px;
+  padding: 10px 10px 0 34px;
+}
+.pagina-reportes .grafico-barras .guia {
+  position: absolute;
+  left: 34px;
+  right: 0;
+  border-top: 1px dashed #B9CFCA;
+  pointer-events: none;
+}
+.pagina-reportes .grafico-barras .guia span {
+  position: absolute;
+  left: -30px;
+  top: -9px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--nota);
+}
+/* El área de las barras mide 240 - 10 (arriba) - 28 (nombre) = 202 px */
+.pagina-reportes .guia-75 { bottom: calc(28px + 202px * .75); }
+.pagina-reportes .guia-50 { bottom: calc(28px + 202px * .50); }
+.pagina-reportes .columna { flex: 1; max-width: 110px; height: 100%; display: flex; flex-direction: column; }
+.pagina-reportes .columna-area { flex: 1; display: flex; align-items: flex-end; justify-content: center; position: relative; }
+.pagina-reportes .barra {
+  position: relative;
+  width: 100%;
+  border-radius: 10px 10px 4px 4px;
+  min-height: 4px;
+  transition: height .4s ease;
+}
+.pagina-reportes .barra-lectura { background: var(--color-lectura); }
+.pagina-reportes .barra-escritura { background: var(--color-escritura); }
+.pagina-reportes .barra-oralidad { background: var(--color-oralidad); }
+.pagina-reportes .barra .valor {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-weight: 900;
+  font-size: 14px;
+  color: var(--titulo);
+}
+.pagina-reportes .columna-area > .valor { margin-bottom: 6px; }
+.pagina-reportes .columna-nombre { height: 28px; line-height: 28px; text-align: center; font-weight: 800; font-size: 13px; }
+
+/* Dona del semáforo */
+.pagina-reportes .grafico-dona { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; justify-content: center; }
+.pagina-reportes .dona { width: 170px; height: 170px; flex: none; }
+.pagina-reportes .dona circle { fill: none; stroke-width: 6; }
+.pagina-reportes .dona-fondo { stroke: #EEF1F5; }
+.pagina-reportes .dona-tramo.tramo-verde { stroke: var(--verde); }
+.pagina-reportes .dona-tramo.tramo-amarillo { stroke: var(--amarillo); }
+.pagina-reportes .dona-tramo.tramo-rojo { stroke: var(--rojo); }
+.pagina-reportes .dona-tramo.tramo-sin_evaluar { stroke: var(--sin-evaluar); }
+.pagina-reportes .dona-total { text-anchor: middle; font-size: 8px; font-weight: 900; fill: var(--titulo); }
+.pagina-reportes .dona-etiqueta { text-anchor: middle; font-size: 3.4px; font-weight: 700; fill: var(--nota); }
+.pagina-reportes .dona-leyenda { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 200px; }
+.pagina-reportes .dona-leyenda li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #D5E6E2; }
+.pagina-reportes .dona-leyenda li:last-child { border-bottom: 0; }
+.pagina-reportes .dona-leyenda .porcentaje { width: 42px; text-align: right; }

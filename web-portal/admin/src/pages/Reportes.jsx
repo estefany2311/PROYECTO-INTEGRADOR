@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { obtenerReporteAulas, obtenerReporteColegios } from "../api";
+import { GraficoCompetencias, GraficoSemaforo } from "../components/GraficosReporte";
 
 // US-47 · T-269: reporte consolidado por colegio y por aula (usa los endpoints de T-267 y T-268)
 
@@ -114,6 +115,9 @@ export default function Reportes({ onNoAutorizado }) {
     ? promediosResumen.reduce((s, p) => s + p, 0) / promediosResumen.length
     : null;
 
+  const nombreColegio = colegios.find((c) => String(c.colegio_id) === colegioId)?.nombre;
+  const alcance = colegioId ? nombreColegio ?? "Colegio elegido" : "Todos los colegios";
+
   const tarjetas = [
     { titulo: "Alumnos activos", valor: resumen?.alumnos ?? 0, icono: "bi-people", tono: "verde-marca" },
     { titulo: "Evaluaciones", valor: resumen?.evaluaciones ?? 0, icono: "bi-clipboard-check", tono: "azul" },
@@ -157,6 +161,15 @@ export default function Reportes({ onNoAutorizado }) {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="row g-3 mb-4">
+        <div className="col-lg-7">
+          <GraficoCompetencias promedios={resumen?.promedios} alcance={alcance} cargando={cargando} />
+        </div>
+        <div className="col-lg-5">
+          <GraficoSemaforo semaforo={resumen?.semaforo} alcance={alcance} cargando={cargando} />
+        </div>
       </div>
 
       <div className="card">
