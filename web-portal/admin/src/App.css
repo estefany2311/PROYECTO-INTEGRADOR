@@ -1,24 +1,45 @@
-/* Paleta del proyecto: azul noche, turquesa y naranja (marca compartida con la app) */
+/* Paleta de Yalliq (T-446) */
 :root {
-  /* Marca compartida con la app del estudiante (ColoresAventura.kt) */
-  --brand-turquesa: #0E9F92;   /* turquesa de la marca: detalles, foco, selección */
-  --accent: #FF9F1C;           /* naranja de la app: logo, insignias, menú activo */
-  --accent-soft: #FFF3DD;
-  --accent-text: #8A5300;      /* naranja oscuro para textos sobre fondo claro */
-
-  /* Botones y enlaces: turquesa un poco más oscuro para que el texto blanco se lea bien */
+  /* Marca */
+  --brand-turquesa: #0E9F92;
   --primary: #0A8378;
-  --primary-soft: #E0F5F3;
+  --primary-soft: #E3F2F0;
   --primary-dark: #08665E;
+  --accent: #FF9F1C;           /* naranja de la app (Inicio) */
+  --accent-soft: #FFF3DD;
+  --accent-text: #8A5300;
+  --lapiz: #FFD36B;            /* amarillo lápiz: detalles y etiqueta "Nuevo" */
+  --resaltador: #FFE9A8;       /* plumón para resaltar palabras de los títulos */
 
-  --sidebar: #1D3557;          /* azul noche */
+  /* Fondo y superficies */
+  --body: #DCECE8;             /* fondo menta */
+  --puntos: rgba(8, 102, 94, .14);
+  --card: #F6FBFA;             /* tarjetas */
+  --card-head: #EAF4F2;        /* encabezados de tabla */
+  --border: #C9DFDA;
+  --linea: #D5E6E2;            /* líneas entre filas */
+  --hoja: #FFF8E7;             /* hoja de cuaderno de los encabezados (T-448) */
+
+  /* Texto */
+  --text: #22303C;
+  --muted: #5E6B73;
+
+  /* Competencias */
+  --lectura: #0A8378;
+  --escritura: #4F7CAC;
+  --oralidad: #D9822B;
+
+  /* Semáforo */
+  --verde: #16A34A;
+  --amarillo: #D97706;
+  --rojo: #DC2626;
+  --sin-evaluar: #CBD5E1;
+  --success: #16A34A;
+  --danger: #DC2626;
+
+  /* Menú lateral: se cambia en T-447 */
+  --sidebar: #1D3557;
   --sidebar-text: #B8C4D6;
-  --body: #F4FAFF;             /* cielo muy claro */
-  --border: #E1E8F0;
-  --text: #1D3557;
-  --muted: #5F6F86;
-  --success: #2EC4B6;
-  --danger: #E63946;
 
   --bs-primary: #0A8378;
   --bs-primary-rgb: 10, 131, 120;
@@ -26,17 +47,20 @@
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: var(--body);
+  font-family: 'Nunito', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--body);
+  background-image: radial-gradient(var(--puntos) 1px, transparent 1.2px);
+  background-size: 22px 22px;
   color: var(--text);
-  font-size: 14px;
+  font-size: 14.5px;
   -webkit-font-smoothing: antialiased;
 }
-
-h1, h2, h5 { color: var(--text); }
-a { color: var(--primary); }
-.text-primary { color: var(--primary) !important; }
-.note { font-size: 12px; color: var(--muted); }
+/* El fondo punteado también se ve detrás de cada pestaña */
+body .main {
+  background-image: radial-gradient(var(--puntos) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+h1, h2, h3, h4, h5 { font-weight: 800; letter-spacing: -.01em; }
 
 /* BOTONES Y FORMULARIOS (Bootstrap con la paleta) */
 .btn-primary {
@@ -56,6 +80,19 @@ a { color: var(--primary); }
   --bs-btn-hover-border-color: var(--primary);
   --bs-btn-active-bg: var(--primary-dark);
 }
+
+.btn { border-radius: 10px; font-weight: 700; }
+.btn-primary { box-shadow: 0 6px 14px -8px rgba(10, 131, 120, .7); }
+.btn-light, .btn-outline-secondary {
+  --bs-btn-bg: #fff;
+  --bs-btn-color: var(--text);
+  --bs-btn-border-color: var(--border);
+  --bs-btn-hover-bg: var(--card-head);
+  --bs-btn-hover-color: var(--text);
+  --bs-btn-hover-border-color: var(--border);
+}
+.form-control, .form-select { border-color: var(--border); border-radius: 9px; }
+
 .form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
 .form-control:focus, .form-select:focus, .form-check-input:focus {
   border-color: #7FD3CB;
@@ -122,28 +159,28 @@ a { color: var(--primary); }
 .story { font-size: 11px; font-weight: 600; color: var(--accent-text); background: var(--accent-soft); padding: 3px 8px; border-radius: 6px; margin-left: 8px; vertical-align: middle; }
 
 /* CARDS, TABLAS Y BADGES */
-.card { border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
-.card-header { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 20px; border-radius: 14px 14px 0 0 !important; }
-.card-header h2 { font-size: 15px; font-weight: 600; margin: 0; }
-.table { margin: 0; --bs-table-hover-bg: #EEF7FD; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 2px rgba(8, 102, 94, .05); }
+.card-header { background: var(--card); border-bottom: 1px solid var(--border); padding: 16px 20px; border-radius: 12px 12px 0 0 !important; }
+.card-header h2 { font-size: 15.5px; font-weight: 800; margin: 0; }
+.table { margin: 0; --bs-table-bg: transparent; --bs-table-hover-bg: #EEF6F4; }
 .table thead th {
   font-size: 11.5px;
   text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--muted);
-  font-weight: 600;
-  background: #fafbfc;
+  font-weight: 800;
+  background: var(--card-head);
   border-bottom-color: var(--border);
   padding: 12px 16px;
   white-space: nowrap;
 }
-.table td { padding: 12px 16px; vertical-align: middle; border-color: var(--border); }
-.badge-soft { font-weight: 600; font-size: 11.5px; padding: 5px 9px; border-radius: 8px; white-space: nowrap; }
-.bs-ok { background: #e7f8ef; color: #13804b; }
-.bs-off { background: #fdecec; color: #c0352b; }
-.bs-p { background: var(--primary-soft); color: var(--primary); }
-.bs-info { background: #e8f1fd; color: #2463b8; }
-.bs-warn { background: #fff4e0; color: #b26b00; }
+.table td { padding: 12px 16px; vertical-align: middle; border-color: var(--linea); }
+.badge-soft { font-weight: 700; font-size: 11.5px; padding: 4px 9px; border-radius: 6px; white-space: nowrap; }
+.bs-ok { background: #ECFDF3; color: #166534; }
+.bs-off { background: #FEF2F2; color: #991B1B; }
+.bs-p { background: var(--primary-soft); color: var(--primary-dark); }
+.bs-info { background: #EFF6FF; color: #1E40AF; }
+.bs-warn { background: #FFF7ED; color: #9A3412; }
 .icon-btn {
   width: 32px;
   height: 32px;
@@ -154,8 +191,11 @@ a { color: var(--primary); }
   background: #fff;
   color: var(--muted);
 }
-.icon-btn:hover { color: var(--primary); border-color: #9FD9D3; }
+.icon-btn:hover { color: var(--primary); border-color: var(--primary); background: var(--primary-soft); }
 .icon-btn:disabled { opacity: .5; }
+/* Plumón para resaltar una palabra del título (se usa en T-448) */
+.resaltado { background: linear-gradient(transparent 58%, var(--resaltador) 58%, var(--resaltador) 92%, transparent 92%); padding: 0 3px; }
+
 .mini-avatar { width: 32px; height: 32px; border-radius: 50%; display: inline-grid; place-items: center; font-weight: 600; font-size: 12px; background: var(--primary-soft); color: var(--primary); }
 .avatar-group .mini-avatar { border: 2px solid #fff; margin-left: -8px; }
 .avatar-group .mini-avatar:first-child { margin-left: 0; }
