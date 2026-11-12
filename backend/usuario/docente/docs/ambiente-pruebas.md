@@ -88,7 +88,8 @@ npm run preview -- --port 4173
 | Backend `EvidenciaServiceTest` | 9/9 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo y aula del docente |
 | Backend `EvidenciaControllerTest` | 8/8 · ruta, respuesta de audio y texto, filtro por tipo, header y errores |
 | Backend `MigracionPuntajeEstudianteTest` | 6/6 · tabla, una fila por alumno, acumulados desde cero, valores no negativos, actualización y cascada |
-| Backend `test` | 216/216 |
+| Backend `PuntajeServiceTest` | 9/9 · acumulado nuevo y existente, umbrales de estrellas, tipo y puntaje inválidos y alumno inexistente |
+| Backend `test` | 225/225 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
