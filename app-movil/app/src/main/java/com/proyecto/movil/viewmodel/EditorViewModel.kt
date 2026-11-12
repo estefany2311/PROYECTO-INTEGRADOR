@@ -3,7 +3,11 @@ package com.proyecto.movil.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.proyecto.movil.Dependencias
+import com.proyecto.movil.model.ErrorOrtografico
+import com.proyecto.movil.model.ResultadoOrtografia
 import com.proyecto.movil.model.local.AlmacenBorradores
+import com.proyecto.movil.model.repository.IOrtografiaRepository
+import com.proyecto.movil.model.repository.OrtografiaRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -19,7 +23,8 @@ enum class EstadoGuardado { NADA, GUARDANDO, GUARDADO }
 class EditorViewModel(
     private val almacen: AlmacenBorradores = Dependencias.almacenBorradores,
     private val estudianteId: () -> Long = { Dependencias.almacenSesion.leer()?.estudianteId ?: 0L },
-    private val io: CoroutineDispatcher = Dispatchers.IO
+    private val io: CoroutineDispatcher = Dispatchers.IO,
+    private val ortografia: IOrtografiaRepository = OrtografiaRepository()
 ) : ViewModel() {
 
     private val _texto = MutableStateFlow("")
@@ -28,7 +33,12 @@ class EditorViewModel(
     private val _guardado = MutableStateFlow(EstadoGuardado.NADA)
     val guardado: StateFlow<EstadoGuardado> = _guardado
 
+    // T-330: errores de ortografía del texto actual (T-331 los subraya)
+    private val _errores = MutableStateFlow<List<ErrorOrtografico>>(emptyList())
+    val errores: StateFlow<List<ErrorOrtografico>> = _errores
+
     private var nivelId: Int? = null
+    private var verificacion: Job? = null
     private var guardadoPendiente: Job? = null
     private var sinGuardar = false
 
@@ -39,6 +49,7 @@ class EditorViewModel(
         almacen.leer(estudianteId(), nivelId)?.let {
             _texto.value = it
             _guardado.value = EstadoGuardado.GUARDADO
+            programarVerificacion()
         }
     }
 
@@ -49,6 +60,33 @@ class EditorViewModel(
         _texto.value = texto
         sinGuardar = true
         programarGuardado()
+        conservarErroresQueSiguen(texto)
+        programarVerificacion()
+    }
+
+    // T-330: se verifica cuando el niño deja de escribir un momento, no con cada letra
+    private fun programarVerificacion() {
+        verificacion?.cancel()
+        if (_texto.value.isBlank()) {
+            _errores.value = emptyList()
+            return
+        }
+        verificacion = viewModelScope.launch {
+            delay(ESPERA_VERIFICAR_MS)
+            val enviado = _texto.value
+            val resultado = ortografia.verificar(enviado)
+            // Si siguió escribiendo mientras llegaba la respuesta, esas posiciones ya no sirven
+            if (resultado is ResultadoOrtografia.Exito && enviado == _texto.value) {
+                _errores.value = resultado.errores
+            }
+        }
+    }
+
+    // Mientras llega la nueva revisión, se dejan solo los errores cuya palabra sigue en el mismo lugar
+    private fun conservarErroresQueSiguen(texto: String) {
+        _errores.value = _errores.value.filter { e ->
+            e.fin <= texto.length && texto.substring(e.inicio, e.fin) == e.palabra
+        }
     }
 
     // Espera a que deje de escribir un momento; así no se escribe en la tablet con cada letra
@@ -75,5 +113,6 @@ class EditorViewModel(
     companion object {
         const val MAX_CARACTERES = 3_000
         const val ESPERA_GUARDADO_MS = 1_000L
+        const val ESPERA_VERIFICAR_MS = 800L
     }
 }

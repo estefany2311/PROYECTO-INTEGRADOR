@@ -1,6 +1,9 @@
 package com.proyecto.movil.viewmodel
 
+import com.proyecto.movil.model.ErrorOrtografico
+import com.proyecto.movil.model.ResultadoOrtografia
 import com.proyecto.movil.model.local.AlmacenBorradores
+import com.proyecto.movil.model.repository.IOrtografiaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.*
@@ -30,8 +33,20 @@ class EditorViewModelTest {
     @After
     fun limpiar() = Dispatchers.resetMain()
 
+    // T-330: corrector falso; responde lo que diga la prueba y anota qué textos recibió
+    private class OrtografiaFalsa : IOrtografiaRepository {
+        val recibidos = mutableListOf<String>()
+        var respuesta: (String) -> ResultadoOrtografia = { ResultadoOrtografia.Exito(emptyList()) }
+        override suspend fun verificar(texto: String): ResultadoOrtografia {
+            recibidos += texto
+            return respuesta(texto)
+        }
+    }
+
+    private val ortografia = OrtografiaFalsa()
+
     private fun nuevoEditor(estudianteId: Long = 7L) =
-        EditorViewModel(almacen, estudianteId = { estudianteId }, io = dispatcher)
+        EditorViewModel(almacen, estudianteId = { estudianteId }, io = dispatcher, ortografia = ortografia)
 
     @Test
     fun `sin borrador el editor empieza vacio`() = runTest(dispatcher) {
@@ -125,5 +140,105 @@ class EditorViewModelTest {
 
         assertEquals(EditorViewModel.MAX_CARACTERES, vm.texto.value.length)
         advanceUntilIdle()
+    }
+
+    // ---------- T-330 (US-19): verificar mientras escribe ----------
+
+    @Test
+    fun `no verifica con cada letra sino cuando deja de escribir`() = runTest(dispatcher) {
+        val vm = nuevoEditor()
+        vm.abrir(2)
+
+        vm.escribir("Mi")
+        advanceTimeBy(300)
+        vm.escribir("Mi pero")
+        advanceTimeBy(300)
+        vm.escribir("Mi pero juega")
+        advanceTimeBy(EditorViewModel.ESPERA_VERIFICAR_MS + 1)
+
+        assertEquals(listOf("Mi pero juega"), ortografia.recibidos)
+    }
+
+    @Test
+    fun `muestra los errores que devuelve el corrector`() = runTest(dispatcher) {
+        val error = ErrorOrtografico("pero", 3, 7, "ortografia", null)
+        ortografia.respuesta = { ResultadoOrtografia.Exito(listOf(error)) }
+        val vm = nuevoEditor()
+        vm.abrir(2)
+
+        vm.escribir("Mi pero juega")
+        advanceUntilIdle()
+
+        assertEquals(listOf(error), vm.errores.value)
+    }
+
+    @Test
+    fun `texto vacio no llama al corrector y no tiene errores`() = runTest(dispatcher) {
+        val vm = nuevoEditor()
+        vm.abrir(2)
+
+        vm.escribir("   ")
+        advanceUntilIdle()
+
+        assertTrue(ortografia.recibidos.isEmpty())
+        assertTrue(vm.errores.value.isEmpty())
+    }
+
+    @Test
+    fun `al abrir con un borrador lo verifica`() = runTest(dispatcher) {
+        almacen.guardar(7, 2, "Mi pero")
+        val vm = nuevoEditor()
+
+        vm.abrir(2)
+        advanceUntilIdle()
+
+        assertEquals(listOf("Mi pero"), ortografia.recibidos)
+    }
+
+    @Test
+    fun `al seguir escribiendo se quitan los errores cuya palabra cambio`() = runTest(dispatcher) {
+        val enPero = ErrorOrtografico("pero", 3, 7, "ortografia", null)
+        val enJugeton = ErrorOrtografico("jugeton", 11, 18, "ortografia", null)
+        ortografia.respuesta = { ResultadoOrtografia.Exito(listOf(enPero, enJugeton)) }
+        val vm = nuevoEditor()
+        vm.abrir(2)
+        vm.escribir("Mi pero es jugeton")
+        advanceUntilIdle()
+
+        vm.escribir("Mi perro es jugeton")   // corrigió "pero": "jugeton" se movió un lugar
+
+        assertTrue(vm.errores.value.isEmpty())
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `al escribir al final se conservan los errores de antes`() = runTest(dispatcher) {
+        val enPero = ErrorOrtografico("pero", 3, 7, "ortografia", null)
+        ortografia.respuesta = { ResultadoOrtografia.Exito(listOf(enPero)) }
+        val vm = nuevoEditor()
+        vm.abrir(2)
+        vm.escribir("Mi pero")
+        advanceUntilIdle()
+
+        vm.escribir("Mi pero juega")
+
+        assertEquals(listOf(enPero), vm.errores.value)
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `sin conexion se quedan los errores que habia`() = runTest(dispatcher) {
+        val enPero = ErrorOrtografico("pero", 3, 7, "ortografia", null)
+        ortografia.respuesta = { ResultadoOrtografia.Exito(listOf(enPero)) }
+        val vm = nuevoEditor()
+        vm.abrir(2)
+        vm.escribir("Mi pero")
+        advanceUntilIdle()
+
+        ortografia.respuesta = { ResultadoOrtografia.SinConexion }
+        vm.escribir("Mi pero juega")
+        advanceUntilIdle()
+
+        assertEquals(listOf(enPero), vm.errores.value)
     }
 }
