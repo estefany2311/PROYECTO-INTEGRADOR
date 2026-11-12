@@ -11,24 +11,24 @@
 
 /* Valores por defecto (los mismos colores de App.css) */
 .main {
-  --fondo: var(--body);
+  --fondo: #DCECE8;
   --texto: var(--text);
-  --titulo: var(--text);
+  --titulo: #22303C;
   --titulo-tamano: 22px;
-  --subtitulo: var(--muted);
+  --subtitulo: #5E6B73;
   --etiqueta-fondo: var(--accent-soft);
   --etiqueta-texto: var(--accent-text);
-  --tarjeta-fondo: #FFFFFF;
-  --tarjeta-borde: var(--border);
-  --tarjeta-radio: 14px;
-  --tarjeta-titulo: var(--text);
-  --tarjeta-encabezado-fondo: #FFFFFF;
-  --tabla-encabezado-fondo: #FAFBFC;
-  --tabla-encabezado-texto: var(--muted);
-  --tabla-fila-hover: #EEF7FD;
+  --tarjeta-fondo: #F6FBFA;
+  --tarjeta-borde: #C9DFDA;
+  --tarjeta-radio: 12px;
+  --tarjeta-titulo: #22303C;
+  --tarjeta-encabezado-fondo: #F6FBFA;
+  --tabla-encabezado-fondo: #EAF4F2;
+  --tabla-encabezado-texto: #5E6B73;
+  --tabla-fila-hover: #EEF6F4;
   --boton: var(--primary);
   --boton-hover: var(--primary-dark);
-  --nota: var(--muted);
+  --nota: #5E6B73;
 }
 
 /* Dónde se usa cada variable */
@@ -61,3 +61,31 @@
   --bs-btn-disabled-border-color: var(--boton);
 }
 .main .content .note { color: var(--nota); }
+
+/* T-448: el título de cada pestaña parece una hoja de cuaderno
+   (renglones celestes y la línea roja del margen). Colores en el panel de cada pestaña:
+   --encabezado-fondo y --encabezado-borde */
+.main .content .page-title {
+  position: relative;
+  background-color: var(--encabezado-fondo, #FFF8E7);
+  background-image: repeating-linear-gradient(transparent 0 27px, rgba(79, 124, 172, .13) 27px 28px);
+  background-position: 0 12px;
+  border: 1px solid var(--encabezado-borde, #E9DDBF);
+  border-radius: var(--tarjeta-radio);
+  padding: 16px 20px 16px 66px;
+  align-items: center !important;
+  overflow: hidden;
+}
+.main .content .page-title::before {
+  content: "";
+  position: absolute;
+  left: 48px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(220, 90, 90, .3);
+}
+@media (max-width: 575px) {
+  .main .content .page-title { padding-left: 20px; }
+  .main .content .page-title::before { display: none; }
+}

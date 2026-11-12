@@ -5,23 +5,23 @@
 
 /* 1) PANEL DE COLORES: cambia el valor y guarda (Ctrl + S) */
 .main.pagina-ortografia {
-  --fondo: #F4FAFF;                    /* fondo de la pestaña */
-  --titulo: #1D3557;                   /* color del título grande */
+  --fondo: #DCECE8;                    /* fondo de la pestaña */
+  --titulo: #22303C;                   /* color del título grande */
   --titulo-tamano: 22px;               /* tamaño del título grande */
-  --subtitulo: #5F6F86;                /* texto debajo del título (ruta) */
-  --tarjeta-fondo: #FFFFFF;            /* fondo de las tarjetas y tablas */
-  --tarjeta-borde: #E1E8F0;            /* borde de las tarjetas */
-  --tarjeta-radio: 14px;               /* qué tan redondas son las esquinas */
-  --tarjeta-titulo: #1D3557;           /* títulos dentro de las tarjetas */
-  --tabla-encabezado-fondo: #FAFBFC;   /* fila de títulos de la tabla: fondo */
-  --tabla-encabezado-texto: #5F6F86;   /* fila de títulos de la tabla: texto */
+  --subtitulo: #5E6B73;                /* texto debajo del título (ruta) */
+  --tarjeta-fondo: #F6FBFA;            /* fondo de las tarjetas y tablas */
+  --tarjeta-borde: #C9DFDA;            /* borde de las tarjetas */
+  --tarjeta-radio: 12px;               /* qué tan redondas son las esquinas */
+  --tarjeta-titulo: #22303C;           /* títulos dentro de las tarjetas */
+  --tabla-encabezado-fondo: #EAF4F2;   /* fila de títulos de la tabla: fondo */
+  --tabla-encabezado-texto: #5E6B73;   /* fila de títulos de la tabla: texto */
   --boton: #0A8378;                    /* botones principales */
   --boton-hover: #08665E;              /* botones principales al pasar el mouse */
-  --nota: #5F6F86;                     /* textos pequeños grises */
+  --nota: #5E6B73;                     /* textos pequeños grises */
   --fila-cambios: #FFF8E7;             /* fila con cambios sin guardar */
   --nivel-baja: #0A8378;               /* botón "Baja" elegido */
-  --nivel-media: #FF9F1C;              /* botón "Media" elegido */
-  --nivel-alta: #E63946;               /* botón "Alta" elegido */
+  --nivel-media: #D9822B;              /* botón "Media" elegido */
+  --nivel-alta: #B5534A;               /* botón "Alta" elegido */
 }
 
 /* 2) REGLAS SOLO DE ESTA PESTAÑA (empieza siempre con .pagina-ortografia) */
@@ -29,10 +29,10 @@
 
 .pagina-ortografia .selector-sensibilidad {
   display: inline-flex; gap: 4px; padding: 4px;
-  background: #F4FAFF; border: 1px solid #DEE2E6; border-radius: 10px;
+  background: #EAF4F2; border: 1px solid #C9DFDA; border-radius: 10px;
 }
 .pagina-ortografia .selector-sensibilidad button {
-  border: 0; background: transparent; color: #5F6F86; font-weight: 600;
+  border: 0; background: transparent; color: #5E6B73; font-weight: 600;
   padding: 4px 14px; border-radius: 7px; transition: background .15s, color .15s;
 }
 .pagina-ortografia .selector-sensibilidad button:disabled { opacity: .6; }
@@ -44,9 +44,9 @@
 .pagina-ortografia .lista-palabras { display: flex; flex-wrap: wrap; gap: 8px; }
 .pagina-ortografia .chip-palabra {
   display: inline-flex; align-items: center; gap: 6px;
-  border-radius: 20px; padding: 5px 8px 5px 12px; font-weight: 600; font-size: 13.5px; color: #1D3557;
+  border-radius: 20px; padding: 5px 8px 5px 12px; font-weight: 600; font-size: 13.5px; color: #22303C;
 }
 .pagina-ortografia .chip-palabra button {
-  border: 0; background: none; padding: 0; line-height: 1; color: #1D3557; opacity: .55;
+  border: 0; background: none; padding: 0; line-height: 1; color: #22303C; opacity: .55;
 }
 .pagina-ortografia .chip-palabra button:hover { opacity: 1; color: #E63946; }

@@ -152,7 +152,10 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
             />
           </form>
 
-          <div className="ms-auto saludo d-none d-sm-block">Hola, {primerNombre(usuario)}</div>
+          {/* En Inicio ya hay un saludo grande, así que aquí no se repite */}
+          {pagina !== "dashboard" && (
+            <div className="ms-auto saludo d-none d-sm-block">Hola, {primerNombre(usuario)}</div>
+          )}
         </header>
 
         <main className="content">{children}</main>

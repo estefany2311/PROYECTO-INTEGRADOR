@@ -64,7 +64,7 @@ export default function Inicio({ nombre, rol, puede = () => true, onNavegar, onN
           <span className="bienvenida-chip">
             <i className="bi bi-stars me-1"></i>{saludoDelDia()} · <span className="text-capitalize">{fechaDeHoy()}</span>
           </span>
-          <h1>¡Hola, {primerNombre}! <span className="saludo-mano">👋</span></h1>
+          <h1>¡Hola, {primerNombre}!</h1>
           <p>
             {rol === "ADMIN"
               ? "Qué bueno verte. Desde aquí gestionas los colegios, los docentes, el catálogo de lecturas y las cuentas de la plataforma."
