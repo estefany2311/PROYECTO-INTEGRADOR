@@ -253,13 +253,13 @@ def descargar_pdf(url, uuid):
 
 # Números de página escritos en letras (uno, veintitrés, ciento cinco…)
 _UNIDADES = r'(?:uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve)'
-_NUMERO_EN_LETRAS = re.compile(
-    r'^(?:cero|' + _UNIDADES + r'|diez|once|doce|trece|catorce|quince|dieci(?:séis|seis|siete|ocho|nueve)'
+_HASTA_99 = (
+    r'(?:' + _UNIDADES + r'|diez|once|doce|trece|catorce|quince|dieci(?:séis|seis|siete|ocho|nueve)'
     r'|veinte|veinti(?:uno|dós|dos|trés|tres|cuatro|cinco|séis|seis|siete|ocho|nueve)'
-    r'|(?:treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa)(?: y ' + _UNIDADES + r')?'
-    r'|cien|ciento(?: .+)?)$',
-    re.IGNORECASE,
+    r'|(?:treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa)(?: y ' + _UNIDADES + r')?)'
 )
+# Solo si la línea es ÚNICAMENTE el número ("ciento doce"), no una frase ("Ciento veinte niños…")
+_NUMERO_EN_LETRAS = re.compile(r'^(?:cero|' + _HASTA_99 + r'|cien|ciento(?: ' + _HASTA_99 + r')?)$', re.IGNORECASE)
 
 
 def es_linea_de_imprenta(linea):
