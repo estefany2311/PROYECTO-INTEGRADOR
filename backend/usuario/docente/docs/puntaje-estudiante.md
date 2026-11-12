@@ -68,17 +68,42 @@ endpoint de la US-53.
 La respuesta es `PuntajeEstudianteResponse(estudianteId, puntos, estrellas)` con el
 acumulado ya actualizado.
 
-## 5. Siguientes tareas de US-09
+## 5. Respuesta del mapa (T-303)
+
+El endpoint que consume la tablet, `GET /api/estudiante/mapa`, ahora devuelve el
+acumulado del alumno en la cabecera del mapa:
+
+```json
+{
+  "estudianteId": 7,
+  "nombres": "Minji",
+  "apellidos": "Prueba",
+  "totalNiveles": 6,
+  "completados": 2,
+  "puntos": 350,
+  "estrellas": 6,
+  "niveles": []
+}
+```
+
+- `puntos` y `estrellas` salen de `puntaje_estudiante` (lo que suma T-302).
+- Si el alumno todavía no tiene fila en esa tabla, `puntos` mantiene la suma de
+  los puntos del progreso y `estrellas` vale `0`, para no romper el mapa de los
+  alumnos que ya tenían avance antes de esta historia.
+- El detalle por nivel (`niveles[].puntos`) no cambia.
+
+## 6. Siguientes tareas de US-09
 
 | Tarea | Alcance |
 |---|---|
-| T-303 | Incluir puntos y estrellas en la respuesta del mapa. |
 | T-304 | Contador de estrellas y puntos en la cabecera del mapa (coordinado con Karla). |
 | T-305 | Pruebas de la suma de puntos y estrellas. |
 
-## 6. Pruebas
+## 7. Pruebas
 
 | Prueba | Cobertura |
 |---|---|
 | `MigracionPuntajeEstudianteTest` | Tabla, una fila por alumno, acumulados desde cero, valores no negativos, fecha de actualización y cascada (T-301). |
 | `PuntajeServiceTest` | Acumulado nuevo y existente, umbrales de 0 a 3 estrellas, normalización del tipo, tipo y puntaje inválidos y alumno inexistente (T-302). |
+| `MapaEstudianteServiceTest` | Niveles y estados, acumulado de puntos y estrellas, respaldo del progreso cuando no hay fila y alumno inexistente (T-197, T-303). |
+| `MapaEstudianteControllerTest` | Respuesta del mapa con puntos y estrellas, y 404 del alumno inexistente (T-197, T-303). |

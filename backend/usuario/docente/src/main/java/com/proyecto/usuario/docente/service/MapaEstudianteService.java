@@ -5,10 +5,12 @@ import com.proyecto.usuario.docente.dto.NivelMapaResponse;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
 import com.proyecto.usuario.docente.model.Estudiante;
 import com.proyecto.usuario.docente.model.Nivel;
+import com.proyecto.usuario.docente.model.PuntajeEstudiante;
 import com.proyecto.usuario.docente.model.Progreso;
 import com.proyecto.usuario.docente.repository.EstudianteRepository;
 import com.proyecto.usuario.docente.repository.NivelRepository;
 import com.proyecto.usuario.docente.repository.ProgresoRepository;
+import com.proyecto.usuario.docente.repository.PuntajeEstudianteRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,13 +36,16 @@ public class MapaEstudianteService {
     private final EstudianteRepository estudianteRepository;
     private final NivelRepository nivelRepository;
     private final ProgresoRepository progresoRepository;
+    private final PuntajeEstudianteRepository puntajeEstudianteRepository;
 
     public MapaEstudianteService(EstudianteRepository estudianteRepository,
                                  NivelRepository nivelRepository,
-                                 ProgresoRepository progresoRepository) {
+                                 ProgresoRepository progresoRepository,
+                                 PuntajeEstudianteRepository puntajeEstudianteRepository) {
         this.estudianteRepository = estudianteRepository;
         this.nivelRepository = nivelRepository;
         this.progresoRepository = progresoRepository;
+        this.puntajeEstudianteRepository = puntajeEstudianteRepository;
     }
 
     @Transactional(readOnly = true)
@@ -51,10 +56,19 @@ public class MapaEstudianteService {
         int completados = (int) mapa.stream()
                 .filter(nivel -> Progreso.COMPLETADO.equals(nivel.estado()))
                 .count();
-        int puntos = mapa.stream().mapToInt(NivelMapaResponse::puntos).sum();
+        int puntosProgreso = mapa.stream().mapToInt(NivelMapaResponse::puntos).sum();
+
+        // T-303 (US-09): la cabecera del mapa muestra el acumulado de la tabla
+        // puntaje_estudiante. Si el alumno todavía no tiene fila (aún no completó
+        // un reto desde T-302), se mantiene la suma de puntos del progreso.
+        PuntajeEstudiante acumulado = puntajeEstudianteRepository
+                .findByEstudianteId(estudianteId)
+                .orElse(null);
+        int puntos = acumulado != null ? acumulado.getPuntos() : puntosProgreso;
+        int estrellas = acumulado != null ? acumulado.getEstrellas() : 0;
 
         return new MapaResponse(estudiante.getId(), estudiante.getNombres(), estudiante.getApellidos(),
-                mapa.size(), completados, puntos, mapa);
+                mapa.size(), completados, puntos, estrellas, mapa);
     }
 
     /**
