@@ -59,7 +59,7 @@ npm run preview -- --port 4173
 | `GET /api/docente/aulas/9/evidencias?tipo=video` | 400 · `El tipo de evidencia no es válido` |
 | `GET /api/docente/aulas/9/evidencias` sin `X-Docente-Id` | 400 |
 | `GET /api/docente/aulas/5/estudiantes` | 200 |
-| `GET /api/docente/aulas/5/lecturas` | 200 · 3 lecturas |
+| `GET /api/docente/aulas/5/lecturas` | 200 · 3 lecturas · cada una con `fuente` y `urlRecurso` |
 | `GET /api/docente/aulas/5/grupos` | 200 |
 | `GET /v3/api-docs` | 200 · `API Docente` 1.0.0 · 16 rutas |
 | `GET /swagger-ui.html` | 200 |
@@ -93,9 +93,12 @@ npm run preview -- --port 4173
 | Backend `PuntajeEstudianteRepositoryTest` | 5/5 · acumulado por alumno, fila nueva en cero, único por alumno y cascada |
 | Backend `MapaEstudianteServiceTest` | 9/9 · niveles y estados, acumulado de puntos y estrellas, respaldo del progreso y 404 |
 | Backend `MapaEstudianteControllerTest` | 2/2 · mapa con puntos y estrellas, y 404 |
-| Backend `test` | 237/237 |
+| Backend `CatalogoServiceTest` | 13/13 · grados del aula, filtros, aula ajena, sin grados y fuente/enlace de la lectura oficial |
+| Backend `CatalogoControllerTest` | 4/4 · catálogo con `fuente` y `urlRecurso`, filtros, 403 y 404 |
+| Backend `test` | 239/239 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
 | Frontend `Evidencias.test.jsx` | 13/13 · tarjetas, orden, conteo por tipo, filtro y vuelta a todos los tipos, aula activa, cambio de aula, Actualizar, sin aulas, vacío y error |
-| Frontend `test`, `lint`, `build` | 95/95 · OK · OK |
+| Frontend `Catalogo.test.jsx` | 12/12 · lecturas, filtros, búsqueda, modal, asignación, etiqueta Oficial y enlace al recurso |
+| Frontend `test`, `lint`, `build` | 99/99 · OK · OK |

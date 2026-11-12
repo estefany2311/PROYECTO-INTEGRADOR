@@ -770,6 +770,12 @@ main > div > .d-flex:first-child h1 {
   color: #6D28D9;
 }
 
+/* Catálogo: distintivo de las lecturas que vienen del Ministerio de Educación */
+.tag-oficial {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
 /* T-187: avatares del alumno */
 .avatar-mini {
   width: 34px;

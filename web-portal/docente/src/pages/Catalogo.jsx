@@ -29,6 +29,11 @@ const claseDificultad = (valor) => {
   }
 };
 
+// Catálogo: las lecturas oficiales vienen del Minedu. Solo esas llevan la etiqueta
+// "Oficial" y, si Daniela cargó el enlace, el botón "Ver recurso".
+const esOficial = (lectura) => (lectura.fuente || "").toLowerCase() === "oficial";
+const tieneRecurso = (lectura) => Boolean((lectura.urlRecurso || "").trim());
+
 export default function Catalogo() {
   const navegar = useNavigate();
   const [aulas, setAulas] = useState([]);
@@ -238,19 +243,39 @@ export default function Catalogo() {
                     <div className="d-flex flex-wrap gap-2 mb-2">
                       <span className="insignia">{l.gradoNombre || `Grado ${l.gradoId}`}</span>
                       {l.tipoReto && <span className="tag tag-neutro">{l.tipoReto}</span>}
+                      {esOficial(l) && (
+                        <span className="tag tag-oficial">
+                          <i className="bi bi-patch-check-fill me-1" />
+                          Oficial
+                        </span>
+                      )}
                     </div>
 
                     <p className="text-secondary lectura-texto mb-3">{l.texto}</p>
 
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-primary rounded-pill mt-auto align-self-start"
-                      aria-label={`Ver lectura ${l.titulo}`}
-                      onClick={() => setDetalle(l)}
-                    >
-                      <i className="bi bi-eye me-2" />
-                      Ver lectura
-                    </button>
+                    <div className="d-flex flex-wrap align-items-center gap-2 mt-auto align-self-start">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary rounded-pill"
+                        aria-label={`Ver lectura ${l.titulo}`}
+                        onClick={() => setDetalle(l)}
+                      >
+                        <i className="bi bi-eye me-2" />
+                        Ver lectura
+                      </button>
+                      {tieneRecurso(l) && (
+                        <a
+                          className="btn btn-sm btn-outline-secondary rounded-pill"
+                          href={l.urlRecurso}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`Ver recurso oficial de ${l.titulo}`}
+                        >
+                          <i className="bi bi-box-arrow-up-right me-2" />
+                          Ver recurso
+                        </a>
+                      )}
+                    </div>
                   </article>
                 </div>
               ))}
@@ -280,6 +305,12 @@ export default function Catalogo() {
                     {textoDificultad(detalle.dificultad)}
                   </span>
                   {detalle.tipoReto && <span className="tag tag-neutro">{detalle.tipoReto}</span>}
+                  {esOficial(detalle) && (
+                    <span className="tag tag-oficial">
+                      <i className="bi bi-patch-check-fill me-1" />
+                      Oficial
+                    </span>
+                  )}
                 </div>
 
                 {/* T-229: vista previa con el texto completo antes de asignarlo */}
@@ -292,10 +323,24 @@ export default function Catalogo() {
                 <p className="lectura-completa mb-0">{detalle.texto}</p>
               </div>
               <div className="modal-footer border-0 flex-wrap gap-2 justify-content-between">
-                <span className="text-secondary small">
-                  <i className="bi bi-info-circle me-1" />
-                  Se asignará a un alumno de {aula?.nombre}
-                </span>
+                <div className="d-flex flex-wrap align-items-center gap-3">
+                  <span className="text-secondary small">
+                    <i className="bi bi-info-circle me-1" />
+                    Se asignará a un alumno de {aula?.nombre}
+                  </span>
+                  {tieneRecurso(detalle) && (
+                    <a
+                      className="small fw-semibold"
+                      href={detalle.urlRecurso}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Ver recurso oficial de ${detalle.titulo}`}
+                    >
+                      <i className="bi bi-box-arrow-up-right me-1" />
+                      Ver recurso
+                    </a>
+                  )}
+                </div>
                 <div className="d-flex gap-2">
                   <button
                     type="button"

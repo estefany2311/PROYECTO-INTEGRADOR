@@ -37,14 +37,19 @@ class CatalogoControllerTest {
     void devuelveElCatalogoDelAula() throws Exception {
         when(service.listar(1L, 10L, null, null, null)).thenReturn(List.of(
                 new LecturaResponse(10L, "El cóndor y el zorro", "Había una vez...", "lectura",
-                        "basica", (short) 1, "1.º", true)));
+                        "basica", (short) 1, "1.º", true, "oficial",
+                        "https://repositorio.minedu.gob.pe/condor.pdf")));
 
         mvc.perform(get("/api/docente/aulas/10/lecturas").header("X-Docente-Id", 1))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(10))
                 .andExpect(jsonPath("$[0].titulo").value("El cóndor y el zorro"))
                 .andExpect(jsonPath("$[0].gradoNombre").value("1.º"))
-                .andExpect(jsonPath("$[0].dificultad").value("basica"));
+                .andExpect(jsonPath("$[0].dificultad").value("basica"))
+                // Catálogo: la pantalla recibe de dónde viene la lectura y su enlace
+                .andExpect(jsonPath("$[0].fuente").value("oficial"))
+                .andExpect(jsonPath("$[0].urlRecurso")
+                        .value("https://repositorio.minedu.gob.pe/condor.pdf"));
     }
 
     @Test
