@@ -1,5 +1,9 @@
+// Componente: CrearDocente
+// Padre: App (pestaña Docentes)
+// Recibe (props): —
+// Avisa al padre con: onCreado() para que la lista se actualice, onNoAutorizado()
 import { useState } from "react";
-import { crearDocente } from "./api";
+import { crearDocente } from "../api";
 
 const inicial = { username: "", first_name: "", last_name: "", email: "", password: "" };
 

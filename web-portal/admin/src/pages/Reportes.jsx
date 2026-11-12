@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { obtenerReporteAulas, obtenerReporteColegios } from "../api";
+import BarraSemaforo from "../components/BarraSemaforo";
 import { GraficoCompetencias, GraficoSemaforo } from "../components/GraficosReporte";
+import Promedio from "../components/Promedio";
 
 // US-47 · T-269: reporte consolidado por colegio y por aula (usa los endpoints de T-267 y T-268)
 
@@ -9,54 +11,6 @@ const COMPETENCIAS = [
   { clave: "escritura", texto: "Escritura" },
   { clave: "oralidad", texto: "Oralidad" },
 ];
-
-// Mismos rangos que el backend (reportes/consultas.py)
-const colorDe = (promedio) => {
-  if (promedio === null || promedio === undefined) return "sin_evaluar";
-  if (promedio >= 75) return "verde";
-  if (promedio >= 50) return "amarillo";
-  return "rojo";
-};
-
-const ETIQUETAS_SEMAFORO = {
-  verde: "Logrado (75 o más)",
-  amarillo: "En proceso (50 a 74)",
-  rojo: "En inicio (menos de 50)",
-  sin_evaluar: "Sin evaluar",
-};
-
-function Promedio({ valor }) {
-  if (valor === null || valor === undefined) return <span className="note">—</span>;
-  return (
-    <span className="promedio">
-      <span className={`punto punto-${colorDe(valor)}`}></span>
-      {valor.toFixed(1)}
-    </span>
-  );
-}
-
-function BarraSemaforo({ semaforo }) {
-  const total = Object.values(semaforo).reduce((a, b) => a + b, 0);
-  if (total === 0) return <span className="note">Sin alumnos</span>;
-  const titulo = Object.entries(semaforo)
-    .map(([color, n]) => `${ETIQUETAS_SEMAFORO[color]}: ${n}`)
-    .join(" · ");
-  return (
-    <div className="semaforo" title={titulo}>
-      <div className="semaforo-barra">
-        {Object.entries(semaforo).map(([color, n]) =>
-          n > 0 ? <span key={color} className={`tramo tramo-${color}`} style={{ width: `${(n / total) * 100}%` }}></span> : null
-        )}
-      </div>
-      <div className="semaforo-numeros">
-        <span className="t-verde">{semaforo.verde}</span>
-        <span className="t-amarillo">{semaforo.amarillo}</span>
-        <span className="t-rojo">{semaforo.rojo}</span>
-        <span className="t-gris">{semaforo.sin_evaluar}</span>
-      </div>
-    </div>
-  );
-}
 
 export default function Reportes({ onNoAutorizado }) {
   const [vista, setVista] = useState("colegios"); // "colegios" | "aulas"

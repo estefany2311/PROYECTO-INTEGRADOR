@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import Login from "./Login";
-import CrearDocente from "./CrearDocente";
-import ListaDocentes from "./ListaDocentes";
+import CrearDocente from "./components/CrearDocente";
+import ListaDocentes from "./components/ListaDocentes";
+import Login from "./pages/Login";
 import Layout from "./components/Layout";
 import Colegios from "./pages/Colegios";
 import RolesPermisos from "./pages/RolesPermisos";

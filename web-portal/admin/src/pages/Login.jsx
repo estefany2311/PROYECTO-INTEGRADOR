@@ -1,6 +1,11 @@
+// Pantalla: Login
+// Padre: App
+// Recibe (props): aviso (por ejemplo, "tu sesión expiró")
+// Avisa al padre con: onLogin() cuando el usuario entra
+// Hijos: Koala
 import { useState } from "react";
-import Koala from "./components/Koala";
-import { iniciarSesion } from "./api";
+import Koala from "../components/Koala";
+import { iniciarSesion } from "../api";
 
 export default function Login({ onLogin, aviso }) {
   const [usuario, setUsuario] = useState("");

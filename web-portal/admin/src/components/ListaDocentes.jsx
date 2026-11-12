@@ -1,5 +1,9 @@
+// Componente: ListaDocentes
+// Padre: App (pestaña Docentes)
+// Recibe (props): recarga (cambia cuando se crea un docente, para volver a pedir la lista)
+// Avisa al padre con: onNoAutorizado()
 import { useEffect, useState } from "react";
-import { listarDocentes } from "./api";
+import { listarDocentes } from "../api";
 
 export default function ListaDocentes({ recarga, onNoAutorizado }) {
   const [docentes, setDocentes] = useState([]);
