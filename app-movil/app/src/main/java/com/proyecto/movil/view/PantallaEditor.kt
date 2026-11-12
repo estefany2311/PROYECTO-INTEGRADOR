@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.proyecto.movil.R
 import com.proyecto.movil.model.ConsignaNivel
+import com.proyecto.movil.model.ErrorOrtografico
 import com.proyecto.movil.model.contarPalabras
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
@@ -67,6 +68,7 @@ fun PantallaEditor(
     val consigna by consignaViewModel.uiState.collectAsState()
     val texto by editorViewModel.texto.collectAsState()
     val guardado by editorViewModel.guardado.collectAsState()
+    val errores by editorViewModel.errores.collectAsState()
 
     LaunchedEffect(nivelId) {
         consignaViewModel.cargar(nivelId)
@@ -80,7 +82,8 @@ fun PantallaEditor(
         onVolver = onVolver,
         onEnviar = { onEnviar(texto) },
         onReintentar = consignaViewModel::reintentar,
-        guardado = guardado
+        guardado = guardado,
+        errores = errores
     )
 }
 
@@ -93,7 +96,8 @@ fun ContenidoEditor(
     onVolver: () -> Unit,
     onEnviar: () -> Unit,
     onReintentar: () -> Unit,
-    guardado: EstadoGuardado = EstadoGuardado.NADA
+    guardado: EstadoGuardado = EstadoGuardado.NADA,
+    errores: List<ErrorOrtografico> = emptyList()
 ) {
     Column(
         Modifier
@@ -111,7 +115,7 @@ fun ContenidoEditor(
             is ConsignaUiState.Error -> Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 ErrorConsigna(consigna, onReintentar, onVolver)
             }
-            is ConsignaUiState.Exito -> Hoja(consigna.consigna, texto, guardado, onEscribir, onEnviar)
+            is ConsignaUiState.Exito -> Hoja(consigna.consigna, texto, guardado, errores, onEscribir, onEnviar)
         }
     }
 }
@@ -121,6 +125,7 @@ private fun ColumnScope.Hoja(
     consigna: ConsignaNivel,
     texto: String,
     guardado: EstadoGuardado,
+    errores: List<ErrorOrtografico>,
     onEscribir: (String) -> Unit,
     onEnviar: () -> Unit
 ) {
@@ -156,6 +161,8 @@ private fun ColumnScope.Hoja(
             onValueChange = onEscribir,
             textStyle = TextStyle(fontSize = 30.sp, lineHeight = 46.sp, color = ColoresAventura.TextoOscuro),
             cursorBrush = SolidColor(ColoresAventura.Naranja),
+            // T-331: subraya en rojo las palabras con error
+            visualTransformation = remember(errores) { SubrayarErrores(errores) },
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
                 autoCorrectEnabled = false,
@@ -187,6 +194,22 @@ private fun ColumnScope.Hoja(
             }
         )
         Spacer(Modifier.height(16.dp))
+        // T-331: cuántas palabras tiene que revisar
+        val porRevisar = remember(texto, errores) {
+            errores.count { it.fin <= texto.length && texto.substring(it.inicio, it.fin) == it.palabra }
+        }
+        if (porRevisar > 0) {
+            Text(
+                if (porRevisar == 1) "Revisa la palabra marcada en rojo" else "Revisa las $porRevisar palabras marcadas en rojo",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = ColoresAventura.Rojo,
+                modifier = Modifier
+                    .semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("aviso_errores")
+            )
+            Spacer(Modifier.height(8.dp))
+        }
         // T-324: cuántas palabras lleva y cuántas le faltan
         val palabras = remember(texto) { contarPalabras(texto) }
         val llego = palabras >= consigna.palabrasMinimas
@@ -314,6 +337,24 @@ fun PantallaEditorEscribiendoPreview() {
             ConsignaUiState.Exito(CONSIGNA_EDITOR),
             "Mi animal favorito es el perro. Se llama Toby.",
             {}, {}, {}, {}
+        )
+    }
+}
+
+@Preview(name = "Editor · con errores", widthDp = 800, heightDp = 1280, showBackground = true)
+@Composable
+fun PantallaEditorConErroresPreview() {
+    AppMovilTheme(dynamicColor = false) {
+        ContenidoEditor(
+            ConsignaUiState.Exito(CONSIGNA_EDITOR),
+            "Mi perro es muy jugeton y le gusta corer en el arbol.",
+            {}, {}, {}, {},
+            guardado = EstadoGuardado.GUARDADO,
+            errores = listOf(
+                ErrorOrtografico("jugeton", 16, 23, "ortografia", null),
+                ErrorOrtografico("corer", 35, 40, "ortografia", null),
+                ErrorOrtografico("arbol", 47, 52, "tilde", "árbol")
+            )
         )
     }
 }
