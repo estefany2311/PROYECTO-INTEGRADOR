@@ -47,7 +47,7 @@ public class VerificadorOrtografico {
 
             boolean correcta = diccionario.contiene(minuscula) || esDiminutivo(minuscula);
             if (!correcta) {
-                String conTilde = buscarConTilde(minuscula);
+                String conTilde = buscarConTilde(minuscula, permitidas);
                 if (conTilde != null) {
                     if (reglas.marcaTildes()) {
                         errores.add(new ErrorOrtografico(palabra, m.start(), m.end(), ErrorOrtografico.TILDE,
@@ -55,7 +55,7 @@ public class VerificadorOrtografico {
                     }
                     continue;
                 }
-                String conEnie = buscarConEnie(minuscula);
+                String conEnie = buscarConEnie(minuscula, permitidas);
                 errores.add(new ErrorOrtografico(palabra, m.start(), m.end(), ErrorOrtografico.ORTOGRAFIA,
                         conEnie == null ? null : comoLaOriginal(conEnie, palabra)));
                 continue;
@@ -88,31 +88,36 @@ public class VerificadorOrtografico {
         return false;
     }
 
+    // Existe en el diccionario o en las palabras permitidas ("pinguino" → "pingüino", que está en V5)
+    private boolean existe(String palabra, Set<String> permitidas) {
+        return diccionario.contiene(palabra) || permitidas.contains(palabra);
+    }
+
     // La misma palabra con la tilde bien puesta: "arbol" → "árbol", "pérro" → "perro"
-    private String buscarConTilde(String palabra) {
+    private String buscarConTilde(String palabra, Set<String> permitidas) {
         String base = sinTildes(palabra);
-        if (!base.equals(palabra) && diccionario.contiene(base)) return base;
+        if (!base.equals(palabra) && existe(base, permitidas)) return base;
         for (int i = 0; i < base.length(); i++) {
             char c = base.charAt(i);
             int vocal = VOCALES.indexOf(c);
             if (vocal >= 0) {
                 String opcion = base.substring(0, i) + CON_TILDE.charAt(vocal) + base.substring(i + 1);
-                if (!opcion.equals(palabra) && diccionario.contiene(opcion)) return opcion;
+                if (!opcion.equals(palabra) && existe(opcion, permitidas)) return opcion;
             }
             if (c == 'u') {
                 String opcion = base.substring(0, i) + 'ü' + base.substring(i + 1);
-                if (diccionario.contiene(opcion)) return opcion;
+                if (existe(opcion, permitidas)) return opcion;
             }
         }
         return null;
     }
 
     // "nino" → "niño"
-    private String buscarConEnie(String palabra) {
+    private String buscarConEnie(String palabra, Set<String> permitidas) {
         for (int i = 0; i < palabra.length(); i++) {
             if (palabra.charAt(i) == 'n') {
                 String opcion = palabra.substring(0, i) + 'ñ' + palabra.substring(i + 1);
-                if (diccionario.contiene(opcion)) return opcion;
+                if (existe(opcion, permitidas)) return opcion;
             }
         }
         return null;
