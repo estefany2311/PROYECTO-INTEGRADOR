@@ -126,17 +126,19 @@ en `web-noemi` con T-301 a T-303. A Karla se le envió el ejemplo de respuesta y
 los cuatro cambios de la tabla; ella implementa el contador en `movil-karla` o
 aplica el patch que le compartamos.
 
-## 7. Siguientes tareas de US-09
+## 7. Cierre de US-09
 
-| Tarea | Alcance |
-|---|---|
-| T-305 | Pruebas de la suma de puntos y estrellas. |
+T-305 cierra las pruebas de la historia: la regla de puntuación, la tabla real
+contra PostgreSQL y los límites del servicio (puntajes 0 y 100). El contador
+visual sigue en la rama `movil-karla` de Karla (sección 6).
 
 ## 8. Pruebas
 
 | Prueba | Cobertura |
 |---|---|
 | `MigracionPuntajeEstudianteTest` | Tabla, una fila por alumno, acumulados desde cero, valores no negativos, fecha de actualización y cascada (T-301). |
-| `PuntajeServiceTest` | Acumulado nuevo y existente, umbrales de 0 a 3 estrellas, normalización del tipo, tipo y puntaje inválidos y alumno inexistente (T-302). |
+| `PuntajeServiceTest` | Acumulado nuevo y existente, umbrales de 0 a 3 estrellas, puntajes límite 0 y 100, normalización del tipo, tipo y puntaje inválidos y alumno inexistente (T-302, T-305). |
+| `ReglaPuntuacionTest` | Estrellas en cada umbral, umbrales crecientes y puntos no negativos (T-305). |
+| `PuntajeEstudianteRepositoryTest` | Acumulado por alumno con el alumno cargado, fila nueva en cero, único por alumno y cascada al borrar al alumno (T-305). |
 | `MapaEstudianteServiceTest` | Niveles y estados, acumulado de puntos y estrellas, respaldo del progreso cuando no hay fila y alumno inexistente (T-197, T-303). |
 | `MapaEstudianteControllerTest` | Respuesta del mapa con puntos y estrellas, y 404 del alumno inexistente (T-197, T-303). |

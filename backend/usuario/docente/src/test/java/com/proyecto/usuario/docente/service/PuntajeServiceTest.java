@@ -110,6 +110,28 @@ class PuntajeServiceTest {
     }
 
     @Test
+    void unPuntajeCeroSumaPuntosSinEstrellas() {
+        prepararAlumnoSinAcumulado();
+
+        PuntajeEstudianteResponse respuesta =
+                service.sumarAlCompletarReto(7L, "escritura", 0);
+
+        assertEquals(100, respuesta.puntos());
+        assertEquals(0, respuesta.estrellas());
+    }
+
+    @Test
+    void unPuntajeCienGanaTresEstrellas() {
+        prepararAlumnoSinAcumulado();
+
+        PuntajeEstudianteResponse respuesta =
+                service.sumarAlCompletarReto(7L, "oralidad", 100);
+
+        assertEquals(100, respuesta.puntos());
+        assertEquals(3, respuesta.estrellas());
+    }
+
+    @Test
     void respetaElUmbralDeUnaEstrella() {
         prepararAlumnoSinAcumulado();
 

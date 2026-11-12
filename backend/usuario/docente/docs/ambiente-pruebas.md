@@ -88,10 +88,12 @@ npm run preview -- --port 4173
 | Backend `EvidenciaServiceTest` | 9/9 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo y aula del docente |
 | Backend `EvidenciaControllerTest` | 8/8 · ruta, respuesta de audio y texto, filtro por tipo, header y errores |
 | Backend `MigracionPuntajeEstudianteTest` | 6/6 · tabla, una fila por alumno, acumulados desde cero, valores no negativos, actualización y cascada |
-| Backend `PuntajeServiceTest` | 9/9 · acumulado nuevo y existente, umbrales de estrellas, tipo y puntaje inválidos y alumno inexistente |
+| Backend `PuntajeServiceTest` | 11/11 · acumulado nuevo y existente, umbrales de estrellas, puntajes límite 0 y 100, tipo y puntaje inválidos y alumno inexistente |
+| Backend `ReglaPuntuacionTest` | 3/3 · estrellas por umbral, umbrales crecientes y puntos no negativos |
+| Backend `PuntajeEstudianteRepositoryTest` | 5/5 · acumulado por alumno, fila nueva en cero, único por alumno y cascada |
 | Backend `MapaEstudianteServiceTest` | 9/9 · niveles y estados, acumulado de puntos y estrellas, respaldo del progreso y 404 |
 | Backend `MapaEstudianteControllerTest` | 2/2 · mapa con puntos y estrellas, y 404 |
-| Backend `test` | 227/227 |
+| Backend `test` | 237/237 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
