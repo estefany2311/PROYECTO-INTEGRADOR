@@ -33,6 +33,10 @@ const SECCIONES = [
       { id: "puntuacion", modulo: "configuracion", icono: "bi-star", texto: "Puntos y estrellas", disponible: true },
     ],
   },
+  {
+    titulo: "Análisis",
+    enlaces: [{ id: "reportes", icono: "bi-bar-chart", texto: "Reportes", disponible: true }],
+  },
 ];
 
 const iniciales = (texto) =>

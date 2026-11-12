@@ -122,3 +122,10 @@ export const listarReglasPuntuacion = () => pedir("/configuracion/reglas/");
 
 export const actualizarReglaPuntuacion = (tipoReto, datos) =>
 pedir(`/configuracion/reglas/${tipoReto}/`, { method: "PATCH", body: JSON.stringify(datos) });
+
+
+// US-47 · Reportes consolidados (T-267 y T-268)
+export const obtenerReporteColegios = (colegio = "") =>
+  pedir(`/reportes/colegios/${colegio ? `?${new URLSearchParams({ colegio })}` : ""}`);
+
+export const obtenerReporteAulas = (colegioId) => pedir(`/reportes/colegios/${colegioId}/aulas/`);

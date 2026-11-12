@@ -14,6 +14,7 @@ import "./App.css";
 import "./estilos/paginas/index.css";
 import ConfiguracionOrtografia from "./pages/ConfiguracionOrtografia";
 import ReglasPuntuacion from "./pages/ReglasPuntuacion";
+import Reportes from "./pages/Reportes";
 
 export default function App() {
   const [autenticado, setAutenticado] = useState(Boolean(sesion.token));
@@ -123,6 +124,8 @@ export default function App() {
 
       
       {paginaActual === "puntuacion" && <ReglasPuntuacion onNoAutorizado={sesionExpirada} puede={puede} />}
+
+      {paginaActual === "reportes" && <Reportes onNoAutorizado={sesionExpirada} />}
 
       {paginaActual === "usuarios" && (
         <Usuarios onNoAutorizado={sesionExpirada} puede={puede} usuarioActualId={perfil.id} />
