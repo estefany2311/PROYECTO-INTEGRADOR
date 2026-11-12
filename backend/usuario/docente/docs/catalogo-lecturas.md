@@ -57,6 +57,14 @@ Parámetros opcionales: `gradoId`, `dificultad`, `tipoReto`.
 La pantalla del alumno no cambia con este ajuste. Si se agrega, sería solo un crédito
 pequeño tipo «Fuente: Ministerio de Educación», sin etiqueta.
 
+## CI
+
+El workflow `docente-api` usa un PostgreSQL temporal, no Neon. Como la tabla
+`lecturas` es de Admin, el CI la crea en
+`src/test/resources/db/ci/beforeMigrate.sql`; ese script debe mantener las mismas
+columnas (`fuente` y `url_recurso` incluidas) o Hibernate falla al validar el
+esquema.
+
 ## Pruebas
 
 | Prueba | Cobertura |
