@@ -43,6 +43,12 @@ const iniciales = (texto) =>
     .map((parte) => parte[0].toUpperCase())
     .join("") || "AD";
 
+// Primera palabra del usuario para el saludo: "daniela.vila" → "Daniela"
+const primerNombre = (texto) => {
+  const nombre = (texto || "Administrador").split(/[\s._@-]+/)[0];
+  return nombre.charAt(0).toUpperCase() + nombre.slice(1);
+};
+
 export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, usuario, permisos = [], rol, children }) {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
@@ -65,10 +71,13 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
     <div className="app-layout">
       <aside className={`sidebar${menuAbierto ? " open" : ""}`}>
         <div className="brand">
-          <div className="brand-logo koala-logo">
-            <Koala size={30} />
+          <div className="brand-logo">
+            <Koala size={52} />
           </div>
-          Plataforma Educativa
+          <div className="brand-texto">
+            <span className="brand-nombre">Yalliq</span>
+            <span className="brand-sub">Panel de administración</span>
+          </div>
         </div>
 
         <nav className="flex-grow-1 overflow-auto">
@@ -97,6 +106,23 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
             </div>
           ))}
         </nav>
+
+        <div className="perfil">
+          <div className="perfil-foto">{iniciales(usuario)}</div>
+          <div className="perfil-datos">
+            <span className="perfil-nombre">{usuario || "Administrador"}</span>
+            <span className="perfil-rol">{rol || "Sin rol"}</span>
+          </div>
+          <button
+            type="button"
+            className="perfil-salir"
+            onClick={onCerrarSesion}
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+          >
+            <i className="bi bi-box-arrow-right"></i>
+          </button>
+        </div>
       </aside>
 
       {menuAbierto && <div className="sidebar-backdrop d-lg-none" onClick={() => setMenuAbierto(false)}></div>}
@@ -122,19 +148,7 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
             />
           </form>
 
-          <div className="ms-auto d-flex align-items-center gap-3">
-            <div className="d-flex align-items-center gap-2">
-              <div className="avatar">{iniciales(usuario)}</div>
-              <div className="lh-sm d-none d-sm-block">
-                <div className="fw-semibold">{usuario || "Administrador"}</div>
-                  <div className="note">{rol || "Sin rol"}</div>
-              </div>
-            </div>
-            <button type="button" className="btn btn-sm btn-outline-danger" onClick={onCerrarSesion}>
-              <i className="bi bi-box-arrow-right me-1"></i>
-              <span className="d-none d-sm-inline">Cerrar sesión</span>
-            </button>
-          </div>
+          <div className="ms-auto saludo d-none d-sm-block">Hola, {primerNombre(usuario)}</div>
         </header>
 
         <main className="content">{children}</main>
