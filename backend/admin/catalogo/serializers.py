@@ -26,9 +26,9 @@ class LecturaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Lectura
-        fields = ['id', 'titulo', 'texto', 'tipo_reto', 'grado', 'dificultad', 'activo', 'asignada', 'creado_por', 'creado_en']
-        read_only_fields = ['id', 'activo', 'creado_por', 'creado_en']
-
+        fields = ['id', 'titulo', 'texto', 'tipo_reto', 'grado', 'dificultad', 'activo', 'fuente', 'url_recurso',
+                  'asignada', 'creado_por', 'creado_en']
+        read_only_fields = ['id', 'activo', 'fuente', 'url_recurso', 'creado_por', 'creado_en']
     def get_asignada(self, obj):
         return lectura_esta_asignada(obj.id)
 

@@ -16,6 +16,12 @@ class Lectura(models.Model):
         ('avanzada', 'Avanzada'),
     ]
 
+    
+    FUENTES = [
+        ('manual', 'Manual'),
+        ('oficial', 'Oficial'),
+    ]
+
     titulo = models.CharField(max_length=150)
     texto = models.TextField()
     tipo_reto = models.CharField(max_length=20, choices=TIPOS_RETO)
@@ -25,6 +31,9 @@ class Lectura(models.Model):
     )
     dificultad = models.CharField(max_length=20, choices=DIFICULTADES, default='basica')
     activo = models.BooleanField(default=True)
+        # T-442: de dónde viene la lectura (manual o importada de un recurso oficial)
+    fuente = models.CharField(max_length=10, choices=FUENTES, default='manual', db_default='manual')
+    url_recurso = models.URLField(max_length=500, blank=True, default='', db_default='')
     creado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
