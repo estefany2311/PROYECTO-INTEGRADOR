@@ -61,7 +61,7 @@ npm run preview -- --port 4173
 | `GET /api/docente/aulas/5/estudiantes` | 200 |
 | `GET /api/docente/aulas/5/lecturas` | 200 · 3 lecturas · cada una con `fuente` y `urlRecurso` |
 | `GET /api/docente/aulas/5/grupos` | 200 |
-| `GET /v3/api-docs` | 200 · `API Docente` 1.0.0 · 16 rutas |
+| `GET /v3/api-docs` | 200 · `API Docente` 1.0.0 · 19 operaciones |
 | `GET /swagger-ui.html` | 200 |
 | Frontend `/`, `/alumnos`, `/grupos`, `/catalogo`, `/dashboard`, `/evidencias` | 200 y sin errores de consola |
 | Leyenda del semáforo en `/dashboard` | 4 estados visibles · color + ícono + texto |
@@ -75,7 +75,8 @@ npm run preview -- --port 4173
 | Lista de evidencias en `/evidencias` (aula 9) | 6 pendientes · 3 audio y 3 texto · enlace al detalle del alumno |
 | Filtro por tipo en `/evidencias` | Audio → 3 · Texto → 3 · sin resultados → aviso del filtro |
 | Build de producción con `npm run preview` | 200 |
-| CORS desde `http://localhost:5173` | 200 · `Access-Control-Allow-Origin` correcto |
+| CORS desde `http://localhost:5173` | 200 · `Access-Control-Allow-Origin` correcto · orígenes configurables con `APP_CORS_ORIGENES` |
+| Colección `docs/postman-docente-sprint3.json` | 6 grupos · 23 requests · JSON válido |
 | Backend `SemaforoServiceTest` | 8/8 · límites, redondeo y sin evaluaciones |
 | Backend `RendimientoServiceTest` | 7/7 · filtros combinados, validaciones y `soloRojo` |
 | Backend `DashboardAulaControllerTest` | 6/6 · reenvío de filtros combinados y errores |
@@ -95,7 +96,9 @@ npm run preview -- --port 4173
 | Backend `MapaEstudianteControllerTest` | 2/2 · mapa con puntos y estrellas, y 404 |
 | Backend `CatalogoServiceTest` | 13/13 · grados del aula, filtros, aula ajena, sin grados y fuente/enlace de la lectura oficial |
 | Backend `CatalogoControllerTest` | 4/4 · catálogo con `fuente` y `urlRecurso`, filtros, 403 y 404 |
-| Backend `test` | 239/239 |
+| Backend `ConfiguracionCorsTest` | 4/4 · origen local, varios orígenes, espacios y lista vacía |
+| Backend `OpenApiConfigTest` | 4/4 · servidor, información, esquemas de seguridad y orden de secciones |
+| Backend `test` | 246/246 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |

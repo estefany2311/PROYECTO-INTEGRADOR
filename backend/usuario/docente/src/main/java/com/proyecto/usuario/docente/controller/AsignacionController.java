@@ -3,6 +3,9 @@ package com.proyecto.usuario.docente.controller;
 import com.proyecto.usuario.docente.dto.AsignacionResponse;
 import com.proyecto.usuario.docente.dto.AsignarLecturaRequest;
 import com.proyecto.usuario.docente.service.AsignacionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -13,8 +16,8 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/docente/aulas/{aulaId}/asignaciones")
-@CrossOrigin(origins = "http://localhost:5173",
-        methods = {RequestMethod.POST, RequestMethod.OPTIONS})
+@Tag(name = "Asignaciones", description = "Asigna una lectura del catálogo a un alumno concreto.")
+@SecurityRequirement(name = "docenteId")
 public class AsignacionController {
 
     private final AsignacionService service;
@@ -25,6 +28,7 @@ public class AsignacionController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Asigna una lectura a un alumno")
     public AsignacionResponse asignar(@RequestHeader("X-Docente-Id") Long docenteId,
                                       @PathVariable Long aulaId,
                                       @Valid @RequestBody AsignarLecturaRequest req) {
