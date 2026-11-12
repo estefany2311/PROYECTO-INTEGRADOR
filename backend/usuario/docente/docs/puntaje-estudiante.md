@@ -92,14 +92,47 @@ acumulado del alumno en la cabecera del mapa:
   alumnos que ya tenían avance antes de esta historia.
 - El detalle por nivel (`niveles[].puntos`) no cambia.
 
-## 6. Siguientes tareas de US-09
+## 6. Coordinación con Karla (T-304)
+
+La cabecera del mapa se dibuja en la app Android de Karla (`movil-karla`), no en
+el portal Docente. El backend ya entrega los datos (sección 5); esta sección deja
+registrada la coordinación para que la app muestre el contador.
+
+### Contrato que consume la app
+
+`GET /api/estudiante/mapa` con `Authorization: Bearer <token>` devuelve, entre
+otros campos:
+
+| Campo | Tipo | Uso en la cabecera |
+|---|---|---|
+| `puntos` | entero | Puntos acumulados del alumno. |
+| `estrellas` | entero | Estrellas acumuladas (de 0 a 3 por reto completado). |
+
+- Si el alumno todavía no tiene fila en `puntaje_estudiante`, `puntos` mantiene la
+  suma del progreso y `estrellas` llega en `0`.
+- Los acumulados los actualiza T-302 al completar un reto.
+
+### Cambios acordados en `movil-karla`
+
+| Archivo | Cambio |
+|---|---|
+| `app-movil/.../model/Mapa.kt` | Agregar `val estrellas: Int = 0` a `MapaRespuesta`. |
+| `app-movil/.../view/PantallaMapa.kt` | En `ResumenAvance`, mostrar estrella + `estrellas` y puntos + `puntos` (hoy la estrella acompaña a los puntos). |
+| `MapaJsonTest.kt` | Agregar `"estrellas"` al JSON y comprobar `mapa.estrellas`. |
+| `PantallaMapaTest.kt` | Construir el mapa con `estrellas` y verificar ambos contadores. |
+
+**Estado:** pendiente en la rama de Karla. El backend de la historia queda cerrado
+en `web-noemi` con T-301 a T-303. A Karla se le envió el ejemplo de respuesta y
+los cuatro cambios de la tabla; ella implementa el contador en `movil-karla` o
+aplica el patch que le compartamos.
+
+## 7. Siguientes tareas de US-09
 
 | Tarea | Alcance |
 |---|---|
-| T-304 | Contador de estrellas y puntos en la cabecera del mapa (coordinado con Karla). |
 | T-305 | Pruebas de la suma de puntos y estrellas. |
 
-## 7. Pruebas
+## 8. Pruebas
 
 | Prueba | Cobertura |
 |---|---|
