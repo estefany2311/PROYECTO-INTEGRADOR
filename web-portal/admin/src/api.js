@@ -129,3 +129,15 @@ export const obtenerReporteColegios = (colegio = "") =>
   pedir(`/reportes/colegios/${colegio ? `?${new URLSearchParams({ colegio })}` : ""}`);
 
 export const obtenerReporteAulas = (colegioId) => pedir(`/reportes/colegios/${colegioId}/aulas/`);
+
+
+// US-39 · Libros oficiales de la Biblioteca Escolar Digital (T-443)
+export const listarRecursosOficiales = () => pedir("/recursos-oficiales/");
+
+export const textoDeRecurso = (id, desde, hasta) =>
+  pedir(`/recursos-oficiales/${id}/texto/?${new URLSearchParams({ desde, hasta })}`);
+
+export const importarLectura = (id, datos) =>
+  pedir(`/recursos-oficiales/${id}/importar/`, { method: "POST", body: JSON.stringify(datos) });
+
+export const sincronizarRecursos = () => pedir("/recursos-oficiales/sincronizar/", { method: "POST" });

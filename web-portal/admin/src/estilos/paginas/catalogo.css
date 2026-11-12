@@ -53,3 +53,45 @@
   color: #fff;
   box-shadow: 0 1px 3px rgba(10, 131, 120, .35);
 }
+
+/* T-444: libros oficiales, con un lomo de color por grado */
+.pagina-catalogo .libros-oficiales { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.pagina-catalogo .libro {
+  position: relative;
+  background: #FFFFFF;
+  border: 1px solid var(--tarjeta-borde);
+  border-radius: 10px;
+  padding: 12px 12px 12px 20px;
+}
+.pagina-catalogo .libro::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  border-radius: 10px 0 0 10px;
+  background: var(--lomo, #0A8378);
+}
+.pagina-catalogo .libro-grado { font-size: 20px; font-weight: 900; color: var(--lomo, #0A8378); line-height: 1.2; }
+.pagina-catalogo .libro-grado-1 { --lomo: #0A8378; }
+.pagina-catalogo .libro-grado-2 { --lomo: #4F7CAC; }
+.pagina-catalogo .libro-grado-3 { --lomo: #D9822B; }
+.pagina-catalogo .libro-grado-4 { --lomo: #B5534A; }
+.pagina-catalogo .libro-grado-5 { --lomo: #6D5BA8; }
+.pagina-catalogo .libro-grado-6 { --lomo: #2F8F5B; }
+
+/* Ventana de importar: pasos 1 y 2 */
+.pagina-catalogo .paso-importar { display: flex; align-items: flex-start; gap: 10px; }
+.pagina-catalogo .paso-importar .paso-numero {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #E3F2F0;
+  color: #08665E;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 13px;
+  flex: none;
+}
