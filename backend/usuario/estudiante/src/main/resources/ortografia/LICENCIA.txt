@@ -1,0 +1,3 @@
+palabras_es.txt: lista de palabras generada del diccionario ortográfico es_ES de LibreOffice
+(RLA-ES, versión 2.8, autor Santiago Bosio). Licencia triple a elección: GPL 3+, LGPL 3+ o MPL 1.1+.
+Fuente: https://github.com/wooorm/dictionaries/tree/main/dictionaries/es
