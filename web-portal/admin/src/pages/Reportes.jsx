@@ -72,10 +72,8 @@ export default function Reportes({ onNoAutorizado }) {
     setError(err.datos?.detail ?? err.mensaje ?? "No se pudo cargar el reporte.");
   };
 
-  // Reporte por colegio (todos o uno)
+  // Reporte por colegio (todos o uno). El "cargando" se activa al cambiar de colegio (elegirColegio)
   useEffect(() => {
-    setCargando(true);
-    setError("");
     obtenerReporteColegios(colegioId)
       .then((datos) => {
         setReporte(datos);
@@ -88,16 +86,23 @@ export default function Reportes({ onNoAutorizado }) {
 
   // Aulas del colegio elegido
   useEffect(() => {
-    if (vista !== "aulas" || !colegioId) {
-      setAulas(null);
-      return;
-    }
+    if (vista !== "aulas" || !colegioId) return;
     obtenerReporteAulas(colegioId).then(setAulas).catch(manejarError);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vista, colegioId]);
 
+  // Solo se muestran las aulas si son del colegio elegido (mientras llegan las nuevas, sale "Cargando…")
+  const aulasDelColegio = aulas && String(aulas.colegio.id) === colegioId ? aulas : null;
+
+  const elegirColegio = (id) => {
+    if (id === colegioId) return;
+    setCargando(true);
+    setError("");
+    setColegioId(id);
+  };
+
   const verAulas = (id) => {
-    setColegioId(String(id));
+    elegirColegio(String(id));
     setVista("aulas");
   };
 
@@ -126,7 +131,7 @@ export default function Reportes({ onNoAutorizado }) {
         <select
           className="form-select selector-colegio"
           value={colegioId}
-          onChange={(e) => setColegioId(e.target.value)}
+          onChange={(e) => elegirColegio(e.target.value)}
           aria-label="Elegir colegio"
         >
           <option value="">Todos los colegios</option>
@@ -164,9 +169,9 @@ export default function Reportes({ onNoAutorizado }) {
               Por aula
             </button>
           </div>
-          {vista === "aulas" && aulas && (
+          {vista === "aulas" && aulasDelColegio && (
             <span className="note ms-auto">
-              {aulas.colegio.nombre} · código modular {aulas.colegio.codigo_modular}
+              {aulasDelColegio.colegio.nombre} · código modular {aulasDelColegio.colegio.codigo_modular}
             </span>
           )}
         </div>
@@ -216,9 +221,9 @@ export default function Reportes({ onNoAutorizado }) {
         {vista === "aulas" && (
           !colegioId ? (
             <div className="text-center text-secondary py-5">Elige un colegio arriba para ver sus aulas.</div>
-          ) : !aulas ? (
+          ) : !aulasDelColegio ? (
             <div className="text-center text-secondary py-5">Cargando…</div>
-          ) : aulas.aulas.length === 0 ? (
+          ) : aulasDelColegio.aulas.length === 0 ? (
             <div className="text-center text-secondary py-5">Este colegio todavía no tiene aulas registradas.</div>
           ) : (
             <div className="table-responsive">
@@ -234,7 +239,7 @@ export default function Reportes({ onNoAutorizado }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {aulas.aulas.map((a) => (
+                  {aulasDelColegio.aulas.map((a) => (
                     <tr key={a.aula_id}>
                       <td className="fw-bold">{a.nombre}</td>
                       <td>{a.docente ?? <span className="note">—</span>}</td>
