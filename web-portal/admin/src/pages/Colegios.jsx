@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { actualizarColegio, listarColegios } from "../api";
+import ListaColegios from "../components/ListaColegios";
 import ModalAsignar from "../components/ModalAsignar";
 import ModalColegio from "../components/ModalColegio";
+import ResumenColegios from "../components/ResumenColegios";
 import { REGIONES } from "../utils/colegios";
-import { inicialesDocente, nombreCompleto } from "../utils/personas";
 
-  export default function Colegios({ busquedaInicial = "", onNoAutorizado, puede = () => true }) {
+// Componente: Colegios (padre de la pestaña)
+// Padre: App
+// Guarda el estado: colegios, busqueda, region y qué ventana está abierta
+// Hijos: ResumenColegios y ListaColegios (reciben la misma lista), ModalColegio, ModalAsignar
+export default function Colegios({ busquedaInicial = "", onNoAutorizado, puede = () => true }) {
   const [colegios, setColegios] = useState([]);
   const [busqueda, setBusqueda] = useState(busquedaInicial);
   const [region, setRegion] = useState("");
@@ -49,6 +54,17 @@ import { inicialesDocente, nombreCompleto } from "../utils/personas";
     return () => clearTimeout(t);
   }, [exito]);
 
+  // El formulario entrega el colegio: se agrega o se reemplaza con un arreglo nuevo (sin push ni splice)
+  const alGuardarColegio = (guardado, mensaje) => {
+    setModalColegio(null);
+    setExito(mensaje);
+    setColegios((actuales) =>
+      actuales.some((c) => c.id === guardado.id)
+        ? actuales.map((c) => (c.id === guardado.id ? guardado : c))   // editar
+        : [guardado, ...actuales]                                       // registrar
+    );
+  };
+
   const alGuardar = (_colegio, mensaje) => {
     setModalColegio(null);
     setModalAsignar(null);
@@ -59,8 +75,9 @@ import { inicialesDocente, nombreCompleto } from "../utils/personas";
   const alternarActivo = async (colegio) => {
     try {
       await actualizarColegio(colegio.id, { activo: !colegio.activo });
+      // Arreglo nuevo con map(): solo cambia el colegio tocado, sin push ni splice
+      setColegios((actuales) => actuales.map((c) => (c.id === colegio.id ? { ...c, activo: !c.activo } : c)));
       setExito(colegio.activo ? `Se desactivó ${colegio.nombre}.` : `Se activó ${colegio.nombre}.`);
-      setRecarga((n) => n + 1);
     } catch (err) {
       if (err.estado === 401) onNoAutorizado();
       else setError(err.datos?.detail ?? err.mensaje ?? "No se pudo cambiar el estado del colegio.");
@@ -74,7 +91,7 @@ import { inicialesDocente, nombreCompleto } from "../utils/personas";
           <h1>Colegios</h1>
           <div className="breadcrumb text-secondary">Instituciones / Colegios</div>
         </div>
-                {puede("colegios.crear") && (
+        {puede("colegios.crear") && (
           <button type="button" className="btn btn-primary" onClick={() => setModalColegio({ colegio: null })}>
             <i className="bi bi-plus-lg me-1"></i>Registrar colegio
           </button>
@@ -95,9 +112,7 @@ import { inicialesDocente, nombreCompleto } from "../utils/personas";
             <option value="">Todas las regiones</option>
             {REGIONES.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
-          <span className="ms-auto note">
-            {cargando ? "Cargando..." : `${colegios.length} ${colegios.length === 1 ? "colegio" : "colegios"}`}
-          </span>
+          <ResumenColegios colegios={colegios} cargando={cargando} />
         </div>
 
         {error && <div className="alert alert-danger m-3 py-2 small">{error}</div>}
@@ -110,66 +125,13 @@ import { inicialesDocente, nombreCompleto } from "../utils/personas";
         )}
 
         {colegios.length > 0 && (
-          <div className="table-responsive">
-            <table className="table table-hover">
-              <thead>
-                <tr>
-                  <th>Código modular</th>
-                  <th>Colegio</th>
-                  <th>Región / Distrito</th>
-                  <th>Docentes asignados</th>
-                  <th>Estado</th>
-                  <th className="text-end">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {colegios.map((c) => (
-                  <tr key={c.id} className={c.activo ? "" : "inactivo"}>
-                    <td>{c.codigo_modular}</td>
-                    <td className="fw-medium">{c.nombre}</td>
-                    <td>{c.region}{c.distrito ? ` / ${c.distrito}` : ""}</td>
-                    <td>
-                      {c.total_docentes > 0 ? (
-                        <span className="d-inline-flex align-items-center">
-                          <span className="avatar-group">
-                            {c.docentes.slice(0, 3).map((d) => (
-                              <span key={d.id} className="mini-avatar" title={nombreCompleto(d)}>{inicialesDocente(d)}</span>
-                            ))}
-                          </span>
-                          <span className="note ms-2">
-                            {c.total_docentes} {c.total_docentes === 1 ? "docente" : "docentes"}
-                          </span>
-                        </span>
-                      ) : (
-                        <span className="badge-soft bs-warn">Sin docentes</span>
-                      )}
-                    </td>
-                    <td>
-                      <span className={`badge-soft ${c.activo ? "bs-ok" : "bs-off"}`}>{c.activo ? "Activo" : "Inactivo"}</span>
-                    </td>
-                    <td className="text-end text-nowrap">
-                                            {puede("colegios.editar") && (
-                        <button type="button" className="icon-btn" title="Asignar docentes" onClick={() => setModalAsignar(c)}>
-                          <i className="bi bi-person-plus"></i>
-                        </button>
-                      )}
-                      {puede("colegios.editar") && (
-                        <button type="button" className="icon-btn" title="Editar" onClick={() => setModalColegio({ colegio: c })}>
-                          <i className="bi bi-pencil"></i>
-                        </button>
-                      )}
-                      {puede("colegios.desactivar") && (
-                        <button type="button" className="icon-btn" title={c.activo ? "Desactivar" : "Activar"}
-                          onClick={() => alternarActivo(c)}>
-                          <i className={`bi ${c.activo ? "bi-slash-circle" : "bi-check-circle"}`}></i>
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ListaColegios
+            colegios={colegios}
+            puede={puede}
+            onAsignar={(c) => setModalAsignar(c)}
+            onEditar={(c) => setModalColegio({ colegio: c })}
+            onAlternar={alternarActivo}
+          />
         )}
       </div>
 
@@ -177,7 +139,7 @@ import { inicialesDocente, nombreCompleto } from "../utils/personas";
         <ModalColegio
           colegio={modalColegio.colegio}
           onCerrar={() => setModalColegio(null)}
-          onGuardado={alGuardar}
+          onGuardado={alGuardarColegio}
           onNoAutorizado={onNoAutorizado}
         />
       )}

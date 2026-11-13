@@ -1,7 +1,7 @@
 // Componente: ModalColegio
 // Padre: Colegios
 // Recibe (props): colegio (si viene, lo edita; si no, crea uno nuevo)
-// Avisa al padre con: onGuardado(mensaje), onCerrar(), onNoAutorizado()
+// Avisa al padre con: onGuardado(colegio, mensaje), onCerrar(), onNoAutorizado()
 // Hijos: Modal
 import { useState } from "react";
 import { actualizarColegio, crearColegio } from "../api";
@@ -23,12 +23,26 @@ export default function ModalColegio({ colegio, onCerrar, onGuardado, onNoAutori
 
   const cambiar = (e) => setDatos({ ...datos, [e.target.name]: e.target.value });
 
+  // Validación antes de enviar: las mismas reglas que aplica la API
+  const validar = () => {
+    const e = {};
+    if (!/^\d{7}$/.test(datos.codigo_modular.trim())) e.codigo_modular = "El código modular debe tener 7 dígitos.";
+    if (!datos.nombre.trim()) e.nombre = "El nombre del colegio es obligatorio.";
+    if (!datos.region) e.region = "La región es obligatoria.";
+    return e;
+  };
+
   const guardar = async (ev) => {
     ev.preventDefault();
+    const e = validar();
+    setErrores(e);
+    if (Object.keys(e).length > 0) return;   // si hay errores, no se envía nada
+
     setEnviando(true);
-    setErrores({});
     try {
-      const guardado = editando ? await actualizarColegio(colegio.id, datos) : await crearColegio(datos);
+      const limpio = { ...datos, codigo_modular: datos.codigo_modular.trim(), nombre: datos.nombre.trim() };
+      const guardado = editando ? await actualizarColegio(colegio.id, limpio) : await crearColegio(limpio);
+      setDatos(COLEGIO_VACIO);   // los campos quedan vacíos
       onGuardado(guardado, editando ? "Colegio actualizado correctamente." : "Colegio registrado correctamente.");
     } catch (err) {
       if (err.estado === 401) onNoAutorizado();

@@ -30,3 +30,5 @@
    .pagina-colegios .table td { font-size: 15px; }
 */
 
+/* Resumen de la lista (ResumenColegios) */
+.pagina-colegios .resumen-colegios { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
