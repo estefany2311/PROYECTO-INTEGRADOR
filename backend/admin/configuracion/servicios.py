@@ -34,3 +34,8 @@ def obtener_nivel(nivel_id):
         cursor.execute(f'SELECT {COLUMNAS_NIVEL} FROM nivel WHERE id = %s', [nivel_id])
         filas = _filas(cursor)
     return filas[0] if filas else None
+
+
+def niveles_del_tipo(tipo_reto):
+    """Niveles del mapa de un tipo de reto (lectura, escritura u oralidad)."""
+    return [n for n in listar_niveles() if n['tipo_reto'] == tipo_reto]

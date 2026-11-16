@@ -5,6 +5,8 @@ from rest_framework import serializers
 from .models import (ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion,
 PalabraPermitida, ReglaDesbloqueo, ReglaPuntuacion)
 
+from .servicios import niveles_del_tipo
+
 # Límites permitidos (los mismos del modelo y de la pantalla)
 PRECISION = (0, 100)
 PAUSAS = (Decimal('0'), Decimal('10'))
@@ -137,8 +139,18 @@ class ReglaPuntuacionSerializer(serializers.ModelSerializer):
             errores['umbral_3_estrellas'] = f'Debe ser mayor que el umbral de 2 estrellas ({dos} %).'
         if errores:
             raise serializers.ValidationError(errores)
-        return attrs
 
+        # T-338 (US-54): no bajar los puntos por debajo de lo que pide un nivel para desbloquearse
+        if 'puntos' in attrs and self.instance:
+            niveles = {n['id']: n['nombre'] for n in niveles_del_tipo(self.instance.tipo_reto)}
+            regla = (ReglaDesbloqueo.objects
+                     .filter(nivel_id__in=niveles, puntaje_minimo__gt=attrs['puntos'])
+                     .order_by('-puntaje_minimo').first())
+            if regla:
+                raise serializers.ValidationError({'puntos': (
+                    f'El nivel «{niveles[regla.nivel_id]}» pide {regla.puntaje_minimo} puntos para desbloquear '
+                    f'el siguiente: los puntos no pueden ser menores. Baja primero esa regla de desbloqueo.')})
+        return attrs
 
 
 class ReglaDesbloqueoSerializer(serializers.ModelSerializer):
@@ -150,3 +162,24 @@ class ReglaDesbloqueoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReglaDesbloqueo
         fields = ['estrellas_minimas', 'puntaje_minimo']
+
+    
+    def validate(self, attrs):
+        """T-338: que la regla se pueda cumplir (ningún nivel imposible de desbloquear)."""
+        nivel = self.context['nivel']
+        if not nivel['activo']:
+            raise serializers.ValidationError(
+                {'detail': 'El nivel está desactivado: actívalo antes de cambiar su regla.'})
+
+        # Con PATCH puede llegar solo un campo: se completa con el valor guardado (o 0)
+        if 'puntaje_minimo' in attrs:
+            puntaje = attrs['puntaje_minimo']
+        else:
+            puntaje = self.instance.puntaje_minimo if self.instance else 0
+
+        regla_puntos = ReglaPuntuacion.objects.filter(tipo_reto=nivel['tipo_reto']).first()
+        if regla_puntos and puntaje > regla_puntos.puntos:
+            raise serializers.ValidationError({'puntaje_minimo': (
+                f'Un reto de {nivel["tipo_reto"]} da como máximo {regla_puntos.puntos} puntos: '
+                f'el puntaje mínimo no puede ser mayor.')})
+        return attrs
