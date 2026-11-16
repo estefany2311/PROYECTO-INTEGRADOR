@@ -130,6 +130,7 @@ export default function Alumnos() {
   // T-229: descarta la lectura que llegó del catálogo (y borra el state de la ruta)
   const quitarLectura = () => {
     setLecturaElegida(null);
+    //titulo
     navegar("/alumnos", { replace: true, state: null });
   };
 

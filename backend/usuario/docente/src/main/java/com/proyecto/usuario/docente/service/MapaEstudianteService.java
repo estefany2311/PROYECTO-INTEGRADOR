@@ -5,10 +5,12 @@ import com.proyecto.usuario.docente.dto.NivelMapaResponse;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
 import com.proyecto.usuario.docente.model.Estudiante;
 import com.proyecto.usuario.docente.model.Nivel;
+import com.proyecto.usuario.docente.model.PuntajeEstudiante;
 import com.proyecto.usuario.docente.model.Progreso;
 import com.proyecto.usuario.docente.repository.EstudianteRepository;
 import com.proyecto.usuario.docente.repository.NivelRepository;
 import com.proyecto.usuario.docente.repository.ProgresoRepository;
+import com.proyecto.usuario.docente.repository.PuntajeEstudianteRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,20 +36,48 @@ public class MapaEstudianteService {
     private final EstudianteRepository estudianteRepository;
     private final NivelRepository nivelRepository;
     private final ProgresoRepository progresoRepository;
+    private final PuntajeEstudianteRepository puntajeEstudianteRepository;
 
     public MapaEstudianteService(EstudianteRepository estudianteRepository,
                                  NivelRepository nivelRepository,
-                                 ProgresoRepository progresoRepository) {
+                                 ProgresoRepository progresoRepository,
+                                 PuntajeEstudianteRepository puntajeEstudianteRepository) {
         this.estudianteRepository = estudianteRepository;
         this.nivelRepository = nivelRepository;
         this.progresoRepository = progresoRepository;
+        this.puntajeEstudianteRepository = puntajeEstudianteRepository;
     }
 
     @Transactional(readOnly = true)
     public MapaResponse obtenerMapa(Long estudianteId) {
-        Estudiante estudiante = estudianteRepository.findById(estudianteId)
-                .orElseThrow(() -> new ReglaNegocioException("El alumno no existe", HttpStatus.NOT_FOUND));
+        Estudiante estudiante = buscarEstudiante(estudianteId);
+        List<NivelMapaResponse> mapa = nivelesDe(estudianteId);
 
+        int completados = (int) mapa.stream()
+                .filter(nivel -> Progreso.COMPLETADO.equals(nivel.estado()))
+                .count();
+        int puntosProgreso = mapa.stream().mapToInt(NivelMapaResponse::puntos).sum();
+
+        // T-303 (US-09): la cabecera del mapa muestra el acumulado de la tabla
+        // puntaje_estudiante. Si el alumno todavía no tiene fila (aún no completó
+        // un reto desde T-302), se mantiene la suma de puntos del progreso.
+        PuntajeEstudiante acumulado = puntajeEstudianteRepository
+                .findByEstudianteId(estudianteId)
+                .orElse(null);
+        int puntos = acumulado != null ? acumulado.getPuntos() : puntosProgreso;
+        int estrellas = acumulado != null ? acumulado.getEstrellas() : 0;
+
+        return new MapaResponse(estudiante.getId(), estudiante.getNombres(), estudiante.getApellidos(),
+                mapa.size(), completados, puntos, estrellas, mapa);
+    }
+
+    /**
+     * T-290 (US-29): reutiliza la regla del mapa para el detalle del estudiante.
+     * Devuelve los niveles activos en orden con su estado y puntos.
+     */
+    @Transactional(readOnly = true)
+    public List<NivelMapaResponse> nivelesDe(Long estudianteId) {
+        buscarEstudiante(estudianteId);
         List<Nivel> niveles = nivelRepository.findByActivoTrueOrderByOrdenAsc();
         Map<Short, Progreso> guardados = progresoRepository.findByEstudianteId(estudianteId)
                 .stream()
@@ -55,8 +85,6 @@ public class MapaEstudianteService {
 
         List<NivelMapaResponse> mapa = new ArrayList<>();
         boolean anteriorCompletado = false;
-        int completados = 0;
-        int puntos = 0;
 
         for (int i = 0; i < niveles.size(); i++) {
             Nivel nivel = niveles.get(i);
@@ -72,8 +100,6 @@ public class MapaEstudianteService {
             }
 
             int puntosNivel = progreso != null ? progreso.getPuntos() : 0;
-            if (Progreso.COMPLETADO.equals(estado)) completados++;
-            puntos += puntosNivel;
 
             mapa.add(new NivelMapaResponse(nivel.getId(), nivel.getOrden(), nivel.getNombre(),
                     nivel.getTipoReto(), nivel.getDescripcion(), estado, puntosNivel));
@@ -81,7 +107,11 @@ public class MapaEstudianteService {
             anteriorCompletado = Progreso.COMPLETADO.equals(estado);
         }
 
-        return new MapaResponse(estudiante.getId(), estudiante.getNombres(), estudiante.getApellidos(),
-                mapa.size(), completados, puntos, mapa);
+        return mapa;
+    }
+
+    private Estudiante buscarEstudiante(Long estudianteId) {
+        return estudianteRepository.findById(estudianteId)
+                .orElseThrow(() -> new ReglaNegocioException("El alumno no existe", HttpStatus.NOT_FOUND));
     }
 }

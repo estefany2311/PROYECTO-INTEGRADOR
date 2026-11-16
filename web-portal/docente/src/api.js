@@ -17,8 +17,33 @@ async function pedir(ruta, opciones = {}) {
 
 export const listarGrados = () => pedir("/api/docente/grados");
 export const listarAulas = () => pedir("/api/docente/aulas");
+// T-279: dashboard del aula (endpoint de T-278).
+// T-284: filtro soloRojo del endpoint (T-282) para el contador del menú.
+// T-287: filtros de grado y competencia del dashboard (T-286).
+export const listarDashboardAula = (aulaId, filtros = {}) => {
+  const params = new URLSearchParams();
+  if (filtros.soloRojo) params.set("soloRojo", "true");
+  if (filtros.gradoId) params.set("gradoId", filtros.gradoId);
+  if (filtros.competencia) params.set("competencia", filtros.competencia);
+  const query = params.toString();
+  return pedir(`/api/docente/aulas/${aulaId}/dashboard${query ? `?${query}` : ""}`);
+};
 export const crearAula = (datos) =>
   pedir("/api/docente/aulas", { method: "POST", body: JSON.stringify(datos) });
+
+// T-292: detalle del estudiante (endpoint de T-290). Incluye niveles,
+// resumen por competencia y últimas evaluaciones en una sola llamada.
+export const obtenerDetalleEstudiante = (aulaId, estudianteId) =>
+  pedir(`/api/docente/aulas/${aulaId}/estudiantes/${estudianteId}/detalle`);
+
+// T-299: evidencias pendientes del aula (endpoint de T-298).
+// El filtro por tipo es opcional: "audio" o "texto".
+export const listarEvidenciasPendientes = (aulaId, filtros = {}) => {
+  const params = new URLSearchParams();
+  if (filtros.tipo) params.set("tipo", filtros.tipo);
+  const query = params.toString();
+  return pedir(`/api/docente/aulas/${aulaId}/evidencias${query ? `?${query}` : ""}`);
+};
 
 export const listarEstudiantes = (aulaId) =>
   pedir(`/api/docente/aulas/${aulaId}/estudiantes`);

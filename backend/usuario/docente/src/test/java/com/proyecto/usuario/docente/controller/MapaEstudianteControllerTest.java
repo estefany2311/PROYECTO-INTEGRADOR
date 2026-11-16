@@ -34,7 +34,7 @@ class MapaEstudianteControllerTest {
     }
 
     @Test
-    void devuelveElMapaConElEstadoDeCadaNivel() throws Exception {        MapaResponse mapa = new MapaResponse(1L, "Ana", "Quispe", 2, 1, 10, List.of(
+    void devuelveElMapaConElEstadoDeCadaNivel() throws Exception {        MapaResponse mapa = new MapaResponse(1L, "Ana", "Quispe", 2, 1, 350, 6, List.of(
                 new NivelMapaResponse((short) 1, (short) 1, "Primeros pasos", "lectura",
                         "Lee palabras", "completado", 10),
                 new NivelMapaResponse((short) 2, (short) 2, "Palabras nuevas", "escritura",
@@ -46,7 +46,8 @@ class MapaEstudianteControllerTest {
                 .andExpect(jsonPath("$.estudianteId").value(1))
                 .andExpect(jsonPath("$.totalNiveles").value(2))
                 .andExpect(jsonPath("$.completados").value(1))
-                .andExpect(jsonPath("$.puntos").value(10))
+                .andExpect(jsonPath("$.puntos").value(350))
+                .andExpect(jsonPath("$.estrellas").value(6))
                 .andExpect(jsonPath("$.niveles[0].estado").value("completado"))
                 .andExpect(jsonPath("$.niveles[1].estado").value("desbloqueado"))
                 .andExpect(jsonPath("$.niveles[1].tipoReto").value("escritura"));

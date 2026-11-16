@@ -2,6 +2,7 @@
 -- La tabla `lecturas` la crea el módulo Admin de Daniela (Django). En el CI no existe,
 -- y la migración V6 (asignacion) la necesita para su llave foránea.
 -- Columnas iguales a backend/admin/catalogo/models.py (rama admin-daniela).
+-- `fuente` y `url_recurso` las agregó Admin para marcar las lecturas oficiales del Minedu.
 CREATE TABLE IF NOT EXISTS lecturas (
     id             BIGSERIAL    PRIMARY KEY,
     titulo         VARCHAR(150) NOT NULL,
@@ -10,6 +11,8 @@ CREATE TABLE IF NOT EXISTS lecturas (
     grado          SMALLINT     NOT NULL DEFAULT 1 CHECK (grado BETWEEN 1 AND 6),
     dificultad     VARCHAR(20)  NOT NULL DEFAULT 'basica',
     activo         BOOLEAN      NOT NULL DEFAULT TRUE,
+    fuente         VARCHAR(10)  NOT NULL DEFAULT 'manual',
+    url_recurso    VARCHAR(500) NOT NULL DEFAULT '',
     creado_por_id  BIGINT,
     creado_en      TIMESTAMPTZ  NOT NULL DEFAULT now(),
     actualizado_en TIMESTAMPTZ  NOT NULL DEFAULT now()

@@ -34,6 +34,15 @@ public class Lectura {
     @Column(nullable = false)
     private boolean activo;
 
+    // Catálogo: origen de la lectura. "manual" la carga el equipo Admin desde su
+    // Catálogo; "oficial" viene de un recurso del Ministerio de Educación.
+    @Column(nullable = false, length = 10)
+    private String fuente;
+
+    // Catálogo: enlace al recurso oficial. Las lecturas manuales lo traen vacío ('').
+    @Column(name = "url_recurso", nullable = false, length = 500)
+    private String urlRecurso;
+
     public Long getId() { return id; }
     public String getTitulo() { return titulo; }
     public String getTexto() { return texto; }
@@ -41,4 +50,6 @@ public class Lectura {
     public String getDificultad() { return dificultad; }
     public Short getGrado() { return grado; }
     public boolean isActivo() { return activo; }
+    public String getFuente() { return fuente; }
+    public String getUrlRecurso() { return urlRecurso; }
 }

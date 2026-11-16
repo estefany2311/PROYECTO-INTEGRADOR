@@ -65,6 +65,7 @@ public class CatalogoService {
 
     private LecturaResponse toResponse(Lectura l, Map<Short, String> nombresGrado) {
         return new LecturaResponse(l.getId(), l.getTitulo(), l.getTexto(), l.getTipoReto(),
-                l.getDificultad(), l.getGrado(), nombresGrado.get(l.getGrado()), l.isActivo());
+                l.getDificultad(), l.getGrado(), nombresGrado.get(l.getGrado()), l.isActivo(),
+                l.getFuente(), l.getUrlRecurso());
     }
 }

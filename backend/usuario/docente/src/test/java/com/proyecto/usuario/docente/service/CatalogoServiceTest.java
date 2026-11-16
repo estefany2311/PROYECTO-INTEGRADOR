@@ -62,6 +62,9 @@ class CatalogoServiceTest {
         ReflectionTestUtils.setField(l, "tipoReto", tipoReto);
         ReflectionTestUtils.setField(l, "grado", grado);
         ReflectionTestUtils.setField(l, "activo", true);
+        // Catálogo: por defecto las lecturas son manuales y sin enlace
+        ReflectionTestUtils.setField(l, "fuente", "manual");
+        ReflectionTestUtils.setField(l, "urlRecurso", "");
         return l;
     }
 
@@ -167,5 +170,33 @@ class CatalogoServiceTest {
 
         assertEquals(1, catalogo.size());
         assertEquals("La llama viajera", catalogo.get(0).titulo());
+    }
+
+    // Catálogo: la fuente y el enlace del Minedu llegan tal cual a la pantalla
+    @Test
+    void entregaLaFuenteYElEnlaceDeLaLecturaOficial() {
+        Lectura oficial = lectura(12L, "Cuento del Minedu", "basica", "lectura", (short) 1);
+        ReflectionTestUtils.setField(oficial, "fuente", "oficial");
+        ReflectionTestUtils.setField(oficial, "urlRecurso",
+                "https://repositorio.minedu.gob.pe/cuento.pdf");
+        when(lecturaRepository.findByActivoTrueAndGradoInOrderByGradoAscTituloAsc(any()))
+                .thenReturn(List.of(oficial));
+
+        List<LecturaResponse> catalogo = service.listar(1L, 10L, null, null, null);
+
+        assertEquals(1, catalogo.size());
+        assertEquals("oficial", catalogo.get(0).fuente());
+        assertEquals("https://repositorio.minedu.gob.pe/cuento.pdf",
+                catalogo.get(0).urlRecurso());
+    }
+
+    // Catálogo: las manuales viajan con fuente "manual" y el enlace vacío
+    @Test
+    void lasLecturasManualesNoTienenEnlace() {
+        List<LecturaResponse> catalogo = service.listar(1L, 10L, null, null, null);
+
+        assertEquals(2, catalogo.size());
+        assertTrue(catalogo.stream().allMatch(l -> "manual".equals(l.fuente())));
+        assertTrue(catalogo.stream().allMatch(l -> "".equals(l.urlRecurso())));
     }
 }
