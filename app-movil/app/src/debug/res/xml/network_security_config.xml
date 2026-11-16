@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Solo en modo desarrollo (debug): permite http a cualquier IP de la red local,
+     así cada integrante prueba con la IP de su PC (api.base.url en local.properties)
+     sin cambiar este archivo. La versión final (release) usa la de src/main, que es más estricta. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

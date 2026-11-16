@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- T-211: lápiz (reto de escritura) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3,17.3L3,21L6.7,21L17.6,10.1L13.9,6.4Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M15.3,5L19,8.7L20.6,7.1C21.1,6.6 21.1,5.8 20.6,5.3L18.7,3.4C18.2,2.9 17.4,2.9 16.9,3.4Z" />
+</vector>

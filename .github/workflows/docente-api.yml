@@ -35,6 +35,8 @@ jobs:
       SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/plataforma_educativa
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+      # La tabla lecturas es de Daniela: en el CI se crea antes de migrar (db/ci/beforeMigrate.sql)
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/ci
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4

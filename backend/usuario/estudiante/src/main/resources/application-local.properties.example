@@ -1,0 +1,2 @@
+spring.datasource.username=neondb_owner
+spring.datasource.password=PON_AQUI_LA_CONTRASENA

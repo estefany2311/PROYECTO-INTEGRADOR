@@ -1,0 +1,158 @@
+{
+  "info": {
+    "_postman_id": "4f0e7d61-2b3c-4a8e-9d51-7c6a0b2f9e14",
+    "name": "Docente - US-24 alumnos (T-227)",
+    "description": "Pruebas manuales de alumnos: aula ajena (403), alumno duplicado (409) y grado inválido (400). Requiere el backend docente en {{baseUrl}} y un aula del docente {{docenteId}} con al menos un alumno. Ajusta «aulaId» y los datos del duplicado en las variables de la colección.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081" },
+    { "key": "docenteId", "value": "1" },
+    { "key": "otroDocenteId", "value": "2" },
+    { "key": "aulaId", "value": "5" },
+    { "key": "nombresDuplicado", "value": "NOEMI" },
+    { "key": "apellidosDuplicado", "value": "DE LA CRUZ" },
+    { "key": "gradoDuplicado", "value": "1" },
+    { "key": "gradoAjeno", "value": "6" }
+  ],
+  "item": [
+    {
+      "name": "Aula ajena - 403",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// T-227: el aula existe pero es de otro docente",
+              "pm.test('aula de otro docente devuelve 403', () => {",
+              "  pm.response.to.have.status(403);",
+              "  pm.expect(pm.response.json().mensaje).to.eql('El aula no pertenece al docente');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Docente-Id", "value": "{{otroDocenteId}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombres\": \"Ana\",\n  \"apellidos\": \"Quispe\",\n  \"gradoId\": 1\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "docente", "aulas", "{{aulaId}}", "estudiantes"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Alumno duplicado - 409",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// T-227: ya hay un alumno con esos nombres y apellidos en el aula",
+              "pm.test('alumno duplicado devuelve 409', () => {",
+              "  pm.response.to.have.status(409);",
+              "  pm.expect(pm.response.json().mensaje).to.eql('Ya existe un alumno con ese nombre en esta aula');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Docente-Id", "value": "{{docenteId}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombres\": \"{{nombresDuplicado}}\",\n  \"apellidos\": \"{{apellidosDuplicado}}\",\n  \"gradoId\": {{gradoDuplicado}}\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "docente", "aulas", "{{aulaId}}", "estudiantes"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Grado inválido - 400",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// T-227: el grado no es uno de los que atiende el aula",
+              "pm.test('grado que el aula no atiende devuelve 400', () => {",
+              "  pm.response.to.have.status(400);",
+              "  pm.expect(pm.response.json().mensaje).to.eql('El grado no corresponde a esta aula');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Docente-Id", "value": "{{docenteId}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombres\": \"Ana\",\n  \"apellidos\": \"Quispe\",\n  \"gradoId\": {{gradoAjeno}}\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "docente", "aulas", "{{aulaId}}", "estudiantes"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Listar alumnos - 200",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// control: el aula del docente sí responde y trae sus alumnos",
+              "pm.test('lista de alumnos devuelve 200', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json()).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "X-Docente-Id", "value": "{{docenteId}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "docente", "aulas", "{{aulaId}}", "estudiantes"]
+        }
+      },
+      "response": []
+    }
+  ]
+}
