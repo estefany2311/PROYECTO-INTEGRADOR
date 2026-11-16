@@ -4,23 +4,31 @@ import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
 import com.proyecto.usuario.docente.exception.ManejadorErrores;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
+import com.proyecto.usuario.docente.service.AudioEvidenciaService;
+import com.proyecto.usuario.docente.service.AudioEvidenciaService.ArchivoAudio;
 import com.proyecto.usuario.docente.service.EvidenciaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,10 +42,16 @@ class EvidenciaControllerTest {
     @Mock
     EvidenciaService service;
 
+    @Mock
+    AudioEvidenciaService audioService;
+
     @InjectMocks
     EvidenciaController controller;
 
     MockMvc mvc;
+
+    @TempDir
+    Path carpeta;
 
     @BeforeEach
     void preparar() {
@@ -260,5 +274,119 @@ class EvidenciaControllerTest {
     void elDetalleExigeElHeaderDelDocente() throws Exception {
         mvc.perform(get("/api/docente/aulas/10/evidencias/30"))
                 .andExpect(status().isBadRequest());
+    }
+
+    // T-372 (US-32): el audio solo lo recibe el docente dueño del aula
+
+    @Test
+    void entregaElAudioCompleto() throws Exception {
+        byte[] audio = {1, 2, 3, 4, 5, 6, 7, 8};
+        Path archivo = archivoDeAudio(audio);
+        when(audioService.audio(1L, 10L, 30L))
+                .thenReturn(new ArchivoAudio(archivo, "evidencia-30.mp3", "audio/mpeg", audio.length));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias/30/audio")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCEPT_RANGES, "bytes"))
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "private, max-age=0"))
+                .andExpect(header().longValue(HttpHeaders.CONTENT_LENGTH, audio.length))
+                .andExpect(content().contentType("audio/mpeg"))
+                .andExpect(content().bytes(audio));
+
+        verify(audioService).audio(1L, 10L, 30L);
+    }
+
+    @Test
+    void entregaSoloLaPartePedidaConRange() throws Exception {
+        byte[] audio = {1, 2, 3, 4, 5, 6, 7, 8};
+        Path archivo = archivoDeAudio(audio);
+        when(audioService.audio(1L, 10L, 30L))
+                .thenReturn(new ArchivoAudio(archivo, "evidencia-30.mp3", "audio/mpeg", audio.length));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias/30/audio")
+                        .header("X-Docente-Id", 1)
+                        .header(HttpHeaders.RANGE, "bytes=0-3"))
+                .andExpect(status().isPartialContent())
+                .andExpect(header().string(HttpHeaders.CONTENT_RANGE, "bytes 0-3/8"))
+                .andExpect(header().longValue(HttpHeaders.CONTENT_LENGTH, 4))
+                .andExpect(content().contentType("audio/mpeg"))
+                .andExpect(content().bytes(new byte[]{1, 2, 3, 4}));
+    }
+
+    @Test
+    void unRangeFueraDelArchivoDevuelve416() throws Exception {
+        byte[] audio = {1, 2, 3, 4, 5, 6, 7, 8};
+        Path archivo = archivoDeAudio(audio);
+        when(audioService.audio(1L, 10L, 30L))
+                .thenReturn(new ArchivoAudio(archivo, "evidencia-30.mp3", "audio/mpeg", audio.length));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias/30/audio")
+                        .header("X-Docente-Id", 1)
+                        .header(HttpHeaders.RANGE, "bytes=100-200"))
+                .andExpect(status().isRequestedRangeNotSatisfiable())
+                .andExpect(header().string(HttpHeaders.CONTENT_RANGE, "bytes */8"));
+    }
+
+    @Test
+    void unRangeConFormatoInvalidoDevuelve416() throws Exception {
+        byte[] audio = {1, 2, 3, 4, 5, 6, 7, 8};
+        Path archivo = archivoDeAudio(audio);
+        when(audioService.audio(1L, 10L, 30L))
+                .thenReturn(new ArchivoAudio(archivo, "evidencia-30.mp3", "audio/mpeg", audio.length));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias/30/audio")
+                        .header("X-Docente-Id", 1)
+                        .header(HttpHeaders.RANGE, "lineas=0-3"))
+                .andExpect(status().isRequestedRangeNotSatisfiable())
+                .andExpect(header().string(HttpHeaders.CONTENT_RANGE, "bytes */8"));
+    }
+
+    @Test
+    void unaEvidenciaDeTextoNoTieneAudio() throws Exception {
+        when(audioService.audio(1L, 10L, 29L))
+                .thenThrow(new ReglaNegocioException(
+                        "La evidencia no es de audio", HttpStatus.BAD_REQUEST));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias/29/audio")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("La evidencia no es de audio"));
+    }
+
+    @Test
+    void elAudioDeUnAulaAjenaDevuelve403() throws Exception {
+        when(audioService.audio(2L, 10L, 30L))
+                .thenThrow(new ReglaNegocioException(
+                        "El aula no pertenece al docente", HttpStatus.FORBIDDEN));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias/30/audio")
+                        .header("X-Docente-Id", 2))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.mensaje").value("El aula no pertenece al docente"));
+    }
+
+    @Test
+    void unAudioQueNoEstaEnLaCarpetaDevuelve404() throws Exception {
+        when(audioService.audio(1L, 10L, 30L))
+                .thenThrow(new ReglaNegocioException(
+                        "El audio no está disponible", HttpStatus.NOT_FOUND));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias/30/audio")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje").value("El audio no está disponible"));
+    }
+
+    @Test
+    void elAudioExigeElHeaderDelDocente() throws Exception {
+        mvc.perform(get("/api/docente/aulas/10/evidencias/30/audio"))
+                .andExpect(status().isBadRequest());
+    }
+
+    private Path archivoDeAudio(byte[] contenido) throws Exception {
+        Path archivo = carpeta.resolve("evidencia-30.mp3");
+        Files.write(archivo, contenido);
+        return archivo;
     }
 }

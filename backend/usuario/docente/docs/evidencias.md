@@ -226,3 +226,75 @@ Errores:
 | `EvidenciaRepositoryTest` | Detalle por id y aula, sin importar el estado, y evidencia de otra aula vacía. |
 | `EvidenciaServiceTest` | Audio con transcripción y puntaje, texto revisado, evidencia de otra aula, aula inexistente y aula ajena. |
 | `EvidenciaControllerTest` | Ruta del detalle, respuesta de audio y texto, 404, 403 y header obligatorio. |
+
+## 9. Audio seguro de la evidencia (T-372, US-32)
+
+El docente escucha el audio del alumno en el portal, pero el archivo **no** se expone
+como una URL pública: se pide al backend y este comprueba que quien lo pide es el
+docente dueño del aula.
+
+### Endpoint
+
+```
+GET /api/docente/aulas/{aulaId}/evidencias/{evidenciaId}/audio
+Header obligatorio: X-Docente-Id
+```
+
+El control valida en este orden:
+
+1. El aula existe → si no, `404`.
+2. El aula pertenece al docente → si no, `403`.
+3. La evidencia existe en esa aula → si no, `404`.
+4. La evidencia es de tipo `audio` → si no, `400`.
+5. El archivo está en la carpeta configurada → si no, `404`.
+
+### Carpeta de audios
+
+`application.properties`:
+
+```properties
+app.evidencias.directorio=./evidencias
+```
+
+En despliegue se sobreescribe con la variable `APP_EVIDENCIAS_DIRECTORIO`. La carpeta
+está en `.gitignore`: los audios no se versionan.
+
+`audio_url` puede guardarse como **nombre de archivo** (`evidencia-30.mp3`) o como
+**URL completa** (`https://cdn.ejemplo.pe/audios/evidencia-30.mp3?v=3`). En ambos casos
+se usa solo el último segmento, sin la query string, y se resuelve dentro de la carpeta.
+Un nombre con `..`, una ruta absoluta o un archivo que no existe responde `404`; nunca
+se sirve un archivo de fuera de la carpeta.
+
+> **Para Karla (T-413 / T-414):** al guardar el audio deje el archivo en
+> `app.evidencias.directorio` y guarde en `audio_url` el nombre del archivo o su URL.
+> El docente solo necesita que el nombre final coincida con el archivo.
+
+### Respuestas
+
+| Caso | Respuesta |
+|---|---|
+| Sin `Range` | `200` · archivo completo · `Content-Type` según la extensión (`audio/mpeg`, `audio/wav`, `audio/mp4`, `audio/aac`, `audio/ogg`, `audio/webm`) · `Accept-Ranges: bytes` · `Cache-Control: private, max-age=0` |
+| `Range: bytes=0-1023` | `206` · solo esa parte · `Content-Range: bytes 0-1023/{total}` |
+| `Range` fuera del archivo o con formato inválido | `416` · `Content-Range: bytes */{total}` |
+
+El soporte de `Range` permite que el reproductor del portal (T-373) empiece a sonar sin
+descargar todo el archivo.
+
+Errores:
+
+| Caso | Respuesta |
+|---|---|
+| Aula inexistente | `404` · `El aula no existe` |
+| Aula de otro docente | `403` · `El aula no pertenece al docente` |
+| Evidencia inexistente o de otra aula | `404` · `La evidencia no existe en esta aula` |
+| Evidencia de texto | `400` · `La evidencia no es de audio` |
+| Archivo no encontrado o nombre inválido | `404` · `El audio no está disponible` |
+| Sin `X-Docente-Id` | `400` |
+
+### Pruebas
+
+| Prueba | Cobertura |
+|---|---|
+| `AlmacenAudioTest` | Nombre desde archivo, URL y query string; resolución dentro de la carpeta; `..`, nombre vacío y archivo inexistente; rutas absolutas que no escapan; tipo MIME por extensión. |
+| `AudioEvidenciaServiceTest` | Audio del aula, evidencia de texto, evidencia de otra aula, aula inexistente, aula ajena y archivo que no está en la carpeta. |
+| `EvidenciaControllerTest` | Audio completo, `206` con `Content-Range`, `416`, formato de `Range` inválido, `400` de texto, `403`, `404` y header obligatorio. |
