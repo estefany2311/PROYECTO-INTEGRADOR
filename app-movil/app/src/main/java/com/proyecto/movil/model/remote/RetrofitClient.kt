@@ -16,8 +16,7 @@ object RetrofitClient {
     @Volatile
     var proveedorToken: () -> String? = { null }
 
-    // BASIC = solo método, URL y código de respuesta, sin cuerpos: el PIN y el token
-    // ya no aparecen en Logcat. En la versión final (release) no se registra nada.
+
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BASIC   // sin cuerpos: el PIN y el token no aparecen en Logcat
         redactHeader("Authorization")
@@ -45,7 +44,7 @@ object RetrofitClient {
             .build()
     }
 
-    // T-210: mapa de niveles (backend docente). Usa el mismo cliente, así también lleva el token
+    // mapa de niveles (backend docente). Usa el mismo cliente, así también lleva el token
     val docente: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(DOCENTE_URL)

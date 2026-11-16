@@ -18,11 +18,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * T-233 (US-03): forma exacta de las respuestas de POST /api/estudiante/sesion.
- * La tablet lee estos campos para el aviso de intentos (T-207) y el bloqueo:
- * si alguien cambia un nombre o un código HTTP, estas pruebas fallan.
- */
 class SesionControllerTest {
 
     private static final String URL = "/api/estudiante/sesion";

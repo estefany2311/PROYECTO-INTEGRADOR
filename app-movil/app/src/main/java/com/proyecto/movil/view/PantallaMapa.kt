@@ -1,5 +1,10 @@
 package com.proyecto.movil.view
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
@@ -102,6 +108,7 @@ fun PantallaMapa(
                 estado = estado,
                 onReintentar = { viewModel.cargarMapa() },
                 // T-215: un nivel disponible abre su detalle; uno bloqueado muestra el aviso (T-240)
+                onAnimacionTerminada = viewModel::animacionDesbloqueoMostrada,
                 onNivelTocado = { nivel ->
                     if (nivel.disponible) onAbrirNivel(nivel.id) else viewModel.tocarNivel(nivel)
                 }
@@ -130,15 +137,6 @@ fun PantallaMapa(
     }
 }
 
-/**
- * T-237 (US-04): confirmación antes de cerrar la sesión, con la cara del alumno
- * para que vea que es SU sesión la que se cierra. Así un toque sin querer no lo saca.
- * Botones grandes y con palabras completas: "Sí, salir" / "No, quedarme".
- *
- * Diálogo propio en vez del estándar: con el móvil horizontal hay poca altura y el estándar
- * cortaba el texto y apilaba los botones. Aquí el avatar se achica en pantallas bajas,
- * los botones van siempre lado a lado y, si no cabe, el contenido se desliza.
- */
 @Composable
 fun DialogoSalir(
     nombre: String,
@@ -229,14 +227,15 @@ private val PADDING_BOTON = PaddingValues(horizontal = 12.dp)
 fun ContenidoMapa(
     estado: MapaUiState,
     onReintentar: () -> Unit,
-    onNivelTocado: (NivelMapa) -> Unit = {}
+    onNivelTocado: (NivelMapa) -> Unit = {},
+    onAnimacionTerminada: () -> Unit = {}
 ) {
     when (estado) {
         is MapaUiState.Cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(Modifier.size(64.dp).testTag("cargando_mapa"))
         }
         is MapaUiState.Error -> ErrorMapa(estado.mensaje, onReintentar)
-        is MapaUiState.Exito -> RecorridoNiveles(estado.mapa, onNivelTocado)
+        is MapaUiState.Exito -> RecorridoNiveles(estado.mapa, onNivelTocado, estado.recienDesbloqueados, onAnimacionTerminada)
     }
 }
 
@@ -288,7 +287,12 @@ private val POSICIONES_X = listOf(0.25f, 0.5f, 0.75f, 0.5f)
 
 // T-210/T-211: resumen de avance arriba y los niveles unidos por un camino que serpentea
 @Composable
-fun RecorridoNiveles(mapa: MapaRespuesta, onNivelTocado: (NivelMapa) -> Unit = {}) {
+fun RecorridoNiveles(
+    mapa: MapaRespuesta,
+    onNivelTocado: (NivelMapa) -> Unit = {},
+    recienDesbloqueados: Set<Int> = emptySet(),
+    onAnimacionTerminada: () -> Unit = {}
+) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val medidas = if (maxWidth >= ANCHO_TABLET) MedidasMapa.TABLET else MedidasMapa.TELEFONO
         Column(
@@ -299,24 +303,21 @@ fun RecorridoNiveles(mapa: MapaRespuesta, onNivelTocado: (NivelMapa) -> Unit = {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Column(Modifier.widthIn(max = ANCHO_MAXIMO_MAPA).fillMaxWidth()) {
-                ResumenAvance(mapa.completados, mapa.totalNiveles, mapa.puntos)
+                ResumenAvance(mapa.completados, mapa.totalNiveles, mapa.puntos, mapa.estrellas)
                 Spacer(Modifier.height(24.dp))
-                CaminoDeNiveles(mapa.niveles.sortedBy { it.orden }, medidas, onNivelTocado)
+                CaminoDeNiveles(mapa.niveles.sortedBy { it.orden }, medidas, onNivelTocado, recienDesbloqueados, onAnimacionTerminada)
             }
         }
     }
 }
 
-/**
- * T-211: el camino se dibuja con Canvas (una línea de puntos blancos con curvas)
- * en vez de imágenes: no pesa nada y se ve nítido en cualquier tamaño de tablet.
- * Cada círculo se coloca justo sobre su punto del camino.
- */
 @Composable
 private fun CaminoDeNiveles(
     niveles: List<NivelMapa>,
     medidas: MedidasMapa,
-    onNivelTocado: (NivelMapa) -> Unit
+    onNivelTocado: (NivelMapa) -> Unit,
+    recienDesbloqueados: Set<Int> = emptySet(),
+    onAnimacionTerminada: () -> Unit = {}
 ) {
     BoxWithConstraints(
         Modifier
@@ -359,6 +360,8 @@ private fun CaminoDeNiveles(
                 nivel = nivel,
                 medidas = medidas,
                 onClick = { onNivelTocado(nivel) },
+                recienDesbloqueado = nivel.id in recienDesbloqueados,
+                onAnimacionTerminada = onAnimacionTerminada,
                 modifier = Modifier
                     .offset(x = centroX(i) - medidas.anchoEtiqueta / 2, y = medidas.alturaFila * i)
                     .width(medidas.anchoEtiqueta)
@@ -368,7 +371,7 @@ private fun CaminoDeNiveles(
 }
 
 @Composable
-private fun ResumenAvance(completados: Int, total: Int, puntos: Int) {
+private fun ResumenAvance(completados: Int, total: Int, puntos: Int, estrellas: Int) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -391,6 +394,7 @@ private fun ResumenAvance(completados: Int, total: Int, puntos: Int) {
             modifier = Modifier.fillMaxWidth().height(14.dp).clip(RoundedCornerShape(7.dp))
         )
         Spacer(Modifier.height(8.dp))
+        // T-304 (US-09): estrellas y puntos acumulados, cada uno con su ícono
         Row(verticalAlignment = Alignment.CenterVertically) {
             // T-211: estrella en vector (Color.Unspecified conserva su naranja)
             Icon(
@@ -400,26 +404,62 @@ private fun ResumenAvance(completados: Int, total: Int, puntos: Int) {
                 modifier = Modifier.size(26.dp)
             )
             Spacer(Modifier.width(6.dp))
-            Text("$puntos puntos", fontSize = 20.sp, color = ColoresAventura.TextoOscuro)
+            Text(
+                if (estrellas == 1) "1 estrella" else "$estrellas estrellas",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = ColoresAventura.TextoOscuro,
+                modifier = Modifier.testTag("contador_estrellas")
+            )
+            Spacer(Modifier.width(24.dp))
+            Icon(
+                painterResource(R.drawable.ic_puntos),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(26.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                if (puntos == 1) "1 punto" else "$puntos puntos",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = ColoresAventura.TextoOscuro,
+                modifier = Modifier.testTag("contador_puntos")
+            )
         }
     }
 }
 
-/**
- * Un nivel: círculo del color de su reto con el ícono del reto,
- * el número en una insignia arriba a la izquierda y el nombre debajo.
- * T-239 (US-06): si está bloqueado, el círculo es gris, lleva un candado en lugar del ícono
- * y el nombre se ve más suave. Así el niño distingue de un vistazo qué puede jugar.
- */
 @Composable
 private fun NodoNivel(
     nivel: NivelMapa,
     medidas: MedidasMapa,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    recienDesbloqueado: Boolean = false,
+    onAnimacionTerminada: () -> Unit = {}
 ) {
-    val bloqueado = nivel.bloqueado
-    val color = if (bloqueado) ColoresAventura.Gris else estiloDe(nivel.reto).color
+    // T-216: un nivel recién desbloqueado empieza viéndose como bloqueado (gris con candado),
+    // el candado se sacude, y luego el círculo pasa al color de su reto con un pequeño salto.
+    var mostrarCandado by remember(nivel.id, recienDesbloqueado) { mutableStateOf(recienDesbloqueado) }
+    val escala = remember { Animatable(1f) }
+    val giroCandado = remember { Animatable(0f) }
+    LaunchedEffect(nivel.id, recienDesbloqueado) {
+        if (!recienDesbloqueado) return@LaunchedEffect
+        kotlinx.coroutines.delay(400)
+        listOf(-14f, 14f, -10f, 10f, 0f).forEach { giroCandado.animateTo(it, tween(80)) }
+        mostrarCandado = false
+        escala.animateTo(1.25f, tween(180))
+        escala.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+        onAnimacionTerminada()
+    }
+
+    val bloqueado = nivel.bloqueado || mostrarCandado
+    val color by animateColorAsState(
+        targetValue = if (bloqueado) ColoresAventura.Gris else estiloDe(nivel.reto).color,
+        animationSpec = tween(500),
+        label = "colorNivel"
+    )
     val colorTexto = if (bloqueado) ColoresAventura.TextoOscuro.copy(alpha = 0.55f) else ColoresAventura.TextoOscuro
     Column(
         modifier
@@ -437,6 +477,7 @@ private fun NodoNivel(
             Box(
                 Modifier
                     .fillMaxSize()
+                    .graphicsLayer { scaleX = escala.value; scaleY = escala.value }
                     .clip(CircleShape)
                     .background(color)
                     .border(5.dp, Color.White, CircleShape),
@@ -449,7 +490,9 @@ private fun NodoNivel(
                         painterResource(icono),
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(medidas.nodo * 0.45f)
+                        modifier = Modifier
+                            .size(medidas.nodo * 0.45f)
+                            .graphicsLayer { rotationZ = if (mostrarCandado) giroCandado.value else 0f }
                     )
                 }
             }
@@ -484,10 +527,6 @@ private fun NodoNivel(
     }
 }
 
-/**
- * T-240 (US-06): tarjeta abajo de la pantalla con el candado y el mensaje.
- * Se oculta sola a los 4 s o al tocarla. liveRegion: TalkBack la lee apenas aparece.
- */
 @Composable
 private fun AvisoNivelBloqueado(mensaje: String, onCerrar: () -> Unit, modifier: Modifier = Modifier) {
     Row(

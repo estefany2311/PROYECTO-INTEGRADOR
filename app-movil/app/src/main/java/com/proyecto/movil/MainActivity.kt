@@ -17,7 +17,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.view.PantallaCodigoAula
+import com.proyecto.movil.view.PantallaConsigna
+import com.proyecto.movil.model.TipoReto
 import com.proyecto.movil.view.PantallaDetalleNivel
+import com.proyecto.movil.view.PantallaEditor
+import com.proyecto.movil.view.PantallaGrabacion
+import com.proyecto.movil.view.PantallaLectura
 import com.proyecto.movil.view.PantallaMapa
 import com.proyecto.movil.view.PantallaPerfiles
 import com.proyecto.movil.view.PantallaPin
@@ -100,15 +105,65 @@ class MainActivity : ComponentActivity() {
                             "nivel/{nivelId}",
                             arguments = listOf(navArgument("nivelId") { type = NavType.IntType })
                         ) { backStackEntry ->
-                            val contexto = LocalContext.current
                             PantallaDetalleNivel(
                                 nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
                                 onVolver = { navController.popBackStack() },
-                                onComenzar = {
-                                    // Las pantallas de cada reto (lectura, escritura, oralidad) llegan en el
-                                    // Sprint 3 (US-10, T-219). Por ahora se avisa para la demo.
-                                    Toast.makeText(contexto, "El reto se abre en la próxima versión", Toast.LENGTH_SHORT).show()
+                                onComenzar = { detalle ->
+                                    // T-219: los retos de lectura y de oralidad empiezan leyendo un texto.
+                                    // T-321: el reto de escritura empieza con su consigna.
+                                    when (detalle.reto) {
+                                        TipoReto.LECTURA, TipoReto.ORALIDAD -> navController.navigate("lectura/${detalle.id}")
+                                        TipoReto.ESCRITURA -> navController.navigate("consigna/${detalle.id}")
+                                        TipoReto.DESCONOCIDO -> Unit
+                                    }
                                 }
+                            )
+                        }
+                        // T-219 (US-10): el texto para leer en voz alta, con letra grande
+                        composable(
+                            "lectura/{nivelId}",
+                            arguments = listOf(navArgument("nivelId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            PantallaLectura(
+                                nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
+                                onVolver = { navController.popBackStack() },
+                                onGrabar = { lectura -> navController.navigate("grabar/${lectura.nivelId}") }
+                            )
+                        }
+                        // T-321 (US-17): la consigna del nivel de escritura, con su ilustración
+                        composable(
+                            "consigna/{nivelId}",
+                            arguments = listOf(navArgument("nivelId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            PantallaConsigna(
+                                nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
+                                onVolver = { navController.popBackStack() },
+                                onEmpezar = { consigna -> navController.navigate("escribir/${consigna.nivelId}") }
+                            )
+                        }
+                        // T-323 (US-18): el editor donde el niño escribe su texto
+                        composable(
+                            "escribir/{nivelId}",
+                            arguments = listOf(navArgument("nivelId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val contexto = LocalContext.current
+                            PantallaEditor(
+                                nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
+                                onVolver = { navController.popBackStack() },
+                                onEnviar = {
+                                    // Enviar el texto para evaluarlo llega en una próxima historia
+                                    Toast.makeText(contexto, "Enviar tu texto llega en la próxima versión", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                        // US-11: grabar la lectura. T-313 pide antes el permiso del micrófono
+                        composable(
+                            "grabar/{nivelId}",
+                            arguments = listOf(navArgument("nivelId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            PantallaGrabacion(
+                                nivelId = backStackEntry.arguments?.getInt("nivelId") ?: 0,
+                                onVolver = { navController.popBackStack() }
                             )
                         }
                     }

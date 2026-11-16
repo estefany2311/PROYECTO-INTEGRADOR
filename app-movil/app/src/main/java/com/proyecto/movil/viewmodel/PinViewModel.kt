@@ -112,10 +112,6 @@ class PinViewModel(
         }
     }
 
-    /**
-     * T-234: los 4 círculos se quedan llenos mientras se sacuden (así el niño ve que se equivocó)
-     * y después se borran solos para que escriba de nuevo desde cero.
-     */
     private suspend fun fallarConSacudida(mensaje: String, detalle: String?, tipo: TipoError) {
         _uiState.update {
             it.copy(

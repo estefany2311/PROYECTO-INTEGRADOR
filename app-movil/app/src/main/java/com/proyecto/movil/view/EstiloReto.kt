@@ -6,13 +6,6 @@ import com.proyecto.movil.R
 import com.proyecto.movil.model.TipoReto
 import com.proyecto.movil.ui.theme.ColoresAventura
 
-/**
- * T-242 (US-07): cada tipo de reto tiene su ícono, su color y su nombre, siempre los mismos
- * en el mapa y en el detalle, para que el niño los reconozca aunque todavía no lea bien:
- *   lectura   → libro,  turquesa
- *   escritura → lápiz,  naranja
- *   oralidad  → globo de diálogo, azul
- */
 data class EstiloReto(
     val color: Color,
     @DrawableRes val icono: Int?,     // null si el reto es desconocido

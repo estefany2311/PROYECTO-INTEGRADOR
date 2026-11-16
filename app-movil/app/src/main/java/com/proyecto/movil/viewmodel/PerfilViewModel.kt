@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+//Carga los perfiles del aula.
+
 sealed class PerfilesUiState {
     object Cargando : PerfilesUiState()
     data class Exito(val perfiles: List<Perfil>) : PerfilesUiState()

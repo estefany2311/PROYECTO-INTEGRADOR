@@ -1,22 +1,20 @@
 package com.proyecto.usuario.estudiante.service;
 
+import com.proyecto.usuario.estudiante.config.ReglasReto;
+import com.proyecto.usuario.estudiante.dto.CompletarNivelResponse;
 import com.proyecto.usuario.estudiante.dto.NivelDetalleResponse;
 import com.proyecto.usuario.estudiante.exception.NivelBloqueadoException;
 import com.proyecto.usuario.estudiante.exception.NivelNoEncontradoException;
 import com.proyecto.usuario.estudiante.model.Nivel;
+import com.proyecto.usuario.estudiante.repository.IntentoRetoRepository;
 import com.proyecto.usuario.estudiante.repository.NivelRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
-/**
- * T-214 (US-07): detalle de un nivel para el alumno que tiene la sesión.
- *
- * Misma regla de estado que el mapa del backend docente (T-197):
- *  - si el alumno tiene una fila de progreso en el nivel, manda esa fila;
- *  - si no: el primer nivel está desbloqueado y los demás solo si el anterior está completado.
- * Un nivel bloqueado NO se abre (403), aunque alguien escriba su id a mano.
- */
 @Service
 public class NivelService {
 
@@ -25,9 +23,15 @@ public class NivelService {
     public static final String COMPLETADO = "completado";
 
     private final NivelRepository niveles;
+    private final IntentoRetoRepository intentos;
+    private final ReglasReto reglas;
+    private final Clock reloj;
 
-    public NivelService(NivelRepository niveles) {
+    public NivelService(NivelRepository niveles, IntentoRetoRepository intentos, ReglasReto reglas, Clock reloj) {
         this.niveles = niveles;
+        this.intentos = intentos;
+        this.reglas = reglas;
+        this.reloj = reloj;
     }
 
     public NivelDetalleResponse detalle(long estudianteId, int nivelId) {
@@ -45,6 +49,34 @@ public class NivelService {
         int puntos = progreso.map(NivelRepository.Progreso::puntos).orElse(0);
         return new NivelDetalleResponse(nivel.id(), nivel.orden(), nivel.nombre(), nivel.tipoReto(),
                 nivel.descripcion(), estado, puntos);
+    }
+
+    @Transactional
+    public CompletarNivelResponse completar(long estudianteId, int nivelId, int puntos, int estrellas) {
+        NivelDetalleResponse nivel = detalle(estudianteId, nivelId);    // 404 si no existe, 403 si está bloqueado
+        LocalDateTime ahora = LocalDateTime.now(reloj);
+
+        intentos.registrar(estudianteId, nivelId, puntos, estrellas, ahora);
+
+        // T-309: sin las estrellas mínimas no se completa ni se desbloquea nada.
+        // T-310: si ya lo había completado antes, sigue completado y con su mejor puntaje.
+        if (!reglas.aprueba(estrellas)) {
+            int guardados = niveles.progreso(estudianteId, nivelId).map(NivelRepository.Progreso::puntos).orElse(0);
+            return new CompletarNivelResponse(nivelId, nivel.estado(), puntos, guardados, estrellas, false,
+                    reglas.estrellasMinimas(), null, null, false);
+        }
+
+        int mejoresPuntos = niveles.marcarCompletado(estudianteId, nivelId, puntos, ahora);
+
+        Optional<Nivel> siguiente = niveles.siguiente(nivel.orden());
+        // T-310: al repetir un reto el siguiente ya estaba abierto; solo es "nuevo" la primera vez
+        boolean recienDesbloqueado = siguiente.map(s -> niveles.desbloquear(estudianteId, s.id(), ahora)).orElse(false);
+
+        return new CompletarNivelResponse(nivelId, COMPLETADO, puntos, mejoresPuntos, estrellas, true,
+                reglas.estrellasMinimas(),
+                siguiente.map(Nivel::id).orElse(null),
+                siguiente.map(Nivel::nombre).orElse(null),
+                recienDesbloqueado);
     }
 
     private String estadoSinProgreso(long estudianteId, Optional<Nivel> anterior) {
