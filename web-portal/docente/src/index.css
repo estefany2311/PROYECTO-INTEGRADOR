@@ -2584,23 +2584,52 @@ legend {
   color: #1D4ED8;
 }
 
-.evidencia-audio {
+.evidencia-audio-caja {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.evidencia-boton-audio {
   display: inline-flex;
   align-self: start;
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
+  border: 0;
   border-radius: 10px;
   background: #F5F3FF;
   color: #6D28D9;
+  font-family: inherit;
   font-size: 0.8rem;
   font-weight: 800;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.evidencia-audio:hover,
-.evidencia-audio:focus-visible {
+.evidencia-boton-audio:hover,
+.evidencia-boton-audio:focus-visible {
   background: #EDE9FE;
+}
+
+.evidencia-boton-audio:disabled {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+.evidencia-reproductor {
+  width: 100%;
+  height: 40px;
+}
+
+.evidencia-audio-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: #B91C1C;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .evidencia-texto {

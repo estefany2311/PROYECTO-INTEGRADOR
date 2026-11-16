@@ -45,6 +45,21 @@ export const listarEvidenciasPendientes = (aulaId, filtros = {}) => {
   return pedir(`/api/docente/aulas/${aulaId}/evidencias${query ? `?${query}` : ""}`);
 };
 
+// T-373: audio de una evidencia (endpoint de T-372). El endpoint exige el
+// header X-Docente-Id, que un <audio src> no puede enviar, así que el archivo
+// se descarga con fetch y se reproduce desde un blob local.
+export const descargarAudioEvidencia = async (aulaId, evidenciaId) => {
+  const res = await fetch(
+    `${BASE_URL}/api/docente/aulas/${aulaId}/evidencias/${evidenciaId}/audio`,
+    { headers: { "X-Docente-Id": DOCENTE_ID } }
+  );
+  if (!res.ok) {
+    const datos = await res.json().catch(() => null);
+    throw new Error(datos?.mensaje || "No se pudo cargar el audio");
+  }
+  return res.blob();
+};
+
 export const listarEstudiantes = (aulaId) =>
   pedir(`/api/docente/aulas/${aulaId}/estudiantes`);
 export const crearEstudiante = (aulaId, datos) =>

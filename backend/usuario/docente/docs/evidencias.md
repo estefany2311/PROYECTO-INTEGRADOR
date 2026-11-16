@@ -280,6 +280,22 @@ se sirve un archivo de fuera de la carpeta.
 El soporte de `Range` permite que el reproductor del portal (T-373) empiece a sonar sin
 descargar todo el archivo.
 
+### Reproductor en el portal (T-373)
+
+La pantalla de evidencias (`web-portal/docente/src/pages/Evidencias.jsx`) muestra un
+botón **Escuchar audio** en cada tarjeta de audio. Al pulsarlo, el componente
+`components/ReproductorAudio.jsx`:
+
+1. Descarga el audio con `descargarAudioEvidencia(aulaId, evidenciaId)`
+   (`src/api.js`), que envía el header `X-Docente-Id`.
+2. Crea un blob local con `URL.createObjectURL` y lo pone en un `<audio controls autoPlay>`.
+3. Libera el blob con `URL.revokeObjectURL` al desmontar la tarjeta.
+
+No se usa `audioUrl` directamente en un `<audio src>` porque el endpoint exige el header
+del docente y el navegador no lo envía en la reproducción de medios. Tampoco se descargan
+todos los audios al abrir la lista: la descarga empieza con el clic. Si el backend responde
+`403` o `404`, la tarjeta muestra el mensaje y el botón cambia a **Reintentar audio**.
+
 Errores:
 
 | Caso | Respuesta |
@@ -298,3 +314,4 @@ Errores:
 | `AlmacenAudioTest` | Nombre desde archivo, URL y query string; resolución dentro de la carpeta; `..`, nombre vacío y archivo inexistente; rutas absolutas que no escapan; tipo MIME por extensión. |
 | `AudioEvidenciaServiceTest` | Audio del aula, evidencia de texto, evidencia de otra aula, aula inexistente, aula ajena y archivo que no está en la carpeta. |
 | `EvidenciaControllerTest` | Audio completo, `206` con `Content-Range`, `416`, formato de `Range` inválido, `400` de texto, `403`, `404` y header obligatorio. |
+| `ReproductorAudio.test.jsx` | No descarga hasta el clic, descarga con el header y reproduce desde un blob, error con reintento, liberación del blob y nombre genérico. |

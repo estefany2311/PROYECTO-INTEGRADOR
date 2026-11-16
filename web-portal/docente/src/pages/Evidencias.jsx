@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listarAulas, listarEvidenciasPendientes } from "../api";
 import { obtenerAulaSeleccionada, seleccionarAula } from "../aulaSeleccionada";
+import ReproductorAudio from "../components/ReproductorAudio";
 
 // T-299 (US-31): lista de evidencias pendientes de revisión con filtro por tipo.
 // Consume el endpoint de T-298, que ya devuelve el alumno, su grado, el nivel y
@@ -336,15 +337,11 @@ function TarjetaEvidencia({ evidencia, aulaId }) {
         </div>
 
         {tipo.clave === "audio" ? (
-          <a
-            className="evidencia-audio"
-            href={evidencia.audioUrl || "#"}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <i className="bi bi-play-circle-fill" aria-hidden="true" />
-            Escuchar audio
-          </a>
+          <ReproductorAudio
+            aulaId={aulaId}
+            evidenciaId={evidencia.id}
+            nombre={nombre}
+          />
         ) : (
           <blockquote className="evidencia-texto">
             {evidencia.texto || "Sin texto registrado."}

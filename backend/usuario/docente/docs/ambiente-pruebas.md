@@ -81,7 +81,9 @@ npm run preview -- --port 4173
 | Detalle del alumno en `/dashboard/aulas/9/estudiantes/{id}` | 200 · resumen por competencia, niveles y últimas evaluaciones · vuelve al dashboard |
 | Gráfico de evolución en el detalle del alumno | visible · puntos ordenados por fecha · leyenda por competencia · zonas del semáforo |
 | Fortalezas y dificultades en el detalle del alumno | visible · Lectura fortaleza · Oralidad dificultad · Escritura en proceso |
-| Lista de evidencias en `/evidencias` (aula 9) | 6 pendientes · 3 audio y 3 texto · enlace al detalle del alumno |
+| Lista de evidencias en `/evidencias` (aula 9) | 6 pendientes · 3 audio y 3 texto · botón Escuchar audio y enlace al detalle del alumno |
+| Reproducir un audio en `/evidencias` | El botón descarga el audio con `X-Docente-Id` y aparece el reproductor con el audio |
+| Reproducir un audio de otro docente | 403 · mensaje y botón Reintentar audio |
 | Filtro por tipo en `/evidencias` | Audio → 3 · Texto → 3 · sin resultados → aviso del filtro |
 | Build de producción con `npm run preview` | 200 |
 | CORS desde `http://localhost:5173` | 200 · `Access-Control-Allow-Origin` correcto · orígenes configurables con `APP_CORS_ORIGENES` |
@@ -115,5 +117,6 @@ npm run preview -- --port 4173
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
 | Frontend `Evidencias.test.jsx` | 13/13 · tarjetas, orden, conteo por tipo, filtro y vuelta a todos los tipos, aula activa, cambio de aula, Actualizar, sin aulas, vacío y error |
+| Frontend `ReproductorAudio.test.jsx` | 5/5 · descarga al pulsar, header del docente, blob, error con reintento, liberación y nombre genérico |
 | Frontend `Catalogo.test.jsx` | 12/12 · lecturas, filtros, búsqueda, modal, asignación, etiqueta Oficial y enlace al recurso |
-| Frontend `test`, `lint`, `build` | 99/99 · OK · OK |
+| Frontend `test`, `lint`, `build` | 104/104 · OK · OK |
