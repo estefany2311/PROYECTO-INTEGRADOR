@@ -1,5 +1,6 @@
 package com.proyecto.usuario.docente.controller;
 
+import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
 import com.proyecto.usuario.docente.exception.ManejadorErrores;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
@@ -165,6 +166,99 @@ class EvidenciaControllerTest {
     @Test
     void exigeElHeaderDelDocente() throws Exception {
         mvc.perform(get("/api/docente/aulas/10/evidencias"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // T-371 (US-32): detalle de la evidencia
+
+    @Test
+    void devuelveElDetalleDeUnaEvidenciaDeAudio() throws Exception {
+        when(service.detalle(1L, 10L, 30L)).thenReturn(new EvidenciaDetalleResponse(
+                30L, 7L, "Minji", "Prueba", (short) 5, "5.º",
+                (short) 1, "Primeros pasos", "lectura", "audio",
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3", null,
+                "El sol brilla. Los niños juegan en el parque.",
+                (short) 85, "Lee con claridad y buen ritmo.",
+                "pendiente", LocalDateTime.of(2026, 11, 10, 9, 0), null));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias/30")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(30))
+                .andExpect(jsonPath("$.estudianteId").value(7))
+                .andExpect(jsonPath("$.nombres").value("Minji"))
+                .andExpect(jsonPath("$.nivelOrden").value(1))
+                .andExpect(jsonPath("$.tipoReto").value("lectura"))
+                .andExpect(jsonPath("$.tipo").value("audio"))
+                .andExpect(jsonPath("$.audioUrl")
+                        .value("https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3"))
+                .andExpect(jsonPath("$.texto").doesNotExist())
+                .andExpect(jsonPath("$.transcripcion")
+                        .value("El sol brilla. Los niños juegan en el parque."))
+                .andExpect(jsonPath("$.puntajeIa").value(85))
+                .andExpect(jsonPath("$.resultadoIa")
+                        .value("Lee con claridad y buen ritmo."))
+                .andExpect(jsonPath("$.estadoRevision").value("pendiente"))
+                .andExpect(jsonPath("$.creadoEn").exists())
+                .andExpect(jsonPath("$.revisadoEn").doesNotExist());
+
+        verify(service).detalle(1L, 10L, 30L);
+    }
+
+    @Test
+    void devuelveElDetalleDeUnaEvidenciaDeTexto() throws Exception {
+        when(service.detalle(1L, 10L, 29L)).thenReturn(new EvidenciaDetalleResponse(
+                29L, 8L, "Breysi", "Zavala", (short) 1, "1.º",
+                (short) 2, "Palabras nuevas", "escritura", "texto",
+                null, "Mi mamá prepara sopa. Yo pongo la mesa.", null,
+                (short) 80, "Escribe oraciones completas.",
+                "aprobada", LocalDateTime.of(2026, 11, 9, 15, 30),
+                LocalDateTime.of(2026, 11, 10, 8, 0)));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias/29")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(29))
+                .andExpect(jsonPath("$.tipo").value("texto"))
+                .andExpect(jsonPath("$.audioUrl").doesNotExist())
+                .andExpect(jsonPath("$.texto")
+                        .value("Mi mamá prepara sopa. Yo pongo la mesa."))
+                .andExpect(jsonPath("$.transcripcion").doesNotExist())
+                .andExpect(jsonPath("$.puntajeIa").value(80))
+                .andExpect(jsonPath("$.estadoRevision").value("aprobada"))
+                .andExpect(jsonPath("$.revisadoEn").exists());
+
+        verify(service).detalle(1L, 10L, 29L);
+    }
+
+    @Test
+    void unaEvidenciaDeOtraAulaDevuelve404() throws Exception {
+        when(service.detalle(1L, 10L, 99L))
+                .thenThrow(new ReglaNegocioException(
+                        "La evidencia no existe en esta aula", HttpStatus.NOT_FOUND));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias/99")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje")
+                        .value("La evidencia no existe en esta aula"));
+    }
+
+    @Test
+    void elDetalleDeUnAulaAjenaDevuelve403() throws Exception {
+        when(service.detalle(2L, 10L, 30L))
+                .thenThrow(new ReglaNegocioException(
+                        "El aula no pertenece al docente", HttpStatus.FORBIDDEN));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias/30")
+                        .header("X-Docente-Id", 2))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.mensaje").value("El aula no pertenece al docente"));
+    }
+
+    @Test
+    void elDetalleExigeElHeaderDelDocente() throws Exception {
+        mvc.perform(get("/api/docente/aulas/10/evidencias/30"))
                 .andExpect(status().isBadRequest());
     }
 }

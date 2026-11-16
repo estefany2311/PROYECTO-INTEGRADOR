@@ -47,6 +47,14 @@ public class Evidencia {
     @Column(name = "resultado_ia", columnDefinition = "text")
     private String resultadoIa;
 
+    // T-371 (US-32): lo que la IA entendió del audio del alumno
+    @Column(columnDefinition = "text")
+    private String transcripcion;
+
+    // T-371 (US-32): puntaje global de la IA (0 a 100); nulo si aún no evaluó
+    @Column(name = "puntaje_ia")
+    private Short puntajeIa;
+
     @Column(name = "estado_revision", nullable = false)
     private String estadoRevision = PENDIENTE;
 
@@ -90,6 +98,10 @@ public class Evidencia {
     public void setTexto(String texto) { this.texto = texto; }
     public String getResultadoIa() { return resultadoIa; }
     public void setResultadoIa(String resultadoIa) { this.resultadoIa = resultadoIa; }
+    public String getTranscripcion() { return transcripcion; }
+    public void setTranscripcion(String transcripcion) { this.transcripcion = transcripcion; }
+    public Short getPuntajeIa() { return puntajeIa; }
+    public void setPuntajeIa(Short puntajeIa) { this.puntajeIa = puntajeIa; }
     public String getEstadoRevision() { return estadoRevision; }
     public void setEstadoRevision(String estadoRevision) { this.estadoRevision = estadoRevision; }
     public LocalDateTime getCreadoEn() { return creadoEn; }

@@ -152,3 +152,77 @@ evidencias y el mensaje cuando la IA aún no generó un resultado.
 | `EvidenciaServiceTest` | Mapeo de alumno, grado y nivel, filtro por tipo y texto, tipo en blanco o inválido, lista vacía, resultado IA nulo y validación del aula (T-298, T-300). |
 | `EvidenciaControllerTest` | Ruta, forma de la respuesta de audio y texto, filtro por tipo, header obligatorio y errores HTTP (T-298, T-300). |
 | `Evidencias.test.jsx` | Tarjetas con alumno, nivel, tipo y resultado de la IA, orden, conteo por tipo, filtro y vuelta a todos los tipos, aula activa, cambio de aula, Actualizar, estado vacío, sin aulas y error con reintento (T-299, T-300). |
+
+## 8. Detalle de la evidencia (T-371, US-32)
+
+El docente necesita **contrastar la evaluación automática**: escuchar el audio o leer el
+texto del alumno junto con lo que entendió la IA y el puntaje que le puso.
+
+### Migración V13
+
+`V13__evidencia_transcripcion_y_puntaje_ia.sql` agrega dos columnas a `evidencia`:
+
+| Columna | Tipo | Regla |
+|---|---|---|
+| `transcripcion` | `TEXT` | Lo que la IA entendió del audio. Nula en las evidencias de texto. |
+| `puntaje_ia` | `SMALLINT` | Puntaje global de la IA, de 0 a 100 (`chk_evidencia_puntaje_ia`). Nulo mientras no evalúa. |
+
+Las 9 evidencias de prueba de V11 quedan con su transcripción (las de audio) y su
+puntaje, sin quemar ids: se actualizan por `audio_url` o por `texto`.
+
+### Endpoint
+
+```
+GET /api/docente/aulas/{aulaId}/evidencias/{evidenciaId}
+Header obligatorio: X-Docente-Id
+```
+
+Funciona con evidencias en **cualquier estado** (`pendiente`, `aprobada`, `rechazada`),
+porque el docente puede volver a consultar una evidencia ya revisada.
+
+Respuesta (`200`):
+
+```json
+{
+  "id": 30,
+  "estudianteId": 7,
+  "nombres": "Minji",
+  "apellidos": "Prueba",
+  "gradoId": 5,
+  "gradoNombre": "5.º",
+  "nivelOrden": 1,
+  "nivelNombre": "Primeros pasos",
+  "tipoReto": "lectura",
+  "tipo": "audio",
+  "audioUrl": "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3",
+  "texto": null,
+  "transcripcion": "El sol brilla. Los niños juegan en el parque.",
+  "puntajeIa": 85,
+  "resultadoIa": "Lee con claridad y buen ritmo.",
+  "estadoRevision": "pendiente",
+  "creadoEn": "2026-11-10T09:00:00",
+  "revisadoEn": null
+}
+```
+
+En una evidencia de texto, `audioUrl` y `transcripcion` llegan nulos y `texto` trae lo
+que escribió el alumno. `tipoReto` sale del nivel (`lectura`, `escritura` u `oralidad`)
+para saber qué competencia evaluó la IA.
+
+Errores:
+
+| Caso | Respuesta |
+|---|---|
+| Aula inexistente | `404` · `El aula no existe` |
+| Aula de otro docente | `403` · `El aula no pertenece al docente` |
+| Evidencia inexistente o de otra aula | `404` · `La evidencia no existe en esta aula` |
+| Sin `X-Docente-Id` | `400` |
+
+### Pruebas
+
+| Prueba | Cobertura |
+|---|---|
+| `MigracionEvidenciaDetalleTest` | Columnas de V13, rango 0–100 del puntaje y datos de prueba sin ids quemados. |
+| `EvidenciaRepositoryTest` | Detalle por id y aula, sin importar el estado, y evidencia de otra aula vacía. |
+| `EvidenciaServiceTest` | Audio con transcripción y puntaje, texto revisado, evidencia de otra aula, aula inexistente y aula ajena. |
+| `EvidenciaControllerTest` | Ruta del detalle, respuesta de audio y texto, 404, 403 y header obligatorio. |

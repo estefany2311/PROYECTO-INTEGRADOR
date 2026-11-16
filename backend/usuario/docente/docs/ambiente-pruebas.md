@@ -1,4 +1,4 @@
-# Ambiente de pruebas — Módulo Docente
+﻿# Ambiente de pruebas — Módulo Docente
 
 ## URLs locales
 
@@ -58,10 +58,13 @@ npm run preview -- --port 4173
 | `GET /api/docente/aulas/9/evidencias?tipo=audio` | 200 · 3 audios pendientes |
 | `GET /api/docente/aulas/9/evidencias?tipo=video` | 400 · `El tipo de evidencia no es válido` |
 | `GET /api/docente/aulas/9/evidencias` sin `X-Docente-Id` | 400 |
+| `GET /api/docente/aulas/9/evidencias/{id}` | 200 · audio o texto, transcripción y puntaje de la IA |
+| `GET /api/docente/aulas/9/evidencias/{id de otra aula}` | 404 · `La evidencia no existe en esta aula` |
+| `GET /api/docente/aulas/9/evidencias/{id}` sin `X-Docente-Id` | 400 |
 | `GET /api/docente/aulas/5/estudiantes` | 200 |
 | `GET /api/docente/aulas/5/lecturas` | 200 · 3 lecturas · cada una con `fuente` y `urlRecurso` |
 | `GET /api/docente/aulas/5/grupos` | 200 |
-| `GET /v3/api-docs` | 200 · `API Docente` 1.0.0 · 19 operaciones |
+| `GET /v3/api-docs` | 200 · `API Docente` 1.0.0 · 20 operaciones |
 | `GET /swagger-ui.html` | 200 |
 | Frontend `/`, `/alumnos`, `/grupos`, `/catalogo`, `/dashboard`, `/evidencias` | 200 y sin errores de consola |
 | Leyenda del semáforo en `/dashboard` | 4 estados visibles · color + ícono + texto |
@@ -85,9 +88,10 @@ npm run preview -- --port 4173
 | Backend `EvaluacionRepositoryTest` | 2/2 · promedio por aula e historial del alumno |
 | Backend `MigracionEvidenciaTest` | 6/6 · tabla, audio/texto, estado de revisión, cascada e índices |
 | Backend `MigracionEvidenciaDatosPruebaTest` | 5/5 · datos de audio y texto, estados y niveles por orden |
-| Backend `EvidenciaRepositoryTest` | 2/2 · pendientes por fecha y filtro por tipo |
-| Backend `EvidenciaServiceTest` | 9/9 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo y aula del docente |
-| Backend `EvidenciaControllerTest` | 8/8 · ruta, respuesta de audio y texto, filtro por tipo, header y errores |
+| Backend `EvidenciaRepositoryTest` | 4/4 · pendientes por fecha y filtro por tipo, detalle por id y aula, y evidencia de otra aula |
+| Backend `EvidenciaServiceTest` | 14/14 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo, aula del docente y detalle con transcripción y puntaje |
+| Backend `EvidenciaControllerTest` | 13/13 · ruta, respuesta de audio y texto, filtro por tipo, detalle, header y errores |
+| Backend `MigracionEvidenciaDetalleTest` | 3/3 · columnas de V13, rango 0-100 del puntaje y datos de prueba |
 | Backend `MigracionPuntajeEstudianteTest` | 6/6 · tabla, una fila por alumno, acumulados desde cero, valores no negativos, actualización y cascada |
 | Backend `PuntajeServiceTest` | 11/11 · acumulado nuevo y existente, umbrales de estrellas, puntajes límite 0 y 100, tipo y puntaje inválidos y alumno inexistente |
 | Backend `ReglaPuntuacionTest` | 3/3 · estrellas por umbral, umbrales crecientes y puntos no negativos |
@@ -98,7 +102,7 @@ npm run preview -- --port 4173
 | Backend `CatalogoControllerTest` | 4/4 · catálogo con `fuente` y `urlRecurso`, filtros, 403 y 404 |
 | Backend `ConfiguracionCorsTest` | 4/4 · origen local, varios orígenes, espacios y lista vacía |
 | Backend `OpenApiConfigTest` | 4/4 · servidor, información, esquemas de seguridad y orden de secciones |
-| Backend `test` | 246/246 |
+| Backend `test` | 261/261 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |

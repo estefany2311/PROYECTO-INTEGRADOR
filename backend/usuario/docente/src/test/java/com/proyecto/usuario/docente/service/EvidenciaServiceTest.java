@@ -1,5 +1,6 @@
 package com.proyecto.usuario.docente.service;
 
+import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
 import com.proyecto.usuario.docente.model.Aula;
@@ -248,5 +249,114 @@ class EvidenciaServiceTest {
         verify(evidenciaRepository, never())
                 .findByEstudianteAulaIdAndEstadoRevisionOrderByCreadoEnDescIdDesc(
                         any(), anyString());
+    }
+
+    // T-371 (US-32): detalle de la evidencia con transcripción y puntaje de la IA
+
+    @Test
+    void devuelveElDetalleDeUnAudioConTranscripcionYPuntaje() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+        audio.setTranscripcion("El sol brilla. Los niños juegan en el parque.");
+        audio.setPuntajeIa((short) 85);
+        audio.setResultadoIa("Lee con claridad y buen ritmo.");
+        ReflectionTestUtils.setField(audio, "creadoEn",
+                LocalDateTime.of(2026, 11, 10, 9, 0));
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+
+        EvidenciaDetalleResponse detalle = service.detalle(1L, 10L, 30L);
+
+        assertEquals(30L, detalle.id());
+        assertEquals(7L, detalle.estudianteId());
+        assertEquals("Minji", detalle.nombres());
+        assertEquals("Prueba", detalle.apellidos());
+        assertEquals((short) 5, detalle.gradoId());
+        assertEquals("5.º", detalle.gradoNombre());
+        assertEquals((short) 1, detalle.nivelOrden());
+        assertEquals("Primeros pasos", detalle.nivelNombre());
+        assertEquals("lectura", detalle.tipoReto());
+        assertEquals(Evidencia.AUDIO, detalle.tipo());
+        assertEquals("https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3",
+                detalle.audioUrl());
+        assertNull(detalle.texto());
+        assertEquals("El sol brilla. Los niños juegan en el parque.",
+                detalle.transcripcion());
+        assertEquals((short) 85, detalle.puntajeIa());
+        assertEquals("Lee con claridad y buen ritmo.", detalle.resultadoIa());
+        assertEquals(Evidencia.PENDIENTE, detalle.estadoRevision());
+        assertEquals(LocalDateTime.of(2026, 11, 10, 9, 0), detalle.creadoEn());
+        assertNull(detalle.revisadoEn());
+    }
+
+    @Test
+    void devuelveElDetalleDeUnTextoRevisadoConSuPuntaje() {
+        Evidencia texto = Evidencia.texto(estudiante, nivelTexto,
+                "Mi mamá prepara sopa. Yo pongo la mesa.");
+        ReflectionTestUtils.setField(texto, "id", 29L);
+        texto.setPuntajeIa((short) 80);
+        texto.setResultadoIa("Escribe oraciones completas.");
+        texto.setEstadoRevision(Evidencia.APROBADA);
+        texto.setRevisadoEn(LocalDateTime.of(2026, 11, 11, 8, 0));
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(29L, 10L))
+                .thenReturn(Optional.of(texto));
+
+        EvidenciaDetalleResponse detalle = service.detalle(1L, 10L, 29L);
+
+        assertEquals(29L, detalle.id());
+        assertEquals(Evidencia.TEXTO, detalle.tipo());
+        assertEquals("Mi mamá prepara sopa. Yo pongo la mesa.", detalle.texto());
+        assertNull(detalle.audioUrl());
+        assertNull(detalle.transcripcion());
+        assertEquals((short) 80, detalle.puntajeIa());
+        assertEquals(Evidencia.APROBADA, detalle.estadoRevision());
+        assertEquals(LocalDateTime.of(2026, 11, 11, 8, 0), detalle.revisadoEn());
+    }
+
+    @Test
+    void unaEvidenciaDeOtraAulaDevuelve404() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(99L, 10L))
+                .thenReturn(Optional.empty());
+
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                () -> service.detalle(1L, 10L, 99L));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getEstado());
+        assertEquals("La evidencia no existe en esta aula", error.getMessage());
+    }
+
+    @Test
+    void elDetalleDeUnAulaInexistenteDevuelve404() {
+        when(aulaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                () -> service.detalle(1L, 99L, 30L));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getEstado());
+        assertEquals("El aula no existe", error.getMessage());
+        verify(evidenciaRepository, never())
+                .findByIdAndEstudianteAulaId(any(), any());
+    }
+
+    @Test
+    void elDetalleDeUnAulaAjenaDevuelve403() {
+        Aula ajena = new Aula();
+        ReflectionTestUtils.setField(ajena, "id", 10L);
+        ajena.setDocenteId(2L);
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(ajena));
+
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                () -> service.detalle(1L, 10L, 30L));
+
+        assertEquals(HttpStatus.FORBIDDEN, error.getEstado());
+        assertEquals("El aula no pertenece al docente", error.getMessage());
+        verify(evidenciaRepository, never())
+                .findByIdAndEstudianteAulaId(any(), any());
     }
 }

@@ -1,5 +1,6 @@
 package com.proyecto.usuario.docente.service;
 
+import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
 import com.proyecto.usuario.docente.model.Aula;
@@ -21,6 +22,9 @@ import java.util.Locale;
  * reciente a la más antigua, con el alumno, su grado y el nivel ya resueltos.
  * El filtro opcional por tipo ({@code audio} o {@code texto}) lo usa la
  * pantalla de T-299.</p>
+ *
+ * <p>T-371 (US-32): {@link #detalle} devuelve una evidencia concreta del aula,
+ * en cualquier estado, con la transcripción y el puntaje de la IA.</p>
  */
 @Service
 public class EvidenciaService {
@@ -53,6 +57,40 @@ public class EvidenciaService {
         return evidencias.stream()
                 .map(this::respuesta)
                 .toList();
+    }
+
+    // T-371 (US-32): detalle de una evidencia del aula, en cualquier estado
+    @Transactional(readOnly = true)
+    public EvidenciaDetalleResponse detalle(Long docenteId, Long aulaId, Long evidenciaId) {
+        buscarAulaDelDocente(docenteId, aulaId);
+        Evidencia evidencia = evidenciaRepository
+                .findByIdAndEstudianteAulaId(evidenciaId, aulaId)
+                .orElseThrow(() -> new ReglaNegocioException(
+                        "La evidencia no existe en esta aula", HttpStatus.NOT_FOUND));
+        return detalleRespuesta(evidencia);
+    }
+
+    private EvidenciaDetalleResponse detalleRespuesta(Evidencia evidencia) {
+        Estudiante estudiante = evidencia.getEstudiante();
+        return new EvidenciaDetalleResponse(
+                evidencia.getId(),
+                estudiante.getId(),
+                estudiante.getNombres(),
+                estudiante.getApellidos(),
+                estudiante.getGrado().getId(),
+                estudiante.getGrado().getNombre(),
+                evidencia.getNivel().getOrden(),
+                evidencia.getNivel().getNombre(),
+                evidencia.getNivel().getTipoReto(),
+                evidencia.getTipo(),
+                evidencia.getAudioUrl(),
+                evidencia.getTexto(),
+                evidencia.getTranscripcion(),
+                evidencia.getPuntajeIa(),
+                evidencia.getResultadoIa(),
+                evidencia.getEstadoRevision(),
+                evidencia.getCreadoEn(),
+                evidencia.getRevisadoEn());
     }
 
     private EvidenciaPendienteResponse respuesta(Evidencia evidencia) {

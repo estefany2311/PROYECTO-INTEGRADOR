@@ -12,6 +12,7 @@ import javax.sql.DataSource;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * T-298 (US-31): prueba las consultas REALES de evidencias pendientes contra
@@ -91,5 +92,25 @@ class EvidenciaRepositoryTest {
         assertEquals(-5001L, audio.get(0).getId());
         assertEquals(1, texto.size());
         assertEquals(-5002L, texto.get(0).getId());
+    }
+
+    // T-371 (US-32): el detalle busca la evidencia por id y aula
+    @Test
+    void encuentraUnaEvidenciaDelAulaSinImportarSuEstado() {
+        Evidencia encontrada = evidenciaRepository
+                .findByIdAndEstudianteAulaId(-5003L, -2002L)
+                .orElseThrow();
+
+        assertEquals(-5003L, encontrada.getId());
+        assertEquals(Evidencia.APROBADA, encontrada.getEstadoRevision());
+        assertEquals("Minji", encontrada.getEstudiante().getNombres());
+        assertEquals("Nivel audio T-298", encontrada.getNivel().getNombre());
+    }
+
+    @Test
+    void noEncuentraUnaEvidenciaDeOtraAula() {
+        assertTrue(evidenciaRepository
+                .findByIdAndEstudianteAulaId(-5001L, -9999L)
+                .isEmpty());
     }
 }
