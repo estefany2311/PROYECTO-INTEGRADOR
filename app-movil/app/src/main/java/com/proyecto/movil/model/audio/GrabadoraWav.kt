@@ -16,7 +16,7 @@ import kotlin.math.abs
 // Resultado de una grabación terminada
 data class Grabacion(val archivo: File, val duracionMs: Long)
 
-// Interfaz: en las pruebas (T-318) se reemplaza por una grabadora falsa, sin micrófono
+// Interfaz:
 interface IGrabadora {
     val grabando: Boolean
 
@@ -52,7 +52,7 @@ class GrabadoraWav : IGrabadora {
     private var hilo: Thread? = null
     private var archivo: File? = null
 
-    // El permiso RECORD_AUDIO ya lo pidió ConPermisoMicrofono (T-313) antes de llegar aquí
+    // El permiso RECORD_AUDIO ya lo pidió ConPermisoMicrofono
     @SuppressLint("MissingPermission")
     override fun iniciar(archivo: File) {
         if (grabando) return
@@ -119,7 +119,7 @@ class GrabadoraWav : IGrabadora {
         return pico / 32_768f
     }
 
-    // Cabecera RIFF/WAVE estándar de 44 bytes, en little-endian
+    // Cabecera RIFF/WAVE estándar de 44 bytes
     private fun escribirCabecera(archivo: File, bytesDeAudio: Long) {
         val cabecera = ByteBuffer.allocate(TAMANO_CABECERA).order(ByteOrder.LITTLE_ENDIAN).apply {
             put("RIFF".toByteArray()); putInt((36 + bytesDeAudio).toInt()); put("WAVE".toByteArray())

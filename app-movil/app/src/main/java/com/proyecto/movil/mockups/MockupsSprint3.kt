@@ -46,7 +46,7 @@ private fun Cabecera(nivel: String, reto: String, color: Color) {
     }
 }
 
-// Botón grande de los mockups (no hace nada: es solo diseño)
+// Botón grande de los mockups
 @Composable
 private fun BotonGrande(texto: String, color: Color, modifier: Modifier = Modifier, alto: Dp = 72.dp, contorno: Boolean = false) {
     Box(
