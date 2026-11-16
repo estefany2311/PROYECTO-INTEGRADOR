@@ -1,6 +1,7 @@
 package com.proyecto.movil.view
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -16,10 +17,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * T-212 (US-05): lo que dibuja la pantalla del mapa en cada estado.
- * Se prueba ContenidoMapa directamente, sin ViewModel ni backend.
- */
 @RunWith(AndroidJUnit4::class)
 class PantallaMapaTest {
 
@@ -29,7 +26,7 @@ class PantallaMapaTest {
     private val tipos = listOf("lectura", "escritura", "oralidad")
     private val mapa = MapaRespuesta(
         estudianteId = 1, nombres = "Ana", apellidos = "Quispe",
-        totalNiveles = 6, completados = 1, puntos = 10,
+        totalNiveles = 6, completados = 1, puntos = 10, estrellas = 6,
         niveles = (1..6).map { n ->
             NivelMapa(n, n, "Nivel $n", tipos[(n - 1) % 3], null, if (n == 1) "completado" else "bloqueado")
         }
@@ -64,6 +61,30 @@ class PantallaMapaTest {
 
         composeRule.onNodeWithText("Completaste 1 de 6 niveles").assertIsDisplayed()
         composeRule.onNodeWithText("10 puntos").assertIsDisplayed()
+    }
+
+    // T-304 (US-09): la cabecera muestra estrellas y puntos por separado
+    @Test
+    fun laCabeceraMuestraEstrellasYPuntos() {
+        mostrar(MapaUiState.Exito(mapa))
+
+        composeRule.onNodeWithTag("contador_estrellas").assertTextEquals("6 estrellas")
+        composeRule.onNodeWithTag("contador_puntos").assertTextEquals("10 puntos")
+    }
+
+    @Test
+    fun conUnaSolaEstrellaSeEscribeEnSingular() {
+        mostrar(MapaUiState.Exito(mapa.copy(estrellas = 1, puntos = 1)))
+
+        composeRule.onNodeWithTag("contador_estrellas").assertTextEquals("1 estrella")
+        composeRule.onNodeWithTag("contador_puntos").assertTextEquals("1 punto")
+    }
+
+    @Test
+    fun alumnoSinEstrellasTodaviaVeCero() {
+        mostrar(MapaUiState.Exito(mapa.copy(estrellas = 0)))
+
+        composeRule.onNodeWithTag("contador_estrellas").assertTextEquals("0 estrellas")
     }
 
     // Los 6 niveles están en el recorrido (los de abajo se ven al deslizar)

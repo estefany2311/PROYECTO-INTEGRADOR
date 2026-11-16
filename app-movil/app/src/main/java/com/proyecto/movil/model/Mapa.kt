@@ -51,5 +51,7 @@ data class MapaRespuesta(
     val totalNiveles: Int,
     val completados: Int,
     val puntos: Int,
-    val niveles: List<NivelMapa>
+    val niveles: List<NivelMapa>,
+    // T-304 (US-09, backend de Noemí): estrellas acumuladas; 0 si el campo no llega
+    val estrellas: Int = 0
 )

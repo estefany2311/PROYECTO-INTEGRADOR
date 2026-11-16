@@ -303,7 +303,7 @@ fun RecorridoNiveles(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Column(Modifier.widthIn(max = ANCHO_MAXIMO_MAPA).fillMaxWidth()) {
-                ResumenAvance(mapa.completados, mapa.totalNiveles, mapa.puntos)
+                ResumenAvance(mapa.completados, mapa.totalNiveles, mapa.puntos, mapa.estrellas)
                 Spacer(Modifier.height(24.dp))
                 CaminoDeNiveles(mapa.niveles.sortedBy { it.orden }, medidas, onNivelTocado, recienDesbloqueados, onAnimacionTerminada)
             }
@@ -371,7 +371,7 @@ private fun CaminoDeNiveles(
 }
 
 @Composable
-private fun ResumenAvance(completados: Int, total: Int, puntos: Int) {
+private fun ResumenAvance(completados: Int, total: Int, puntos: Int, estrellas: Int) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -394,6 +394,7 @@ private fun ResumenAvance(completados: Int, total: Int, puntos: Int) {
             modifier = Modifier.fillMaxWidth().height(14.dp).clip(RoundedCornerShape(7.dp))
         )
         Spacer(Modifier.height(8.dp))
+        // T-304 (US-09): estrellas y puntos acumulados, cada uno con su ícono
         Row(verticalAlignment = Alignment.CenterVertically) {
             // T-211: estrella en vector (Color.Unspecified conserva su naranja)
             Icon(
@@ -403,7 +404,28 @@ private fun ResumenAvance(completados: Int, total: Int, puntos: Int) {
                 modifier = Modifier.size(26.dp)
             )
             Spacer(Modifier.width(6.dp))
-            Text("$puntos puntos", fontSize = 20.sp, color = ColoresAventura.TextoOscuro)
+            Text(
+                if (estrellas == 1) "1 estrella" else "$estrellas estrellas",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = ColoresAventura.TextoOscuro,
+                modifier = Modifier.testTag("contador_estrellas")
+            )
+            Spacer(Modifier.width(24.dp))
+            Icon(
+                painterResource(R.drawable.ic_puntos),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(26.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                if (puntos == 1) "1 punto" else "$puntos puntos",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = ColoresAventura.TextoOscuro,
+                modifier = Modifier.testTag("contador_puntos")
+            )
         }
     }
 }
