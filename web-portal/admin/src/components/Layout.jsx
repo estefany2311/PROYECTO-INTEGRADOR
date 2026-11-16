@@ -24,6 +24,19 @@ const SECCIONES = [
     titulo: "Contenido",
         enlaces: [{ id: "catalogo", icono: "bi-journal-richtext", texto: "Catálogo", disponible: true }],
   },
+
+    {
+    titulo: "Configuración IA",
+        enlaces: [
+      { id: "configuracion", icono: "bi-mic", texto: "Evaluación de voz", disponible: true },
+      { id: "ortografia", modulo: "configuracion", icono: "bi-spellcheck", texto: "Ortografía", disponible: true },
+      { id: "puntuacion", modulo: "configuracion", icono: "bi-star", texto: "Puntos y estrellas", disponible: true },
+    ],
+  },
+  {
+    titulo: "Análisis",
+    enlaces: [{ id: "reportes", icono: "bi-bar-chart", texto: "Reportes", disponible: true }],
+  },
 ];
 
 const iniciales = (texto) =>
@@ -34,11 +47,19 @@ const iniciales = (texto) =>
     .map((parte) => parte[0].toUpperCase())
     .join("") || "AD";
 
+// Primera palabra del usuario para el saludo: "daniela.vila" → "Daniela"
+const primerNombre = (texto) => {
+  const nombre = (texto || "Administrador").split(/[\s._@-]+/)[0];
+  return nombre.charAt(0).toUpperCase() + nombre.slice(1);
+};
+
 export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, usuario, permisos = [], rol, children }) {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
     // Un enlace disponible solo se muestra si el rol tiene el permiso "<modulo>.ver"
-  const puedeVer = (enlace) => !enlace.disponible || enlace.libre || permisos.includes(`${enlace.id}.ver`);
+    // "modulo" permite que una pestaña use el permiso de otro módulo (ej. Ortografía → configuracion.ver)
+  const puedeVer = (enlace) =>
+    !enlace.disponible || enlace.libre || permisos.includes(`${enlace.modulo ?? enlace.id}.ver`);
 
   const navegar = (id) => {
     onNavegar(id);
@@ -54,10 +75,13 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
     <div className="app-layout">
       <aside className={`sidebar${menuAbierto ? " open" : ""}`}>
         <div className="brand">
-          <div className="brand-logo koala-logo">
-            <Koala size={30} />
+          <div className="brand-logo">
+            <Koala size={52} />
           </div>
-          Plataforma Educativa
+          <div className="brand-texto">
+            <span className="brand-nombre">Yalliq</span>
+            <span className="brand-sub">Panel de administración</span>
+          </div>
         </div>
 
         <nav className="flex-grow-1 overflow-auto">
@@ -74,7 +98,6 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
                   >
                     <i className={`bi ${enlace.icono}`}></i>
                     {enlace.texto}
-                    {enlace.etiqueta && <span className="tag">{enlace.etiqueta}</span>}
                   </button>
                 ) : (
                   <span key={enlace.id} className="side-link disabled" aria-disabled="true">
@@ -87,11 +110,28 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
             </div>
           ))}
         </nav>
+
+        <div className="perfil">
+          <div className="perfil-foto">{iniciales(usuario)}</div>
+          <div className="perfil-datos">
+            <span className="perfil-nombre">{usuario || "Administrador"}</span>
+            <span className="perfil-rol">{rol || "Sin rol"}</span>
+          </div>
+          <button
+            type="button"
+            className="perfil-salir"
+            onClick={onCerrarSesion}
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+          >
+            <i className="bi bi-box-arrow-right"></i>
+          </button>
+        </div>
       </aside>
 
       {menuAbierto && <div className="sidebar-backdrop d-lg-none" onClick={() => setMenuAbierto(false)}></div>}
 
-      <div className="main">
+        <div className={`main pagina-${pagina}`}>
         <header className="topbar">
           <button
             type="button"
@@ -112,19 +152,10 @@ export default function Layout({ pagina, onNavegar, onBuscar, onCerrarSesion, us
             />
           </form>
 
-          <div className="ms-auto d-flex align-items-center gap-3">
-            <div className="d-flex align-items-center gap-2">
-              <div className="avatar">{iniciales(usuario)}</div>
-              <div className="lh-sm d-none d-sm-block">
-                <div className="fw-semibold">{usuario || "Administrador"}</div>
-                  <div className="note">{rol || "Sin rol"}</div>
-              </div>
-            </div>
-            <button type="button" className="btn btn-sm btn-outline-danger" onClick={onCerrarSesion}>
-              <i className="bi bi-box-arrow-right me-1"></i>
-              <span className="d-none d-sm-inline">Cerrar sesión</span>
-            </button>
-          </div>
+          {/* En Inicio ya hay un saludo grande, así que aquí no se repite */}
+          {pagina !== "dashboard" && (
+            <div className="ms-auto saludo d-none d-sm-block">Hola, {primerNombre(usuario)}</div>
+          )}
         </header>
 
         <main className="content">{children}</main>

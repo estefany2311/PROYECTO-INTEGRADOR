@@ -85,5 +85,59 @@ export const listarLecturas = (params = {}) => {
 export const crearLectura = (datos) =>
   pedir("/lecturas/", { method: "POST", body: JSON.stringify(datos) });
 
+
+export const eliminarLectura = (id) =>
+  pedir(`/lecturas/${id}/`, { method: "DELETE" });
+
+
+export const actualizarLectura = (id, datos) =>
+  pedir(`/lecturas/${id}/`, { method: "PATCH", body: JSON.stringify(datos) });
+
 export const cambiarEstadoUsuario = (id, isActive) =>
   pedir(`/usuarios/${id}/estado/`, { method: "PATCH", body: JSON.stringify({ is_active: isActive }) });
+
+
+export const listarConfiguracionEvaluacion = () => pedir("/configuracion/evaluacion/");
+
+export const actualizarConfiguracionEvaluacion = (grado, datos) =>
+  pedir(`/configuracion/evaluacion/${grado}/`, { method: "PATCH", body: JSON.stringify(datos) });
+
+
+
+export const listarConfiguracionOrtografia = () => pedir("/configuracion/ortografia/");
+
+export const actualizarConfiguracionOrtografia = (grado, datos) =>
+  pedir(`/configuracion/ortografia/${grado}/`, { method: "PATCH", body: JSON.stringify(datos) });
+
+export const listarPalabrasPermitidas = () => pedir("/configuracion/palabras/");
+
+export const agregarPalabraPermitida = (palabra) =>
+  pedir("/configuracion/palabras/", { method: "POST", body: JSON.stringify({ palabra }) });
+
+export const quitarPalabraPermitida = (id) =>
+  pedir(`/configuracion/palabras/${id}/`, { method: "DELETE" });
+
+
+export const listarReglasPuntuacion = () => pedir("/configuracion/reglas/");
+
+export const actualizarReglaPuntuacion = (tipoReto, datos) =>
+pedir(`/configuracion/reglas/${tipoReto}/`, { method: "PATCH", body: JSON.stringify(datos) });
+
+
+// US-47 · Reportes consolidados (T-267 y T-268)
+export const obtenerReporteColegios = (colegio = "") =>
+  pedir(`/reportes/colegios/${colegio ? `?${new URLSearchParams({ colegio })}` : ""}`);
+
+export const obtenerReporteAulas = (colegioId) => pedir(`/reportes/colegios/${colegioId}/aulas/`);
+
+
+// US-39 · Libros oficiales de la Biblioteca Escolar Digital (T-443)
+export const listarRecursosOficiales = () => pedir("/recursos-oficiales/");
+
+export const textoDeRecurso = (id, desde, hasta) =>
+  pedir(`/recursos-oficiales/${id}/texto/?${new URLSearchParams({ desde, hasta })}`);
+
+export const importarLectura = (id, datos) =>
+  pedir(`/recursos-oficiales/${id}/importar/`, { method: "POST", body: JSON.stringify(datos) });
+
+export const sincronizarRecursos = () => pedir("/recursos-oficiales/sincronizar/", { method: "POST" });

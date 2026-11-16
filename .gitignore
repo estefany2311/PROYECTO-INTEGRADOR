@@ -4,6 +4,7 @@ backend/admin/*.pyc
 backend/admin/venv/
 backend/admin/.env
 backend/admin/db.sqlite3
+backend/admin/cache_pdf/
 
 # Java / Spring Boot
 backend/usuario/target/

@@ -1,157 +1,19 @@
 import { useEffect, useState } from "react";
-import { crearLectura, listarLecturas } from "../api";
+import { listarLecturas, listarRecursosOficiales, sincronizarRecursos } from "../api";
+import LibrosOficiales from "../components/LibrosOficiales";
+import ModalEliminar from "../components/ModalEliminar";
+import ModalImportar from "../components/ModalImportar";
+import ModalLectura from "../components/ModalLectura";
+import { DIFICULTADES, GRADOS, TIPOS_RETO, dificultadDe, tipoDe } from "../utils/catalogo";
 
-const TIPOS_RETO = [
-  { valor: "lectura", texto: "Lectura", icono: "bi-book" },
-  { valor: "escritura", texto: "Escritura", icono: "bi-pencil-square" },
-  { valor: "oralidad", texto: "Oralidad", icono: "bi-mic" },
+const sinFiltros = { search: "", tipo_reto: "", grado: "", dificultad: "", activo: "" };
+
+// T-245: filtro por estado ("" = todas, "true" = activas, "false" = desactivadas)
+const ESTADOS = [
+  { valor: "", texto: "Todas" },
+  { valor: "true", texto: "Activas" },
+  { valor: "false", texto: "Desactivadas" },
 ];
-
-const DIFICULTADES = [
-  { valor: "basica", texto: "Básica", clase: "bs-ok" },
-  { valor: "intermedia", texto: "Intermedia", clase: "bs-warn" },
-  { valor: "avanzada", texto: "Avanzada", clase: "bs-off" },
-];
-
-const GRADOS = [1, 2, 3, 4, 5, 6];
-
-const vacio = { titulo: "", tipo_reto: "lectura", grado: "1", dificultad: "basica", texto: "" };
-
-const tipoDe = (valor) => TIPOS_RETO.find((t) => t.valor === valor) ?? { texto: valor, icono: "bi-journal" };
-const dificultadDe = (valor) => DIFICULTADES.find((d) => d.valor === valor) ?? { texto: valor, clase: "bs-info" };
-
-// Convierte los errores 400 de DRF en { campo: "mensaje" }
-const erroresDeServidor = (datos) => {
-  const errores = {};
-  for (const [campo, msgs] of Object.entries(datos ?? {})) {
-    errores[campo] = Array.isArray(msgs) ? msgs.join(" ") : String(msgs);
-  }
-  return errores;
-};
-
-function Modal({ titulo, onCerrar, children, pie }) {
-  useEffect(() => {
-    const alPresionar = (e) => e.key === "Escape" && onCerrar();
-    document.addEventListener("keydown", alPresionar);
-    return () => document.removeEventListener("keydown", alPresionar);
-  }, [onCerrar]);
-
-  return (
-    <>
-      <div className="modal d-block" tabIndex="-1" role="dialog" aria-modal="true" onClick={onCerrar}>
-        <div className="modal-dialog modal-dialog-centered modal-lg" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title fw-semibold">{titulo}</h5>
-              <button type="button" className="btn-close" aria-label="Cerrar" onClick={onCerrar}></button>
-            </div>
-            {children}
-            <div className="modal-footer">{pie}</div>
-          </div>
-        </div>
-      </div>
-      <div className="modal-backdrop show"></div>
-    </>
-  );
-}
-
-function ModalLectura({ onCerrar, onGuardado, onNoAutorizado }) {
-  const [datos, setDatos] = useState(vacio);
-  const [errores, setErrores] = useState({});
-  const [enviando, setEnviando] = useState(false);
-
-  const cambiar = (e) => setDatos({ ...datos, [e.target.name]: e.target.value });
-
-  // Validación en el navegador (el backend vuelve a validar todo)
-  const validar = () => {
-    const e = {};
-    if (!datos.titulo.trim()) e.titulo = "El título es obligatorio.";
-    if (datos.texto.trim().length < 20) e.texto = "El texto de la lectura debe tener al menos 20 caracteres.";
-    return e;
-  };
-
-  const guardar = async (ev) => {
-    ev.preventDefault();
-    const e = validar();
-    setErrores(e);
-    if (Object.keys(e).length > 0) return;
-
-    setEnviando(true);
-    try {
-      const guardada = await crearLectura({ ...datos, grado: Number(datos.grado) });
-      onGuardado(guardada, "Lectura registrada correctamente.");
-    } catch (err) {
-      if (err.estado === 401) onNoAutorizado();
-      else if (err.estado === 400) setErrores(erroresDeServidor(err.datos));
-      else setErrores({ general: err.datos?.detail ?? err.mensaje ?? "Ocurrió un error inesperado." });
-    } finally {
-      setEnviando(false);
-    }
-  };
-
-  const clase = (campo, base = "form-control") => `${base}${errores[campo] ? " is-invalid" : ""}`;
-  const feedback = (campo) => errores[campo] && <div className="invalid-feedback">{errores[campo]}</div>;
-
-  return (
-    <Modal
-      titulo="Nueva lectura"
-      onCerrar={onCerrar}
-      pie={
-        <>
-          <button type="button" className="btn btn-light" onClick={onCerrar}>Cancelar</button>
-          <button type="submit" form="form-lectura" className="btn btn-primary" disabled={enviando}>
-            {enviando ? "Guardando..." : "Guardar lectura"}
-          </button>
-        </>
-      }
-    >
-      <form id="form-lectura" className="modal-body row g-3" onSubmit={guardar} noValidate>
-        {(errores.general || errores.non_field_errors) && (
-          <div className="col-12">
-            <div className="alert alert-danger py-2 small mb-0">{errores.general || errores.non_field_errors}</div>
-          </div>
-        )}
-        <div className="col-md-8">
-          <label className="form-label" htmlFor="titulo">Título *</label>
-          <input id="titulo" name="titulo" className={clase("titulo")} placeholder="El cóndor y el zorro"
-            maxLength={150} value={datos.titulo} onChange={cambiar} />
-          {feedback("titulo")}
-        </div>
-        <div className="col-md-4">
-          <label className="form-label" htmlFor="tipo_reto">Tipo de reto *</label>
-          <select id="tipo_reto" name="tipo_reto" className={clase("tipo_reto", "form-select")} value={datos.tipo_reto} onChange={cambiar}>
-            {TIPOS_RETO.map((t) => <option key={t.valor} value={t.valor}>{t.texto}</option>)}
-          </select>
-          {feedback("tipo_reto")}
-        </div>
-        <div className="col-md-6">
-          <label className="form-label" htmlFor="grado">Grado *</label>
-          <select id="grado" name="grado" className={clase("grado", "form-select")} value={datos.grado} onChange={cambiar}>
-            {GRADOS.map((g) => <option key={g} value={g}>{g}.° grado</option>)}
-          </select>
-          {feedback("grado")}
-        </div>
-        <div className="col-md-6">
-          <label className="form-label" htmlFor="dificultad">Dificultad *</label>
-          <select id="dificultad" name="dificultad" className={clase("dificultad", "form-select")} value={datos.dificultad} onChange={cambiar}>
-            {DIFICULTADES.map((d) => <option key={d.valor} value={d.valor}>{d.texto}</option>)}
-          </select>
-          {feedback("dificultad")}
-        </div>
-        <div className="col-12">
-          <label className="form-label" htmlFor="texto">Texto de la lectura *</label>
-          <textarea id="texto" name="texto" rows={6} className={clase("texto")}
-            placeholder="Había una vez un cóndor que vivía en lo alto de la montaña…"
-            value={datos.texto} onChange={cambiar}></textarea>
-          {feedback("texto")}
-          <div className="form-text">{datos.texto.trim().length} caracteres (mínimo 20).</div>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-const sinFiltros = { search: "", tipo_reto: "", grado: "", dificultad: "" };
 
 export default function Catalogo({ onNoAutorizado, puede = () => true }) {
   const [lecturas, setLecturas] = useState([]);
@@ -161,6 +23,13 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
   const [exito, setExito] = useState("");
   const [recarga, setRecarga] = useState(0);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [porEliminar, setPorEliminar] = useState(null);
+  const [porEditar, setPorEditar] = useState(null);
+  const [recursos, setRecursos] = useState([]);
+  const [cargandoRecursos, setCargandoRecursos] = useState(true);
+  const [recargaRecursos, setRecargaRecursos] = useState(0);
+  const [porImportar, setPorImportar] = useState(null);
+  const [actualizando, setActualizando] = useState(false);
 
   const hayFiltros = Object.values(filtros).some((v) => v);
 
@@ -192,6 +61,21 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtros, recarga]);
 
+  // T-444: libros oficiales (se vuelven a pedir al actualizar el catálogo o al importar)
+  useEffect(() => {
+    let activo = true;
+    listarRecursosOficiales()
+      .then((datos) => activo && setRecursos(Array.isArray(datos) ? datos : datos.results ?? []))
+      .catch((err) => {
+        if (activo && err.estado === 401) onNoAutorizado();
+      })
+      .finally(() => activo && setCargandoRecursos(false));
+    return () => {
+      activo = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recargaRecursos]);
+
   useEffect(() => {
     if (!exito) return;
     const t = setTimeout(() => setExito(""), 4000);
@@ -202,6 +86,38 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
 
   const alGuardar = (_lectura, mensaje) => {
     setModalAbierto(false);
+    setPorEditar(null);
+    setExito(mensaje);
+    setRecarga((n) => n + 1);
+  };
+
+  
+  // T-444: "Actualizar catálogo" vuelve a leer la Biblioteca Escolar Digital
+  const actualizarCatalogo = async () => {
+    setActualizando(true);
+    setError("");
+    try {
+      const r = await sincronizarRecursos();
+      setExito(`Catálogo actualizado. ${r.resultado}`);
+      setCargandoRecursos(true);
+      setRecargaRecursos((n) => n + 1);
+    } catch (err) {
+      if (err.estado === 401) onNoAutorizado();
+      else setError(err.datos?.detail ?? err.mensaje ?? "No se pudo actualizar el catálogo.");
+    } finally {
+      setActualizando(false);
+    }
+  };
+
+  const alImportar = (mensaje) => {
+    setPorImportar(null);
+    setExito(mensaje);
+    setRecarga((n) => n + 1);
+    setRecargaRecursos((n) => n + 1);
+  };
+
+  const alEliminar = (mensaje) => {
+    setPorEliminar(null);
     setExito(mensaje);
     setRecarga((n) => n + 1);
   };
@@ -213,11 +129,22 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
           <h1>Catálogo de lecturas</h1>
           <div className="breadcrumb text-secondary">Contenido / Catálogo</div>
         </div>
-        {puede("catalogo.crear") && (
-          <button type="button" className="btn btn-primary" onClick={() => setModalAbierto(true)}>
-            <i className="bi bi-plus-lg me-1"></i>Nueva lectura
-          </button>
-        )}
+        <div className="d-flex flex-wrap gap-2">
+          {puede("catalogo.crear") && (
+            <button type="button" className="btn btn-light" onClick={() => setModalAbierto(true)}>
+              <i className="bi bi-plus-lg me-1"></i>Agregar manual
+            </button>
+          )}
+          {puede("catalogo.editar") && (
+            <button type="button" className="btn btn-primary" onClick={actualizarCatalogo} disabled={actualizando}>
+              {actualizando ? (
+                <><span className="spinner-border spinner-border-sm me-2"></span>Actualizando…</>
+              ) : (
+                <><i className="bi bi-arrow-repeat me-1"></i>Actualizar catálogo</>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {exito && (
@@ -226,25 +153,44 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
         </div>
       )}
 
+      <LibrosOficiales
+        recursos={recursos}
+        cargando={cargandoRecursos}
+        puedeImportar={puede("catalogo.crear")}
+        onImportar={setPorImportar}
+      />
+
       <div className="card">
         <div className="card-header d-flex flex-wrap gap-2 align-items-center">
           <input name="search" className="form-control" style={{ maxWidth: 240 }} placeholder="Buscar por título"
             aria-label="Buscar por título" value={filtros.search} onChange={cambiarFiltro} />
-          <select name="tipo_reto" className="form-select" style={{ maxWidth: 170 }} aria-label="Tipo de reto"
+          <select name="tipo_reto" className="form-select" style={{ maxWidth: 200 }} aria-label="Tipo de reto"
             value={filtros.tipo_reto} onChange={cambiarFiltro}>
             <option value="">Todo tipo de reto</option>
             {TIPOS_RETO.map((t) => <option key={t.valor} value={t.valor}>{t.texto}</option>)}
           </select>
-          <select name="grado" className="form-select" style={{ maxWidth: 150 }} aria-label="Grado"
+          <select name="grado" className="form-select" style={{ maxWidth: 185 }} aria-label="Grado"
             value={filtros.grado} onChange={cambiarFiltro}>
             <option value="">Todos los grados</option>
             {GRADOS.map((g) => <option key={g} value={g}>{g}.° grado</option>)}
           </select>
-          <select name="dificultad" className="form-select" style={{ maxWidth: 160 }} aria-label="Dificultad"
+        <select name="dificultad" className="form-select" style={{ maxWidth: 185 }} aria-label="Dificultad"
             value={filtros.dificultad} onChange={cambiarFiltro}>
             <option value="">Toda dificultad</option>
             {DIFICULTADES.map((d) => <option key={d.valor} value={d.valor}>{d.texto}</option>)}
           </select>
+            <div className="filtro-estado" role="group" aria-label="Estado">
+            {ESTADOS.map((e) => (
+              <button
+                key={e.valor || "todas"}
+                type="button"
+                className={filtros.activo === e.valor ? "activo" : ""}
+                onClick={() => setFiltros({ ...filtros, activo: e.valor })}
+              >
+                {e.texto}
+              </button>
+            ))}
+          </div>
           {hayFiltros && (
             <button type="button" className="btn btn-sm btn-light" onClick={() => setFiltros(sinFiltros)}>
               <i className="bi bi-x-lg me-1"></i>Limpiar filtros
@@ -273,8 +219,10 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
                   <th>Tipo de reto</th>
                   <th>Grado</th>
                   <th>Dificultad</th>
+                  <th>Fuente</th>
                   <th>Estado</th>
                   <th>Registrada por</th>
+                  <th className="text-end">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -288,9 +236,34 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
                       <td>{l.grado}.°</td>
                       <td><span className={`badge-soft ${dificultad.clase}`}>{dificultad.texto}</span></td>
                       <td>
+                        {l.fuente === "oficial" ? (
+                          l.url_recurso ? (
+                            <a href={l.url_recurso} target="_blank" rel="noreferrer" className="badge-soft bs-p text-decoration-none"
+                              title="Ver el recurso oficial">Oficial <i className="bi bi-box-arrow-up-right"></i></a>
+                          ) : (
+                            <span className="badge-soft bs-p">Oficial</span>
+                          )
+                        ) : (
+                          <span className="badge-soft bs-info">Manual</span>
+                        )}
+                      </td>
+                      <td>
                         <span className={`badge-soft ${l.activo ? "bs-ok" : "bs-off"}`}>{l.activo ? "Activa" : "Inactiva"}</span>
                       </td>
                       <td className="note">{l.creado_por ?? "—"}</td>
+                      <td className="text-end text-nowrap">
+                          {l.asignada && <span className="badge-soft bs-info me-2" title="Asignada a alumnos">Asignada</span>}
+                            {puede("catalogo.editar") && (
+                            <button type="button" className="icon-btn me-1" title="Editar" onClick={() => setPorEditar(l)}>
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                          )}
+                          {puede("catalogo.desactivar") && l.activo && (
+                            <button type="button" className="icon-btn" title="Eliminar" onClick={() => setPorEliminar(l)}>
+                              <i className="bi bi-trash3"></i>
+                            </button>
+                          )}
+                        </td>
                     </tr>
                   );
                 })}
@@ -300,9 +273,28 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
         )}
       </div>
 
-      {modalAbierto && (
+      {porEliminar && (
+        <ModalEliminar
+          lectura={porEliminar}
+          onCerrar={() => setPorEliminar(null)}
+          onEliminada={alEliminar}
+          onNoAutorizado={onNoAutorizado}
+        />
+      )}
+
+        {porImportar && (
+        <ModalImportar
+          recurso={porImportar}
+          onCerrar={() => setPorImportar(null)}
+          onImportada={alImportar}
+          onNoAutorizado={onNoAutorizado}
+        />
+      )}
+
+        {(modalAbierto || porEditar) && (
         <ModalLectura
-          onCerrar={() => setModalAbierto(false)}
+          lectura={porEditar}
+          onCerrar={() => { setModalAbierto(false); setPorEditar(null); }}
           onGuardado={alGuardar}
           onNoAutorizado={onNoAutorizado}
         />
