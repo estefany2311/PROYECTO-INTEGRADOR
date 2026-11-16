@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion,
-                PalabraPermitida, ReglaPuntuacion)
+                PalabraPermitida, ReglaDesbloqueo, ReglaPuntuacion)
 
 @admin.register(ConfiguracionEvaluacion)
 class ConfiguracionEvaluacionAdmin(admin.ModelAdmin):
@@ -28,7 +28,12 @@ class PalabraPermitidaAdmin(admin.ModelAdmin):
     search_fields = ('palabra',)
 
 
-
 @admin.register(ReglaPuntuacion)
 class ReglaPuntuacionAdmin(admin.ModelAdmin):
     list_display = ('tipo_reto', 'puntos', 'umbral_1_estrella', 'umbral_2_estrellas', 'umbral_3_estrellas')
+
+
+
+@admin.register(ReglaDesbloqueo)
+class ReglaDesbloqueoAdmin(admin.ModelAdmin):
+    list_display = ('nivel_id', 'estrellas_minimas', 'puntaje_minimo', 'actualizado_por', 'actualizado_en')

@@ -3,7 +3,7 @@ from decimal import Decimal
 from rest_framework import serializers
 
 from .models import (ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion,
-PalabraPermitida, ReglaPuntuacion)
+PalabraPermitida, ReglaDesbloqueo, ReglaPuntuacion)
 
 # Límites permitidos (los mismos del modelo y de la pantalla)
 PRECISION = (0, 100)
@@ -138,3 +138,15 @@ class ReglaPuntuacionSerializer(serializers.ModelSerializer):
         if errores:
             raise serializers.ValidationError(errores)
         return attrs
+
+
+
+class ReglaDesbloqueoSerializer(serializers.ModelSerializer):
+    """US-54: lo que el admin puede cambiar de la regla de un nivel."""
+
+    estrellas_minimas = serializers.IntegerField(min_value=0, max_value=3, error_messages=mensajes(0, 3, 'estrellas'))
+    puntaje_minimo = serializers.IntegerField(min_value=0, max_value=100, error_messages=mensajes(0, 100, 'puntos'))
+
+    class Meta:
+        model = ReglaDesbloqueo
+        fields = ['estrellas_minimas', 'puntaje_minimo']
