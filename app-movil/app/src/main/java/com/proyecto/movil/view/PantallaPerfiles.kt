@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,7 +29,7 @@ fun PantallaPerfiles(
     onPerfilElegido: (Perfil) -> Unit,
     viewModel: PerfilViewModel = viewModel()
 ) {
-    val estado by viewModel.uiState.collectAsState()
+    val estado by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(codigoAula) {
         viewModel.cargarPerfiles(codigoAula)

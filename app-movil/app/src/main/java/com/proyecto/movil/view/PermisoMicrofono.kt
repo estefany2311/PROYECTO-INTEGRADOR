@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
+import com.proyecto.movil.view.componentes.Koala
 
 enum class EstadoPermiso {
     SIN_PEDIR,          // todavía no se pidió

@@ -17,7 +17,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -52,6 +52,9 @@ import com.proyecto.movil.viewmodel.ConsignaUiState
 import com.proyecto.movil.viewmodel.ConsignaViewModel
 import com.proyecto.movil.viewmodel.EditorViewModel
 import com.proyecto.movil.viewmodel.EstadoGuardado
+import com.proyecto.movil.view.componentes.SubrayarErrores
+import com.proyecto.movil.view.componentes.CabeceraEscritura
+import com.proyecto.movil.view.componentes.ErrorConsigna
 
 //T-323 (US-18): el niño escribe su texto con letra grande. Se abre con "Empezar a escribir" (T-321)
  //Teclado en español y SIN autocorrector: lo que se evalúa es cómo escribe el niño, así que la tablet
@@ -65,11 +68,11 @@ fun PantallaEditor(
     consignaViewModel: ConsignaViewModel = viewModel(),
     editorViewModel: EditorViewModel = viewModel()
 ) {
-    val consigna by consignaViewModel.uiState.collectAsState()
-    val texto by editorViewModel.texto.collectAsState()
-    val guardado by editorViewModel.guardado.collectAsState()
-    val errores by editorViewModel.errores.collectAsState()
-    val sinRevisar by editorViewModel.sinRevisar.collectAsState()
+    val consigna by consignaViewModel.uiState.collectAsStateWithLifecycle()
+    val texto by editorViewModel.texto.collectAsStateWithLifecycle()
+    val guardado by editorViewModel.guardado.collectAsStateWithLifecycle()
+    val errores by editorViewModel.errores.collectAsStateWithLifecycle()
+    val sinRevisar by editorViewModel.sinRevisar.collectAsStateWithLifecycle()
 
     LaunchedEffect(nivelId) {
         consignaViewModel.cargar(nivelId)

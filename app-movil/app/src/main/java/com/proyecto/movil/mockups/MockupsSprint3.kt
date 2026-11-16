@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
-import com.proyecto.movil.view.Koala
+import com.proyecto.movil.view.componentes.Koala
 
 private val Fondo = ColoresAventura.Cielo
 private val Texto = ColoresAventura.TextoOscuro

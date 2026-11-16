@@ -1,4 +1,4 @@
-package com.proyecto.movil.view
+package com.proyecto.movil.view.componentes
 
 import androidx.annotation.DrawableRes
 import androidx.compose.ui.graphics.Color
