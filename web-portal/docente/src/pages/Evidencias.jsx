@@ -361,13 +361,22 @@ function TarjetaEvidencia({ evidencia, aulaId }) {
             <i className="bi bi-clock" aria-hidden="true" />
             {formatearFecha(evidencia.creadoEn)}
           </span>
-          <Link
-            className="evidencia-detalle"
-            to={`/dashboard/aulas/${aulaId}/estudiantes/${evidencia.estudianteId}`}
-          >
-            Ver detalle del alumno
-            <i className="bi bi-arrow-right" aria-hidden="true" />
-          </Link>
+          <div className="evidencia-enlaces">
+            <Link
+              className="evidencia-revisar"
+              to={`/evidencias/${aulaId}/${evidencia.id}`}
+            >
+              <i className="bi bi-clipboard-check" aria-hidden="true" />
+              Revisar evidencia
+            </Link>
+            <Link
+              className="evidencia-detalle"
+              to={`/dashboard/aulas/${aulaId}/estudiantes/${evidencia.estudianteId}`}
+            >
+              Ver detalle del alumno
+              <i className="bi bi-arrow-right" aria-hidden="true" />
+            </Link>
+          </div>
         </div>
       </article>
     </li>

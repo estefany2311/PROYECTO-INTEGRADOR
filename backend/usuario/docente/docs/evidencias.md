@@ -296,6 +296,24 @@ del docente y el navegador no lo envía en la reproducción de medios. Tampoco s
 todos los audios al abrir la lista: la descarga empieza con el clic. Si el backend responde
 `403` o `404`, la tarjeta muestra el mensaje y el botón cambia a **Reintentar audio**.
 
+### Detalle lado a lado en el portal (T-374)
+
+Cada tarjeta de la lista tiene el enlace **Revisar evidencia**, que abre la ruta
+`/evidencias/{aulaId}/{evidenciaId}` (`pages/DetalleEvidencia.jsx`). La pantalla consume
+el detalle de T-371 y muestra:
+
+| Columna | Contenido |
+|---|---|
+| **Texto original** | El `texto` que escribió el alumno, si la evidencia lo trae. |
+| **Audio original** | Si la evidencia es de audio, el reproductor seguro de T-373. |
+| **Transcripción de la IA** | Lo que la IA entendió del audio (`transcripcion`). |
+
+En una evidencia de texto sin transcripción se explica que la IA evaluó el texto
+directamente. Debajo, el panel **Evaluación de la IA** muestra el `puntajeIa` con su barra,
+el `resultadoIa` y las fechas de registro y revisión. El estado (`pendiente`, `aprobada` o
+`rechazada`) aparece en la cabecera y en el panel. En pantallas angostas las columnas se
+apilan.
+
 Errores:
 
 | Caso | Respuesta |
@@ -315,3 +333,4 @@ Errores:
 | `AudioEvidenciaServiceTest` | Audio del aula, evidencia de texto, evidencia de otra aula, aula inexistente, aula ajena y archivo que no está en la carpeta. |
 | `EvidenciaControllerTest` | Audio completo, `206` con `Content-Range`, `416`, formato de `Range` inválido, `400` de texto, `403`, `404` y header obligatorio. |
 | `ReproductorAudio.test.jsx` | No descarga hasta el clic, descarga con el header y reproduce desde un blob, error con reintento, liberación del blob y nombre genérico. |
+| `DetalleEvidencia.test.jsx` | Audio y transcripción lado a lado, texto sin transcripción, avisos sin transcripción/puntaje, error con reintento y estado rechazada. |

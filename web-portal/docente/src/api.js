@@ -60,6 +60,11 @@ export const descargarAudioEvidencia = async (aulaId, evidenciaId) => {
   return res.blob();
 };
 
+// T-374: detalle de una evidencia (endpoint de T-371). Trae el contenido del
+// alumno, la transcripción de la IA, el puntaje y el resultado.
+export const obtenerDetalleEvidencia = (aulaId, evidenciaId) =>
+  pedir(`/api/docente/aulas/${aulaId}/evidencias/${evidenciaId}`);
+
 export const listarEstudiantes = (aulaId) =>
   pedir(`/api/docente/aulas/${aulaId}/estudiantes`);
 export const crearEstudiante = (aulaId, datos) =>

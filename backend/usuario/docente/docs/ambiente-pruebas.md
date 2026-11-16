@@ -84,6 +84,9 @@ npm run preview -- --port 4173
 | Lista de evidencias en `/evidencias` (aula 9) | 6 pendientes · 3 audio y 3 texto · botón Escuchar audio y enlace al detalle del alumno |
 | Reproducir un audio en `/evidencias` | El botón descarga el audio con `X-Docente-Id` y aparece el reproductor con el audio |
 | Reproducir un audio de otro docente | 403 · mensaje y botón Reintentar audio |
+| Abrir `/evidencias/9/3` | Audio original + transcripción lado a lado, puntaje 85 y resultado de la IA |
+| Abrir `/evidencias/9/6` (texto) | Texto original y aviso de que la IA evaluó el texto directamente |
+| `/evidencias/9/999` | 404 · mensaje y botón Reintentar |
 | Filtro por tipo en `/evidencias` | Audio → 3 · Texto → 3 · sin resultados → aviso del filtro |
 | Build de producción con `npm run preview` | 200 |
 | CORS desde `http://localhost:5173` | 200 · `Access-Control-Allow-Origin` correcto · orígenes configurables con `APP_CORS_ORIGENES` |
@@ -116,7 +119,8 @@ npm run preview -- --port 4173
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
-| Frontend `Evidencias.test.jsx` | 13/13 · tarjetas, orden, conteo por tipo, filtro y vuelta a todos los tipos, aula activa, cambio de aula, Actualizar, sin aulas, vacío y error |
+| Frontend `Evidencias.test.jsx` | 13/13 · tarjetas, orden, conteo por tipo, filtro y vuelta a todos los tipos, aula activa, cambio de aula, Actualizar, sin aulas, vacío, error y enlace Revisar evidencia |
+| Frontend `DetalleEvidencia.test.jsx` | 6/6 · audio y transcripción lado a lado, texto sin transcripción, avisos sin transcripción/puntaje, error con reintento y estado rechazada |
 | Frontend `ReproductorAudio.test.jsx` | 5/5 · descarga al pulsar, header del docente, blob, error con reintento, liberación y nombre genérico |
 | Frontend `Catalogo.test.jsx` | 12/12 · lecturas, filtros, búsqueda, modal, asignación, etiqueta Oficial y enlace al recurso |
-| Frontend `test`, `lint`, `build` | 104/104 · OK · OK |
+| Frontend `test`, `lint`, `build` | 110/110 · OK · OK |

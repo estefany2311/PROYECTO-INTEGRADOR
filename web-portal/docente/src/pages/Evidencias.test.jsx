@@ -82,6 +82,9 @@ describe("Pantalla de evidencias pendientes (T-299)", () => {
     expect(
       within(audio).getByRole("link", { name: "Ver detalle del alumno" })
     ).toHaveAttribute("href", "/dashboard/aulas/10/estudiantes/1");
+    expect(
+      within(audio).getByRole("link", { name: "Revisar evidencia" })
+    ).toHaveAttribute("href", "/evidencias/10/30");
 
     const texto = await tarjetaDe("Breysi Zavala");
     expect(within(texto).getByText("Texto")).toBeInTheDocument();
