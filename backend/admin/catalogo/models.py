@@ -90,3 +90,52 @@ class RecursoOficial(models.Model):
     def __str__(self):
         grado = f'{self.grado}.° grado' if self.grado else 'sin grado'
         return f'{self.titulo} ({grado})'
+
+
+class RecursoLectura(models.Model):
+    """US-42: imagen o audio asociado a una lectura (ilustración, portada o narración).
+
+    El archivo se guarda en la carpeta media/ del backend (T-344); aquí queda su ruta.
+    """
+    TIPOS = [
+        ('imagen', 'Imagen'),
+        ('audio', 'Audio'),
+    ]
+
+    lectura = models.ForeignKey(
+        Lectura,
+        on_delete=models.CASCADE,          # si se borra la lectura, se borran sus recursos
+        related_name='recursos',
+    )
+    tipo = models.CharField(max_length=10, choices=TIPOS)
+    archivo = models.FileField(upload_to='recursos_lectura/%Y/%m/', max_length=255)
+    nombre_original = models.CharField(
+        max_length=255,
+        help_text='Nombre del archivo tal como lo subió el admin (p. ej. zorro-andino.png).',
+    )
+    tamano = models.PositiveIntegerField(help_text='Tamaño del archivo en bytes.')
+    descripcion = models.CharField(
+        max_length=120,
+        blank=True,
+        default='',
+        db_default='',
+        help_text='Para qué sirve: portada, ilustración, narración...',
+    )
+    subido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='recursos_subidos',
+    )
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # Nombre claro para que la app del estudiante (Spring Boot) la pueda leer
+        db_table = 'recursos_lectura'
+        ordering = ['lectura', 'creado_en']
+        verbose_name = 'Recurso de lectura'
+        verbose_name_plural = 'Recursos de lectura'
+
+    def __str__(self):
+        return f'{self.get_tipo_display()} · {self.nombre_original} ({self.lectura.titulo})'
