@@ -69,7 +69,9 @@ class EvidenciaRepositoryTest {
     void guardaLaCalificacionFinalYElEstadoCorregida() {
         jdbc.update("""
                 UPDATE evidencia
-                SET estado_revision = 'corregida', calificacion_final = 90
+                SET estado_revision = 'corregida',
+                    calificacion_final = 90,
+                    motivo_correccion = 'El audio tiene ruido de fondo.'
                 WHERE id = -5003
                 """);
 
@@ -77,6 +79,7 @@ class EvidenciaRepositoryTest {
 
         assertEquals(Evidencia.CORREGIDA, corregida.getEstadoRevision());
         assertEquals((short) 90, corregida.getCalificacionFinal());
+        assertEquals("El audio tiene ruido de fondo.", corregida.getMotivoCorreccion());
     }
 
     @Test

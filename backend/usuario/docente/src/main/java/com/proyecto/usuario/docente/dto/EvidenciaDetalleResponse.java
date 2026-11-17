@@ -11,8 +11,9 @@ import java.util.List;
  * lo que la IA entendió del audio ({@code transcripcion}), las palabras que marcó
  * para revisar ({@code palabrasMarcadas}), su puntaje global
  * ({@code puntajeIa}, de 0 a 100) y la retroalimentación ({@code resultadoIa}).
- * Incluye también el estado de revisión y las fechas para que la pantalla no
- * haga llamadas adicionales.</p>
+ * Incluye también la revisión del docente: la {@code calificacionFinal} que deja
+ * al aprobar o corregir, el {@code motivoCorreccion} y el estado de revisión.
+ * Las fechas vienen resueltas para que la pantalla no haga llamadas adicionales.</p>
  */
 public record EvidenciaDetalleResponse(
         Long id,
@@ -30,6 +31,8 @@ public record EvidenciaDetalleResponse(
         String transcripcion,
         List<String> palabrasMarcadas,
         Short puntajeIa,
+        Short calificacionFinal,
+        String motivoCorreccion,
         String resultadoIa,
         String estadoRevision,
         LocalDateTime creadoEn,

@@ -201,6 +201,8 @@ Respuesta (`200`):
   "transcripcion": "El sol brilla. Los niños juegan en el parque.",
   "palabrasMarcadas": ["brilla", "juegan"],
   "puntajeIa": 85,
+  "calificacionFinal": null,
+  "motivoCorreccion": null,
   "resultadoIa": "Lee con claridad y buen ritmo.",
   "estadoRevision": "pendiente",
   "creadoEn": "2026-11-10T09:00:00",
@@ -211,7 +213,8 @@ Respuesta (`200`):
 En una evidencia de texto, `audioUrl` y `transcripcion` llegan nulos y `texto` trae lo
 que escribió el alumno. `tipoReto` sale del nivel (`lectura`, `escritura` u `oralidad`)
 para saber qué competencia evaluó la IA. `palabrasMarcadas` llega como `[]` si la IA no
-marcó ninguna palabra.
+marcó ninguna palabra. `calificacionFinal` y `motivoCorreccion` llegan nulos mientras el
+docente no revisa la evidencia (T-378).
 
 Errores:
 
@@ -364,8 +367,8 @@ Errores:
 ## 10. Calificación final y estado corregida (T-377, US-33)
 
 El docente debe **aprobar o corregir la calificación de la IA** para que la evaluación
-sea justa. T-377 prepara la tabla `evidencia` para esa revisión; los endpoints y los
-botones llegan en T-378 y T-381.
+sea justa. T-377 prepara la tabla `evidencia` para esa revisión; los endpoints llegan
+en T-378 (sección 11) y los botones en T-381.
 
 ### Migración V15
 
@@ -392,3 +395,68 @@ siguen siendo válidas.
 |---|---|
 | `MigracionEvidenciaCalificacionTest` | Columna `calificacion_final`, rango 0–100 y el `CHECK` del estado con `corregida` sin perder los estados anteriores. |
 | `EvidenciaRepositoryTest` | Actualiza una evidencia a `corregida` con nota final y la vuelve a leer desde PostgreSQL. |
+
+## 11. Aprobar y corregir la calificación (T-378, US-33)
+
+El docente acepta la nota de la IA o la cambia por la suya. Ambos endpoints devuelven el
+detalle actualizado de la evidencia (el mismo contrato de T-371) y exigen `X-Docente-Id`.
+
+```
+POST /api/docente/aulas/{aulaId}/evidencias/{evidenciaId}/aprobar
+POST /api/docente/aulas/{aulaId}/evidencias/{evidenciaId}/corregir
+Header obligatorio: X-Docente-Id
+```
+
+### Aprobar
+
+No lleva cuerpo. Copia `puntajeIa` en `calificacionFinal`, deja el estado en `aprobada`,
+borra cualquier motivo anterior y sella `revisadoEn` con la fecha actual.
+
+Si la evidencia todavía no tiene evaluación de la IA (`puntajeIa` nulo) responde
+`400` · `La evidencia no tiene evaluación de la IA`: no hay nota que aprobar.
+
+### Corregir
+
+Cuerpo:
+
+```json
+{
+  "calificacionFinal": 70,
+  "motivo": "El audio tiene ruido de fondo."
+}
+```
+
+| Campo | Regla |
+|---|---|
+| `calificacionFinal` | Obligatorio, entre 0 y 100. |
+| `motivo` | Obligatorio, sin espacios en blanco y de hasta 500 caracteres. |
+
+Guarda la nota y el motivo (recortado), deja el estado en `corregida` y sella
+`revisadoEn`. El `puntajeIa` original se conserva para poder comparar la nota de la IA
+con la del docente.
+
+### Migración V16
+
+`V16__evidencia_motivo_correccion.sql` agrega `motivo_correccion TEXT` a `evidencia`.
+El historial completo de notas (IA vs. docente) llega en T-380.
+
+### Errores
+
+| Caso | Respuesta |
+|---|---|
+| Aula inexistente | `404` · `El aula no existe` |
+| Aula de otro docente | `403` · `El aula no pertenece al docente` |
+| Evidencia inexistente o de otra aula | `404` · `La evidencia no existe en esta aula` |
+| Aprobar sin evaluación de la IA | `400` · `La evidencia no tiene evaluación de la IA` |
+| Corrección sin motivo | `400` · `Debes indicar el motivo de la corrección` |
+| Nota fuera de 0–100 | `400` · mensaje del rango |
+| Sin `X-Docente-Id` | `400` |
+
+### Pruebas
+
+| Prueba | Cobertura |
+|---|---|
+| `MigracionEvidenciaMotivoTest` | Columna `motivo_correccion` de V16. |
+| `EvidenciaServiceTest` | Aprobar copia el puntaje y limpia el motivo; aprobar sin IA falla con 400; corregir guarda nota y motivo recortado; evidencia de otra aula da 404. |
+| `EvidenciaControllerTest` | `POST` aprobar y corregir, validación de motivo y rango, y 400 al aprobar sin evaluación de la IA. |
+| `EvidenciaRepositoryTest` | Persiste nota final y motivo de la corrección en PostgreSQL. |

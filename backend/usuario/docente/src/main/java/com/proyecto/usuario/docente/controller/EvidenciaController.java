@@ -1,5 +1,6 @@
 package com.proyecto.usuario.docente.controller;
 
+import com.proyecto.usuario.docente.dto.CorregirEvidenciaRequest;
 import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
 import com.proyecto.usuario.docente.service.AudioEvidenciaService;
@@ -8,6 +9,7 @@ import com.proyecto.usuario.docente.service.EvidenciaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
@@ -16,6 +18,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -41,6 +45,10 @@ import java.util.List;
  * <p>T-372 (US-32): GET .../evidencias/{evidenciaId}/audio entrega el archivo
  * de audio solo al docente dueño del aula, con soporte de Range para que el
  * reproductor pueda pedir partes del archivo.</p>
+ *
+ * <p>T-378 (US-33): POST .../evidencias/{evidenciaId}/aprobar acepta la nota de
+ * la IA y POST .../evidencias/{evidenciaId}/corregir la cambia por la nota del
+ * docente con su motivo.</p>
  */
 @RestController
 @RequestMapping("/api/docente/aulas/{aulaId}/evidencias")
@@ -73,6 +81,27 @@ public class EvidenciaController {
             @PathVariable Long aulaId,
             @PathVariable Long evidenciaId) {
         return service.detalle(docenteId, aulaId, evidenciaId);
+    }
+
+    // T-378 (US-33): el docente acepta la nota de la IA
+    @PostMapping("/{evidenciaId}/aprobar")
+    @Operation(summary = "Aprueba la calificación de la IA")
+    public EvidenciaDetalleResponse aprobar(
+            @RequestHeader("X-Docente-Id") Long docenteId,
+            @PathVariable Long aulaId,
+            @PathVariable Long evidenciaId) {
+        return service.aprobar(docenteId, aulaId, evidenciaId);
+    }
+
+    // T-378 (US-33): el docente cambia la nota de la IA y explica por qué
+    @PostMapping("/{evidenciaId}/corregir")
+    @Operation(summary = "Corrige la calificación de la IA con un motivo")
+    public EvidenciaDetalleResponse corregir(
+            @RequestHeader("X-Docente-Id") Long docenteId,
+            @PathVariable Long aulaId,
+            @PathVariable Long evidenciaId,
+            @Valid @RequestBody CorregirEvidenciaRequest req) {
+        return service.corregir(docenteId, aulaId, evidenciaId, req);
     }
 
     // T-372 (US-32): el audio solo lo puede pedir el docente dueño del aula

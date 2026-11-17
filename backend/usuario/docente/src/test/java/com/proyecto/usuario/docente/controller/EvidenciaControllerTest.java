@@ -1,5 +1,6 @@
 package com.proyecto.usuario.docente.controller;
 
+import com.proyecto.usuario.docente.dto.CorregirEvidenciaRequest;
 import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
 import com.proyecto.usuario.docente.exception.ManejadorErrores;
@@ -16,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -27,6 +29,7 @@ import java.util.List;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -193,7 +196,7 @@ class EvidenciaControllerTest {
                 "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3", null,
                 "El sol brilla. Los niños juegan en el parque.",
                 List.of("brilla", "juegan"),
-                (short) 85, "Lee con claridad y buen ritmo.",
+                (short) 85, null, null, "Lee con claridad y buen ritmo.",
                 "pendiente", LocalDateTime.of(2026, 11, 10, 9, 0), null));
 
         mvc.perform(get("/api/docente/aulas/10/evidencias/30")
@@ -229,7 +232,7 @@ class EvidenciaControllerTest {
                 (short) 2, "Palabras nuevas", "escritura", "texto",
                 null, "Mi mamá prepara sopa. Yo pongo la mesa.", null,
                 List.of(),
-                (short) 80, "Escribe oraciones completas.",
+                (short) 80, (short) 80, null, "Escribe oraciones completas.",
                 "aprobada", LocalDateTime.of(2026, 11, 9, 15, 30),
                 LocalDateTime.of(2026, 11, 10, 8, 0)));
 
@@ -258,7 +261,7 @@ class EvidenciaControllerTest {
                 "https://cdn.ejemplo.pe/evidencias/minji-nivel3.mp3", null,
                 "Había una vez un conejo que quería volar.",
                 List.of("conejo", "despegaba"),
-                (short) 40, "El audio no responde al reto.",
+                (short) 40, null, null, "El audio no responde al reto.",
                 "rechazada", LocalDateTime.of(2026, 11, 8, 10, 0),
                 LocalDateTime.of(2026, 11, 9, 9, 0)));
 
@@ -280,7 +283,7 @@ class EvidenciaControllerTest {
                 30L, 7L, "Minji", "Prueba", (short) 5, "5.º",
                 (short) 1, "Primeros pasos", "lectura", "audio",
                 "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3", null,
-                null, List.of(), null, null,
+                null, List.of(), null, null, null, null,
                 "pendiente", LocalDateTime.of(2026, 11, 10, 9, 0), null));
 
         mvc.perform(get("/api/docente/aulas/10/evidencias/30")
@@ -306,6 +309,103 @@ class EvidenciaControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.mensaje")
                         .value("La evidencia no existe en esta aula"));
+    }
+
+    // T-378 (US-33): aprobar y corregir la calificación de la IA
+
+    @Test
+    void apruebaLaCalificacionDeLaIa() throws Exception {
+        when(service.aprobar(1L, 10L, 30L)).thenReturn(new EvidenciaDetalleResponse(
+                30L, 7L, "Minji", "Prueba", (short) 5, "5.º",
+                (short) 1, "Primeros pasos", "lectura", "audio",
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3", null,
+                "El sol brilla. Los niños juegan en el parque.",
+                List.of("brilla", "juegan"),
+                (short) 85, (short) 85, null, "Lee con claridad y buen ritmo.",
+                "aprobada", LocalDateTime.of(2026, 11, 10, 9, 0),
+                LocalDateTime.of(2026, 11, 17, 10, 0)));
+
+        mvc.perform(post("/api/docente/aulas/10/evidencias/30/aprobar")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estadoRevision").value("aprobada"))
+                .andExpect(jsonPath("$.calificacionFinal").value(85))
+                .andExpect(jsonPath("$.motivoCorreccion").doesNotExist())
+                .andExpect(jsonPath("$.revisadoEn").exists());
+
+        verify(service).aprobar(1L, 10L, 30L);
+    }
+
+    @Test
+    void corrigeLaCalificacionConSuMotivo() throws Exception {
+        when(service.corregir(1L, 10L, 30L,
+                new CorregirEvidenciaRequest((short) 70, "El audio tiene ruido de fondo.")))
+                .thenReturn(new EvidenciaDetalleResponse(
+                        30L, 7L, "Minji", "Prueba", (short) 5, "5.º",
+                        (short) 1, "Primeros pasos", "lectura", "audio",
+                        "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3", null,
+                        "El sol brilla. Los niños juegan en el parque.",
+                        List.of("brilla", "juegan"),
+                        (short) 85, (short) 70, "El audio tiene ruido de fondo.",
+                        "Lee con claridad y buen ritmo.",
+                        "corregida", LocalDateTime.of(2026, 11, 10, 9, 0),
+                        LocalDateTime.of(2026, 11, 17, 10, 0)));
+
+        mvc.perform(post("/api/docente/aulas/10/evidencias/30/corregir")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"calificacionFinal": 70,
+                                 "motivo": "El audio tiene ruido de fondo."}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estadoRevision").value("corregida"))
+                .andExpect(jsonPath("$.puntajeIa").value(85))
+                .andExpect(jsonPath("$.calificacionFinal").value(70))
+                .andExpect(jsonPath("$.motivoCorreccion")
+                        .value("El audio tiene ruido de fondo."));
+
+        verify(service).corregir(1L, 10L, 30L,
+                new CorregirEvidenciaRequest((short) 70, "El audio tiene ruido de fondo."));
+    }
+
+    @Test
+    void laCorreccionExigeElMotivo() throws Exception {
+        mvc.perform(post("/api/docente/aulas/10/evidencias/30/corregir")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"calificacionFinal": 70, "motivo": "   "}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje")
+                        .value("Debes indicar el motivo de la corrección"));
+    }
+
+    @Test
+    void laCorreccionValidaElRangoDeLaNota() throws Exception {
+        mvc.perform(post("/api/docente/aulas/10/evidencias/30/corregir")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"calificacionFinal": 120, "motivo": "Nota ajustada."}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje")
+                        .value("La calificación final no puede ser mayor que 100"));
+    }
+
+    @Test
+    void aprobarUnaEvidenciaSinEvaluacionDeLaIaDevuelve400() throws Exception {
+        when(service.aprobar(1L, 10L, 30L))
+                .thenThrow(new ReglaNegocioException(
+                        "La evidencia no tiene evaluación de la IA", HttpStatus.BAD_REQUEST));
+
+        mvc.perform(post("/api/docente/aulas/10/evidencias/30/aprobar")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje")
+                        .value("La evidencia no tiene evaluación de la IA"));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.proyecto.usuario.docente.service;
 
+import com.proyecto.usuario.docente.dto.CorregirEvidenciaRequest;
 import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -352,6 +354,7 @@ class EvidenciaServiceTest {
                 "Mi mamá prepara sopa. Yo pongo la mesa.");
         ReflectionTestUtils.setField(texto, "id", 29L);
         texto.setPuntajeIa((short) 80);
+        texto.setCalificacionFinal((short) 80);
         texto.setResultadoIa("Escribe oraciones completas.");
         texto.setEstadoRevision(Evidencia.APROBADA);
         texto.setRevisadoEn(LocalDateTime.of(2026, 11, 11, 8, 0));
@@ -369,6 +372,8 @@ class EvidenciaServiceTest {
         assertNull(detalle.transcripcion());
         assertEquals(List.of(), detalle.palabrasMarcadas());
         assertEquals((short) 80, detalle.puntajeIa());
+        assertEquals((short) 80, detalle.calificacionFinal());
+        assertNull(detalle.motivoCorreccion());
         assertEquals(Evidencia.APROBADA, detalle.estadoRevision());
         assertEquals(LocalDateTime.of(2026, 11, 11, 8, 0), detalle.revisadoEn());
     }
@@ -413,5 +418,84 @@ class EvidenciaServiceTest {
         assertEquals("El aula no pertenece al docente", error.getMessage());
         verify(evidenciaRepository, never())
                 .findByIdAndEstudianteAulaId(any(), any());
+    }
+
+    // T-378 (US-33): aprobar y corregir la calificación de la IA
+
+    @Test
+    void aprobarCopiaElPuntajeDeLaIaYLaDejaAprobada() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+        audio.setPuntajeIa((short) 85);
+        audio.setEstadoRevision(Evidencia.RECHAZADA);
+        audio.setMotivoCorreccion("Motivo anterior.");
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+
+        EvidenciaDetalleResponse detalle = service.aprobar(1L, 10L, 30L);
+
+        assertEquals(Evidencia.APROBADA, detalle.estadoRevision());
+        assertEquals((short) 85, detalle.calificacionFinal());
+        assertNull(detalle.motivoCorreccion());
+        assertNotNull(detalle.revisadoEn());
+        assertEquals(Evidencia.APROBADA, audio.getEstadoRevision());
+        assertNull(audio.getMotivoCorreccion());
+    }
+
+    @Test
+    void aprobarUnaEvidenciaSinEvaluacionDeLaIaFalla() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                () -> service.aprobar(1L, 10L, 30L));
+
+        assertEquals(HttpStatus.BAD_REQUEST, error.getEstado());
+        assertEquals("La evidencia no tiene evaluación de la IA", error.getMessage());
+        assertEquals(Evidencia.PENDIENTE, audio.getEstadoRevision());
+        assertNull(audio.getCalificacionFinal());
+    }
+
+    @Test
+    void corregirGuardaLaNotaFinalYElMotivo() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+        audio.setPuntajeIa((short) 85);
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+
+        EvidenciaDetalleResponse detalle = service.corregir(1L, 10L, 30L,
+                new CorregirEvidenciaRequest((short) 70, "  El audio tiene ruido.  "));
+
+        assertEquals(Evidencia.CORREGIDA, detalle.estadoRevision());
+        assertEquals((short) 85, detalle.puntajeIa());
+        assertEquals((short) 70, detalle.calificacionFinal());
+        assertEquals("El audio tiene ruido.", detalle.motivoCorreccion());
+        assertNotNull(detalle.revisadoEn());
+    }
+
+    @Test
+    void corregirUnaEvidenciaDeOtraAulaDevuelve404() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(99L, 10L))
+                .thenReturn(Optional.empty());
+
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                () -> service.corregir(1L, 10L, 99L,
+                        new CorregirEvidenciaRequest((short) 70, "Nota ajustada.")));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getEstado());
+        assertEquals("La evidencia no existe en esta aula", error.getMessage());
     }
 }

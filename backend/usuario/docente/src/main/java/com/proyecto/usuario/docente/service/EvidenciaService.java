@@ -1,5 +1,6 @@
 package com.proyecto.usuario.docente.service;
 
+import com.proyecto.usuario.docente.dto.CorregirEvidenciaRequest;
 import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -26,6 +28,9 @@ import java.util.Locale;
  *
  * <p>T-371 (US-32): {@link #detalle} devuelve una evidencia concreta del aula,
  * en cualquier estado, con la transcripción y el puntaje de la IA.</p>
+ *
+ * <p>T-378 (US-33): {@link #aprobar} acepta la nota de la IA tal como llegó y
+ * {@link #corregir} guarda la nota final del docente con su motivo.</p>
  */
 @Service
 public class EvidenciaService {
@@ -63,12 +68,41 @@ public class EvidenciaService {
     // T-371 (US-32): detalle de una evidencia del aula, en cualquier estado
     @Transactional(readOnly = true)
     public EvidenciaDetalleResponse detalle(Long docenteId, Long aulaId, Long evidenciaId) {
+        return detalleRespuesta(evidenciaDelAula(docenteId, aulaId, evidenciaId));
+    }
+
+    // T-378 (US-33): aprueba la nota de la IA y la deja como calificación final
+    @Transactional
+    public EvidenciaDetalleResponse aprobar(Long docenteId, Long aulaId, Long evidenciaId) {
+        Evidencia evidencia = evidenciaDelAula(docenteId, aulaId, evidenciaId);
+        if (evidencia.getPuntajeIa() == null) {
+            throw new ReglaNegocioException(
+                    "La evidencia no tiene evaluación de la IA", HttpStatus.BAD_REQUEST);
+        }
+        evidencia.setCalificacionFinal(evidencia.getPuntajeIa());
+        evidencia.setMotivoCorreccion(null);
+        evidencia.setEstadoRevision(Evidencia.APROBADA);
+        evidencia.setRevisadoEn(LocalDateTime.now());
+        return detalleRespuesta(evidencia);
+    }
+
+    // T-378 (US-33): corrige la nota de la IA con la nota final y el motivo
+    @Transactional
+    public EvidenciaDetalleResponse corregir(Long docenteId, Long aulaId, Long evidenciaId,
+                                             CorregirEvidenciaRequest req) {
+        Evidencia evidencia = evidenciaDelAula(docenteId, aulaId, evidenciaId);
+        evidencia.setCalificacionFinal(req.calificacionFinal());
+        evidencia.setMotivoCorreccion(req.motivo().trim());
+        evidencia.setEstadoRevision(Evidencia.CORREGIDA);
+        evidencia.setRevisadoEn(LocalDateTime.now());
+        return detalleRespuesta(evidencia);
+    }
+
+    private Evidencia evidenciaDelAula(Long docenteId, Long aulaId, Long evidenciaId) {
         buscarAulaDelDocente(docenteId, aulaId);
-        Evidencia evidencia = evidenciaRepository
-                .findByIdAndEstudianteAulaId(evidenciaId, aulaId)
+        return evidenciaRepository.findByIdAndEstudianteAulaId(evidenciaId, aulaId)
                 .orElseThrow(() -> new ReglaNegocioException(
                         "La evidencia no existe en esta aula", HttpStatus.NOT_FOUND));
-        return detalleRespuesta(evidencia);
     }
 
     private EvidenciaDetalleResponse detalleRespuesta(Evidencia evidencia) {
@@ -89,6 +123,8 @@ public class EvidenciaService {
                 evidencia.getTranscripcion(),
                 palabrasMarcadas(evidencia.getPalabrasMarcadas()),
                 evidencia.getPuntajeIa(),
+                evidencia.getCalificacionFinal(),
+                evidencia.getMotivoCorreccion(),
                 evidencia.getResultadoIa(),
                 evidencia.getEstadoRevision(),
                 evidencia.getCreadoEn(),

@@ -70,6 +70,10 @@ public class Evidencia {
     @Column(name = "calificacion_final")
     private Short calificacionFinal;
 
+    // T-378 (US-33): explicación del docente cuando corrige la nota de la IA
+    @Column(name = "motivo_correccion", columnDefinition = "text")
+    private String motivoCorreccion;
+
     @Column(name = "creado_en", nullable = false, insertable = false, updatable = false)
     private LocalDateTime creadoEn;
 
@@ -120,6 +124,8 @@ public class Evidencia {
     public void setEstadoRevision(String estadoRevision) { this.estadoRevision = estadoRevision; }
     public Short getCalificacionFinal() { return calificacionFinal; }
     public void setCalificacionFinal(Short calificacionFinal) { this.calificacionFinal = calificacionFinal; }
+    public String getMotivoCorreccion() { return motivoCorreccion; }
+    public void setMotivoCorreccion(String motivoCorreccion) { this.motivoCorreccion = motivoCorreccion; }
     public LocalDateTime getCreadoEn() { return creadoEn; }
     public LocalDateTime getRevisadoEn() { return revisadoEn; }
     public void setRevisadoEn(LocalDateTime revisadoEn) { this.revisadoEn = revisadoEn; }
