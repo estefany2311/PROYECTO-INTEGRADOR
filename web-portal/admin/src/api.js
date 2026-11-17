@@ -18,7 +18,8 @@ export const sesion = {
 };
 
 async function pedir(ruta, opciones = {}) {
-  const headers = { "Content-Type": "application/json" };
+    // Si se envía un archivo (FormData), el navegador pone solo el Content-Type correcto
+  const headers = opciones.body instanceof FormData ? {} : { "Content-Type": "application/json" };
   if (sesion.token) headers.Authorization = `Bearer ${sesion.token}`;
 
   let resp;
@@ -92,6 +93,17 @@ export const eliminarLectura = (id) =>
 
 export const actualizarLectura = (id, datos) =>
   pedir(`/lecturas/${id}/`, { method: "PATCH", body: JSON.stringify(datos) });
+
+
+// US-42: imágenes y audios de una lectura
+export const listarRecursosLectura = (lecturaId) => pedir(`/lecturas/${lecturaId}/recursos/`);
+
+export const subirRecursoLectura = (lecturaId, archivo, descripcion = "") => {
+  const datos = new FormData();
+  datos.append("archivo", archivo);
+  datos.append("descripcion", descripcion);
+  return pedir(`/lecturas/${lecturaId}/recursos/`, { method: "POST", body: datos });
+};
 
 export const cambiarEstadoUsuario = (id, isActive) =>
   pedir(`/usuarios/${id}/estado/`, { method: "PATCH", body: JSON.stringify({ is_active: isActive }) });

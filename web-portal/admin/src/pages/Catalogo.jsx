@@ -4,6 +4,8 @@ import LibrosOficiales from "../components/LibrosOficiales";
 import ModalEliminar from "../components/ModalEliminar";
 import ModalImportar from "../components/ModalImportar";
 import ModalLectura from "../components/ModalLectura";
+import ModalRecursos from "../components/ModalRecursos";
+
 import { DIFICULTADES, GRADOS, TIPOS_RETO, dificultadDe, tipoDe } from "../utils/catalogo";
 
 const sinFiltros = { search: "", tipo_reto: "", grado: "", dificultad: "", activo: "" };
@@ -25,6 +27,7 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [porEliminar, setPorEliminar] = useState(null);
   const [porEditar, setPorEditar] = useState(null);
+  const [porRecursos, setPorRecursos] = useState(null);
   const [recursos, setRecursos] = useState([]);
   const [cargandoRecursos, setCargandoRecursos] = useState(true);
   const [recargaRecursos, setRecargaRecursos] = useState(0);
@@ -134,6 +137,7 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
             <button type="button" className="btn btn-light" onClick={() => setModalAbierto(true)}>
               <i className="bi bi-plus-lg me-1"></i>Agregar manual
             </button>
+            
           )}
           {puede("catalogo.editar") && (
             <button type="button" className="btn btn-primary" onClick={actualizarCatalogo} disabled={actualizando}>
@@ -252,18 +256,21 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
                       </td>
                       <td className="note">{l.creado_por ?? "—"}</td>
                       <td className="text-end text-nowrap">
-                          {l.asignada && <span className="badge-soft bs-info me-2" title="Asignada a alumnos">Asignada</span>}
-                            {puede("catalogo.editar") && (
-                            <button type="button" className="icon-btn me-1" title="Editar" onClick={() => setPorEditar(l)}>
-                              <i className="bi bi-pencil"></i>
-                            </button>
-                          )}
-                          {puede("catalogo.desactivar") && l.activo && (
-                            <button type="button" className="icon-btn" title="Eliminar" onClick={() => setPorEliminar(l)}>
-                              <i className="bi bi-trash3"></i>
-                            </button>
-                          )}
-                        </td>
+                        {l.asignada && <span className="badge-soft bs-info me-2" title="Asignada a alumnos">Asignada</span>}
+                        <button type="button" className="icon-btn me-1" title="Imágenes y audios" onClick={() => setPorRecursos(l)}>
+                          <i className="bi bi-paperclip"></i>
+                        </button>
+                        {puede("catalogo.editar") && (
+                          <button type="button" className="icon-btn me-1" title="Editar" onClick={() => setPorEditar(l)}>
+                            <i className="bi bi-pencil"></i>
+                          </button>
+                        )}
+                        {puede("catalogo.desactivar") && l.activo && (
+                          <button type="button" className="icon-btn" title="Eliminar" onClick={() => setPorEliminar(l)}>
+                            <i className="bi bi-trash3"></i>
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
@@ -282,7 +289,16 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
         />
       )}
 
-        {porImportar && (
+      {porRecursos && (
+        <ModalRecursos
+          lectura={porRecursos}
+          puedeSubir={puede("catalogo.crear")}
+          onCerrar={() => setPorRecursos(null)}
+          onNoAutorizado={onNoAutorizado}
+        />
+      )}
+
+      {porImportar && (
         <ModalImportar
           recurso={porImportar}
           onCerrar={() => setPorImportar(null)}
