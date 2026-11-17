@@ -193,11 +193,12 @@ private fun ControlesGrabacion(
                 Spacer(Modifier.height(12.dp))
                 ReproductorGrabacion(reproduccion, estado.grabacion.duracionMs, onEscuchar)
                 Spacer(Modifier.height(12.dp))
+                // T-408
                 OutlinedButton(
                     onClick = onGrabarOtraVez,
                     shape = RoundedCornerShape(32.dp),
                     modifier = Modifier.fillMaxWidth().height(64.dp).testTag("boton_grabar_otra_vez")
-                ) { Text("Grabar otra vez", fontSize = 22.sp, color = ColoresAventura.TextoOscuro) }
+                ) { Text("Volver a grabar", fontSize = 22.sp, color = ColoresAventura.TextoOscuro) }
             }
             is GrabacionUiState.Error -> {
                 Text(

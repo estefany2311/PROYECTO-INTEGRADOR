@@ -65,6 +65,7 @@ class GrabacionViewModel(
 
     fun grabar(nivelId: Int) {
         if (grabadora.grabando) return
+        liberarReproductor()
         nivelActual = nivelId
         try {
             // Se graba en un archivo aparte; la grabación anterior se reemplaza solo si esta sale bien (T-317)
@@ -106,8 +107,9 @@ class GrabacionViewModel(
         }
     }
 
-    // Vuelve al botón de grabar. La grabación guardada sigue ahí hasta que una nueva salga bien.
+    // T-408: vuelve al botón de grabar. La grabación anterior se reemplaza cuando la nueva sale bien.
     fun grabarOtraVez() {
+        liberarReproductor()
         _uiState.value = GrabacionUiState.Lista
     }
 
