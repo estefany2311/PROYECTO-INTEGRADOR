@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,6 +48,9 @@ class EvidenciaServiceTest {
     @Mock
     EvidenciaRepository evidenciaRepository;
 
+    @Mock
+    PuntajeService puntajeService;
+
     EvidenciaService service;
     Aula aula;
     Estudiante estudiante;
@@ -55,7 +59,7 @@ class EvidenciaServiceTest {
 
     @BeforeEach
     void preparar() {
-        service = new EvidenciaService(aulaRepository, evidenciaRepository);
+        service = new EvidenciaService(aulaRepository, evidenciaRepository, puntajeService);
 
         aula = new Aula();
         ReflectionTestUtils.setField(aula, "id", 10L);
@@ -497,5 +501,61 @@ class EvidenciaServiceTest {
 
         assertEquals(HttpStatus.NOT_FOUND, error.getEstado());
         assertEquals("La evidencia no existe en esta aula", error.getMessage());
+    }
+
+    // T-379 (US-33): el acumulado del alumno se ajusta si cambia la nota
+
+    @Test
+    void corregirRecalculaLasEstrellasEntreLasDosNotas() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+        audio.setPuntajeIa((short) 85);
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+
+        service.corregir(1L, 10L, 30L,
+                new CorregirEvidenciaRequest((short) 70, "El audio tiene ruido."));
+
+        // la nota vigente era la de la IA (85) y baja a 70
+        verify(puntajeService).recalcularPorCambioDeNota(7L, "lectura", 85, 70);
+    }
+
+    @Test
+    void aprobarUnaEvidenciaCorregidaRecalculaDesdeLaNotaDelDocente() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+        audio.setPuntajeIa((short) 85);
+        audio.setCalificacionFinal((short) 70);
+        audio.setEstadoRevision(Evidencia.CORREGIDA);
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+
+        service.aprobar(1L, 10L, 30L);
+
+        // vuelve a la nota de la IA: el ajuste parte de la corrección anterior
+        verify(puntajeService).recalcularPorCambioDeNota(7L, "lectura", 70, 85);
+    }
+
+    @Test
+    void noRecalculaSiLaEvidenciaNoTieneEvaluacionDeLaIa() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+
+        assertThrows(ReglaNegocioException.class,
+                () -> service.aprobar(1L, 10L, 30L));
+
+        verify(puntajeService, never())
+                .recalcularPorCambioDeNota(any(), anyString(), anyInt(), anyInt());
     }
 }

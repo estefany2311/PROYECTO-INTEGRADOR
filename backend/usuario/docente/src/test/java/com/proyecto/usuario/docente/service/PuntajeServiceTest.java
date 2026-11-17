@@ -201,4 +201,71 @@ class PuntajeServiceTest {
         verify(puntajeEstudianteRepository, never())
                 .save(any(PuntajeEstudiante.class));
     }
+
+    // T-379 (US-33): ajustar las estrellas cuando el docente cambia la nota
+
+    private PuntajeEstudiante acumuladoCon(int puntos, int estrellas) {
+        PuntajeEstudiante acumulado = PuntajeEstudiante.inicial(estudiante);
+        acumulado.setPuntos(puntos);
+        acumulado.setEstrellas(estrellas);
+        when(puntajeEstudianteRepository.findByEstudianteId(7L))
+                .thenReturn(Optional.of(acumulado));
+        when(puntajeEstudianteRepository.save(any(PuntajeEstudiante.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        return acumulado;
+    }
+
+    @Test
+    void subeLasEstrellasCuandoLaNotaSubeDeTramo() {
+        PuntajeEstudiante acumulado = acumuladoCon(300, 4);
+
+        // 70 vale 1 estrella y 85 vale 2: el acumulado gana una estrella
+        service.recalcularPorCambioDeNota(7L, "lectura", 70, 85);
+
+        assertEquals(300, acumulado.getPuntos());
+        assertEquals(5, acumulado.getEstrellas());
+        verify(puntajeEstudianteRepository).save(acumulado);
+    }
+
+    @Test
+    void bajaLasEstrellasCuandoLaNotaBajaDeTramo() {
+        PuntajeEstudiante acumulado = acumuladoCon(300, 4);
+
+        // 85 vale 2 estrellas y 60 vale 1: el acumulado pierde una estrella
+        service.recalcularPorCambioDeNota(7L, "escritura", 85, 60);
+
+        assertEquals(300, acumulado.getPuntos());
+        assertEquals(3, acumulado.getEstrellas());
+        verify(puntajeEstudianteRepository).save(acumulado);
+    }
+
+    @Test
+    void lasEstrellasNoBajanDeCero() {
+        PuntajeEstudiante acumulado = acumuladoCon(100, 1);
+
+        // la nota cae a 0 estrellas, pero el acumulado no puede quedar negativo
+        service.recalcularPorCambioDeNota(7L, "oralidad", 85, 40);
+
+        assertEquals(100, acumulado.getPuntos());
+        assertEquals(0, acumulado.getEstrellas());
+    }
+
+    @Test
+    void noGuardaSiElAlumnoNoTieneAcumulado() {
+        when(puntajeEstudianteRepository.findByEstudianteId(7L))
+                .thenReturn(Optional.empty());
+
+        service.recalcularPorCambioDeNota(7L, "lectura", 70, 85);
+
+        verify(puntajeEstudianteRepository, never())
+                .save(any(PuntajeEstudiante.class));
+    }
+
+    @Test
+    void noGuardaSiLaNotaNoCambiaDeTramo() {
+        // 85 y 90 valen las mismas 2 estrellas: no hay nada que ajustar
+        service.recalcularPorCambioDeNota(7L, "lectura", 85, 90);
+
+        verifyNoInteractions(puntajeEstudianteRepository);
+    }
 }

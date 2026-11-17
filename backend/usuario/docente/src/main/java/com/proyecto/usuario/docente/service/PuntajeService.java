@@ -22,6 +22,9 @@ import java.util.Map;
  * puntos fijos y el puntaje obtenido (0 a 100) define cuántas estrellas se suman
  * (0 a 3). Mientras el módulo Admin no exponga sus reglas (T-260), los valores
  * iniciales viven aquí y se pueden cambiar en un solo lugar.</p>
+ *
+ * <p>T-379 (US-33): {@link #recalcularPorCambioDeNota} ajusta las estrellas del
+ * acumulado cuando el docente aprueba o corrige la nota de una evidencia.</p>
  */
 @Service
 public class PuntajeService {
@@ -78,6 +81,41 @@ public class PuntajeService {
                 guardado.getEstudiante().getId(),
                 guardado.getPuntos(),
                 guardado.getEstrellas());
+    }
+
+    /**
+     * T-379 (US-33): ajusta las estrellas cuando el docente aprueba o corrige la
+     * nota de la IA.
+     *
+     * <p>Los puntos no se tocan: se ganan al completar el reto (100 por reto) sin
+     * importar el puntaje, así que una nota distinta solo cambia las estrellas.
+     * El acumulado refleja la nota anterior (la de la IA o la última corrección),
+     * por eso se aplica la diferencia de estrellas entre ambas notas.</p>
+     *
+     * <p>El acumulado nunca queda negativo. Si el alumno todavía no tiene fila en
+     * {@code puntaje_estudiante} (el reto no se contó), no hay nada que ajustar y
+     * el método no hace cambios.</p>
+     */
+    @Transactional
+    public void recalcularPorCambioDeNota(Long estudianteId, String tipoReto,
+                                          int notaAnterior, int notaNueva) {
+        String tipo = normalizarTipo(tipoReto);
+        validarPuntaje(notaAnterior);
+        validarPuntaje(notaNueva);
+
+        ReglaPuntuacion regla = REGLAS.get(tipo);
+        int diferencia = regla.estrellasPara(notaNueva)
+                - regla.estrellasPara(notaAnterior);
+        if (diferencia == 0) {
+            return;
+        }
+
+        puntajeEstudianteRepository.findByEstudianteId(estudianteId)
+                .ifPresent(acumulado -> {
+                    acumulado.setEstrellas(
+                            Math.max(0, acumulado.getEstrellas() + diferencia));
+                    puntajeEstudianteRepository.save(acumulado);
+                });
     }
 
     private String normalizarTipo(String tipoReto) {

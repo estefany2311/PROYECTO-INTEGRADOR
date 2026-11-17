@@ -435,6 +435,13 @@ Guarda la nota y el motivo (recortado), deja el estado en `corregida` y sella
 `revisadoEn`. El `puntajeIa` original se conserva para poder comparar la nota de la IA
 con la del docente.
 
+### Efecto en puntos y estrellas (T-379)
+
+Si la nota final cambia, el acumulado del alumno se ajusta en la misma transacción. La
+nota anterior es `calificacionFinal` si ya existía o, si no, `puntajeIa`, y se aplica la
+diferencia de estrellas entre ambos tramos. Los puntos no se tocan: se ganan al completar
+el reto. Ver `puntaje-estudiante.md`, sección 8.
+
 ### Migración V16
 
 `V16__evidencia_motivo_correccion.sql` agrega `motivo_correccion TEXT` a `evidencia`.
@@ -457,6 +464,6 @@ El historial completo de notas (IA vs. docente) llega en T-380.
 | Prueba | Cobertura |
 |---|---|
 | `MigracionEvidenciaMotivoTest` | Columna `motivo_correccion` de V16. |
-| `EvidenciaServiceTest` | Aprobar copia el puntaje y limpia el motivo; aprobar sin IA falla con 400; corregir guarda nota y motivo recortado; evidencia de otra aula da 404. |
+| `EvidenciaServiceTest` | Aprobar copia el puntaje y limpia el motivo; aprobar sin IA falla con 400; corregir guarda nota y motivo recortado; evidencia de otra aula da 404; el recálculo parte de la nota vigente y no se llama sin evaluación de la IA. |
 | `EvidenciaControllerTest` | `POST` aprobar y corregir, validación de motivo y rango, y 400 al aprobar sin evaluación de la IA. |
 | `EvidenciaRepositoryTest` | Persiste nota final y motivo de la corrección en PostgreSQL. |

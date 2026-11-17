@@ -101,7 +101,7 @@ npm run preview -- --port 4173
 | Backend `MigracionEvidenciaTest` | 6/6 · tabla, audio/texto, estado de revisión, cascada e índices |
 | Backend `MigracionEvidenciaDatosPruebaTest` | 5/5 · datos de audio y texto, estados y niveles por orden |
 | Backend `EvidenciaRepositoryTest` | 5/5 · pendientes por fecha y filtro por tipo, detalle por id y aula, evidencia de otra aula, y calificación final con estado `corregida` y motivo |
-| Backend `EvidenciaServiceTest` | 21/21 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo, aula del docente, detalle con transcripción y puntaje, palabras marcadas, y aprobar/corregir con motivo |
+| Backend `EvidenciaServiceTest` | 24/24 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo, aula del docente, detalle con transcripción y puntaje, palabras marcadas, aprobar/corregir con motivo y recálculo de estrellas al cambiar la nota |
 | Backend `EvidenciaControllerTest` | 28/28 · ruta, respuesta de audio y texto, filtro por tipo, detalle, detalle rechazado, detalle sin evaluación, audio completo, 206, 416, aprobar, corregir, validaciones, header y errores |
 | Backend `AlmacenAudioTest` | 10/10 · nombre desde archivo, URL y query, carpeta, rutas inválidas y tipo MIME |
 | Backend `AudioEvidenciaServiceTest` | 6/6 · audio del aula, texto, otra aula, aula inexistente, aula ajena y archivo faltante |
@@ -110,7 +110,7 @@ npm run preview -- --port 4173
 | Backend `MigracionEvidenciaCalificacionTest` | 3/3 · columna `calificacion_final`, rango 0-100 y estado `corregida` en el `CHECK` |
 | Backend `MigracionEvidenciaMotivoTest` | 1/1 · columna `motivo_correccion` de V16 |
 | Backend `MigracionPuntajeEstudianteTest` | 6/6 · tabla, una fila por alumno, acumulados desde cero, valores no negativos, actualización y cascada |
-| Backend `PuntajeServiceTest` | 11/11 · acumulado nuevo y existente, umbrales de estrellas, puntajes límite 0 y 100, tipo y puntaje inválidos y alumno inexistente |
+| Backend `PuntajeServiceTest` | 16/16 · acumulado nuevo y existente, umbrales de estrellas, puntajes límite 0 y 100, tipo y puntaje inválidos, alumno inexistente y recálculo al cambiar la nota (sube, baja, tope en 0, sin fila y sin cambio de tramo) |
 | Backend `ReglaPuntuacionTest` | 3/3 · estrellas por umbral, umbrales crecientes y puntos no negativos |
 | Backend `PuntajeEstudianteRepositoryTest` | 5/5 · acumulado por alumno, fila nueva en cero, único por alumno y cascada |
 | Backend `MapaEstudianteServiceTest` | 9/9 · niveles y estados, acumulado de puntos y estrellas, respaldo del progreso y 404 |
@@ -119,7 +119,7 @@ npm run preview -- --port 4173
 | Backend `CatalogoControllerTest` | 4/4 · catálogo con `fuente` y `urlRecurso`, filtros, 403 y 404 |
 | Backend `ConfiguracionCorsTest` | 4/4 · origen local, varios orígenes, espacios y lista vacía |
 | Backend `OpenApiConfigTest` | 4/4 · servidor, información, esquemas de seguridad y orden de secciones |
-| Backend `test` | 306/306 |
+| Backend `test` | 314/314 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
