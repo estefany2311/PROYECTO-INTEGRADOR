@@ -123,6 +123,11 @@ export const listarReglasPuntuacion = () => pedir("/configuracion/reglas/");
 export const actualizarReglaPuntuacion = (tipoReto, datos) =>
 pedir(`/configuracion/reglas/${tipoReto}/`, { method: "PATCH", body: JSON.stringify(datos) });
 
+export const listarReglasDesbloqueo = () => pedir("/configuracion/desbloqueo/");
+
+export const actualizarReglaDesbloqueo = (nivelId, datos) =>
+pedir(`/configuracion/desbloqueo/${nivelId}/`, { method: "PATCH", body: JSON.stringify(datos) });
+
 
 // US-47 · Reportes consolidados (T-267 y T-268)
 export const obtenerReporteColegios = (colegio = "") =>
