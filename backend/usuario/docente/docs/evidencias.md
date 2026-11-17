@@ -197,6 +197,7 @@ Respuesta (`200`):
   "audioUrl": "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3",
   "texto": null,
   "transcripcion": "El sol brilla. Los niños juegan en el parque.",
+  "palabrasMarcadas": ["brilla", "juegan"],
   "puntajeIa": 85,
   "resultadoIa": "Lee con claridad y buen ritmo.",
   "estadoRevision": "pendiente",
@@ -207,7 +208,8 @@ Respuesta (`200`):
 
 En una evidencia de texto, `audioUrl` y `transcripcion` llegan nulos y `texto` trae lo
 que escribió el alumno. `tipoReto` sale del nivel (`lectura`, `escritura` u `oralidad`)
-para saber qué competencia evaluó la IA.
+para saber qué competencia evaluó la IA. `palabrasMarcadas` llega como `[]` si la IA no
+marcó ninguna palabra.
 
 Errores:
 
@@ -218,14 +220,26 @@ Errores:
 | Evidencia inexistente o de otra aula | `404` · `La evidencia no existe en esta aula` |
 | Sin `X-Docente-Id` | `400` |
 
+### Palabras marcadas por la IA (T-375)
+
+`V14__evidencia_palabras_marcadas.sql` agrega la columna `palabras_marcadas TEXT`. La IA
+guarda ahí las palabras que quiere que el docente revise, separadas por comas; el endpoint
+las devuelve como lista (`palabrasMarcadas`) y descarta espacios y duplicados. En las
+evidencias de audio son palabras de la `transcripcion` (pronunciación); en las de texto,
+palabras del `texto` con alguna observación de escritura.
+
+Las 5 evidencias de audio de V11 quedan con sus palabras marcadas por `audio_url`, sin
+quemar ids. El portal las resalta en el contenido y avisa cuántas marcó la IA.
+
 ### Pruebas
 
 | Prueba | Cobertura |
 |---|---|
 | `MigracionEvidenciaDetalleTest` | Columnas de V13, rango 0–100 del puntaje y datos de prueba sin ids quemados. |
+| `MigracionEvidenciaPalabrasTest` | Columna de V14 y palabras marcadas en las evidencias de prueba sin ids quemados. |
 | `EvidenciaRepositoryTest` | Detalle por id y aula, sin importar el estado, y evidencia de otra aula vacía. |
-| `EvidenciaServiceTest` | Audio con transcripción y puntaje, texto revisado, evidencia de otra aula, aula inexistente y aula ajena. |
-| `EvidenciaControllerTest` | Ruta del detalle, respuesta de audio y texto, 404, 403 y header obligatorio. |
+| `EvidenciaServiceTest` | Audio con transcripción, puntaje y palabras marcadas, normalización de la lista, texto revisado, evidencia de otra aula, aula inexistente y aula ajena. |
+| `EvidenciaControllerTest` | Ruta del detalle, respuesta de audio y texto con `palabrasMarcadas`, 404, 403 y header obligatorio. |
 
 ## 9. Audio seguro de la evidencia (T-372, US-32)
 
@@ -314,6 +328,10 @@ el `resultadoIa` y las fechas de registro y revisión. El estado (`pendiente`, `
 `rechazada`) aparece en la cabecera y en el panel. En pantallas angostas las columnas se
 apilan.
 
+T-375 resalta en amarillo las palabras de `palabrasMarcadas` dentro del texto o de la
+transcripción, sin distinguir mayúsculas ni tildes, y muestra el aviso «La IA marcó N
+palabras para revisar» encima del contenido.
+
 Errores:
 
 | Caso | Respuesta |
@@ -333,4 +351,4 @@ Errores:
 | `AudioEvidenciaServiceTest` | Audio del aula, evidencia de texto, evidencia de otra aula, aula inexistente, aula ajena y archivo que no está en la carpeta. |
 | `EvidenciaControllerTest` | Audio completo, `206` con `Content-Range`, `416`, formato de `Range` inválido, `400` de texto, `403`, `404` y header obligatorio. |
 | `ReproductorAudio.test.jsx` | No descarga hasta el clic, descarga con el header y reproduce desde un blob, error con reintento, liberación del blob y nombre genérico. |
-| `DetalleEvidencia.test.jsx` | Audio y transcripción lado a lado, texto sin transcripción, avisos sin transcripción/puntaje, error con reintento y estado rechazada. |
+| `DetalleEvidencia.test.jsx` | Audio y transcripción lado a lado, palabras marcadas resaltadas, texto sin transcripción, avisos sin transcripción/puntaje, error con reintento y estado rechazada. |

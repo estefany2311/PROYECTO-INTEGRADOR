@@ -65,6 +65,31 @@ const anchoBarra = (valor) => {
   return Math.min(100, Math.max(0, Math.round(valor)));
 };
 
+// T-375 (US-32): resalta las palabras que la IA marcó. Se comparan sin
+// distinguir mayúsculas ni tildes y se conservan los separadores del texto.
+const SEPARADORES = /(\s+|[.,;:!?¡¿"«»()])/;
+
+const esPalabraMarcada = (parte, palabras) =>
+  palabras.some(
+    (palabra) => palabra.localeCompare(parte, "es", { sensitivity: "base" }) === 0
+  );
+
+const resaltarPalabras = (texto, palabras) => {
+  if (!texto || !palabras?.length) return texto;
+  return texto.split(SEPARADORES).map((parte, indice) =>
+    esPalabraMarcada(parte, palabras) ? (
+      <mark key={indice} className="detalle-palabra-marcada">
+        {parte}
+      </mark>
+    ) : (
+      parte
+    )
+  );
+};
+
+const textoMarcadas = (total) =>
+  `La IA marcó ${total} ${total === 1 ? "palabra" : "palabras"} para revisar.`;
+
 export default function DetalleEvidencia() {
   const { aulaId, evidenciaId } = useParams();
   const [detalle, setDetalle] = useState(null);
@@ -109,6 +134,7 @@ export default function DetalleEvidencia() {
   const estado = estadoDe(detalle?.estadoRevision);
   const esAudio = detalle?.tipo === "audio";
   const tieneTexto = Boolean(detalle?.texto);
+  const palabras = detalle?.palabrasMarcadas || [];
   const tituloIzquierda = tieneTexto
     ? "Texto original"
     : esAudio
@@ -239,9 +265,16 @@ export default function DetalleEvidencia() {
                 />
               )}
 
+              {tieneTexto && palabras.length > 0 && (
+                <p className="detalle-marcadas-aviso">
+                  <i className="bi bi-highlighter" aria-hidden="true" />
+                  {textoMarcadas(palabras.length)}
+                </p>
+              )}
+
               {tieneTexto && (
                 <blockquote className="detalle-evidencia-texto">
-                  {detalle.texto}
+                  {resaltarPalabras(detalle.texto, palabras)}
                 </blockquote>
               )}
 
@@ -267,9 +300,16 @@ export default function DetalleEvidencia() {
                 </span>
               </div>
 
+              {detalle.transcripcion && palabras.length > 0 && (
+                <p className="detalle-marcadas-aviso">
+                  <i className="bi bi-highlighter" aria-hidden="true" />
+                  {textoMarcadas(palabras.length)}
+                </p>
+              )}
+
               {detalle.transcripcion ? (
                 <blockquote className="detalle-evidencia-texto ia">
-                  {detalle.transcripcion}
+                  {resaltarPalabras(detalle.transcripcion, palabras)}
                 </blockquote>
               ) : (
                 <p className="detalle-evidencia-aviso">

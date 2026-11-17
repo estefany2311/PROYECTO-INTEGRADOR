@@ -51,6 +51,10 @@ public class Evidencia {
     @Column(columnDefinition = "text")
     private String transcripcion;
 
+    // T-375 (US-32): palabras que la IA marcó, separadas por comas
+    @Column(name = "palabras_marcadas", columnDefinition = "text")
+    private String palabrasMarcadas;
+
     // T-371 (US-32): puntaje global de la IA (0 a 100); nulo si aún no evaluó
     @Column(name = "puntaje_ia")
     private Short puntajeIa;
@@ -100,6 +104,8 @@ public class Evidencia {
     public void setResultadoIa(String resultadoIa) { this.resultadoIa = resultadoIa; }
     public String getTranscripcion() { return transcripcion; }
     public void setTranscripcion(String transcripcion) { this.transcripcion = transcripcion; }
+    public String getPalabrasMarcadas() { return palabrasMarcadas; }
+    public void setPalabrasMarcadas(String palabrasMarcadas) { this.palabrasMarcadas = palabrasMarcadas; }
     public Short getPuntajeIa() { return puntajeIa; }
     public void setPuntajeIa(Short puntajeIa) { this.puntajeIa = puntajeIa; }
     public String getEstadoRevision() { return estadoRevision; }

@@ -192,6 +192,7 @@ class EvidenciaControllerTest {
                 (short) 1, "Primeros pasos", "lectura", "audio",
                 "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3", null,
                 "El sol brilla. Los niños juegan en el parque.",
+                List.of("brilla", "juegan"),
                 (short) 85, "Lee con claridad y buen ritmo.",
                 "pendiente", LocalDateTime.of(2026, 11, 10, 9, 0), null));
 
@@ -209,6 +210,8 @@ class EvidenciaControllerTest {
                 .andExpect(jsonPath("$.texto").doesNotExist())
                 .andExpect(jsonPath("$.transcripcion")
                         .value("El sol brilla. Los niños juegan en el parque."))
+                .andExpect(jsonPath("$.palabrasMarcadas[0]").value("brilla"))
+                .andExpect(jsonPath("$.palabrasMarcadas[1]").value("juegan"))
                 .andExpect(jsonPath("$.puntajeIa").value(85))
                 .andExpect(jsonPath("$.resultadoIa")
                         .value("Lee con claridad y buen ritmo."))
@@ -225,6 +228,7 @@ class EvidenciaControllerTest {
                 29L, 8L, "Breysi", "Zavala", (short) 1, "1.º",
                 (short) 2, "Palabras nuevas", "escritura", "texto",
                 null, "Mi mamá prepara sopa. Yo pongo la mesa.", null,
+                List.of(),
                 (short) 80, "Escribe oraciones completas.",
                 "aprobada", LocalDateTime.of(2026, 11, 9, 15, 30),
                 LocalDateTime.of(2026, 11, 10, 8, 0)));
@@ -238,6 +242,7 @@ class EvidenciaControllerTest {
                 .andExpect(jsonPath("$.texto")
                         .value("Mi mamá prepara sopa. Yo pongo la mesa."))
                 .andExpect(jsonPath("$.transcripcion").doesNotExist())
+                .andExpect(jsonPath("$.palabrasMarcadas").isEmpty())
                 .andExpect(jsonPath("$.puntajeIa").value(80))
                 .andExpect(jsonPath("$.estadoRevision").value("aprobada"))
                 .andExpect(jsonPath("$.revisadoEn").exists());

@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -86,11 +87,25 @@ public class EvidenciaService {
                 evidencia.getAudioUrl(),
                 evidencia.getTexto(),
                 evidencia.getTranscripcion(),
+                palabrasMarcadas(evidencia.getPalabrasMarcadas()),
                 evidencia.getPuntajeIa(),
                 evidencia.getResultadoIa(),
                 evidencia.getEstadoRevision(),
                 evidencia.getCreadoEn(),
                 evidencia.getRevisadoEn());
+    }
+
+    // T-375 (US-32): la base guarda las palabras marcadas separadas por comas;
+    // el contrato las expone como lista y descarta espacios y duplicados.
+    private List<String> palabrasMarcadas(String texto) {
+        if (texto == null || texto.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(texto.split(","))
+                .map(String::trim)
+                .filter(palabra -> !palabra.isEmpty())
+                .distinct()
+                .toList();
     }
 
     private EvidenciaPendienteResponse respuesta(Evidencia evidencia) {

@@ -2826,6 +2826,29 @@ legend {
   background: #F0F9FF;
 }
 
+/* T-375 (US-32): palabras que la IA marcó para revisar */
+.detalle-palabra-marcada {
+  padding: 0 2px;
+  border-radius: 4px;
+  background: #FEF08A;
+  color: inherit;
+  font-weight: 800;
+}
+
+.detalle-marcadas-aviso {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: #92400E;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.detalle-marcadas-aviso i {
+  color: #D97706;
+}
+
 .detalle-evidencia-aviso {
   display: flex;
   align-items: flex-start;

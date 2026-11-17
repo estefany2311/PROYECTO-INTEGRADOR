@@ -85,6 +85,7 @@ npm run preview -- --port 4173
 | Reproducir un audio en `/evidencias` | El botón descarga el audio con `X-Docente-Id` y aparece el reproductor con el audio |
 | Reproducir un audio de otro docente | 403 · mensaje y botón Reintentar audio |
 | Abrir `/evidencias/9/3` | Audio original + transcripción lado a lado, puntaje 85 y resultado de la IA |
+| Palabras marcadas en `/evidencias/9/3` | «brilla» y «juegan» resaltadas · aviso «La IA marcó 2 palabras para revisar» |
 | Abrir `/evidencias/9/6` (texto) | Texto original y aviso de que la IA evaluó el texto directamente |
 | `/evidencias/9/999` | 404 · mensaje y botón Reintentar |
 | Filtro por tipo en `/evidencias` | Audio → 3 · Texto → 3 · sin resultados → aviso del filtro |
@@ -100,11 +101,12 @@ npm run preview -- --port 4173
 | Backend `MigracionEvidenciaTest` | 6/6 · tabla, audio/texto, estado de revisión, cascada e índices |
 | Backend `MigracionEvidenciaDatosPruebaTest` | 5/5 · datos de audio y texto, estados y niveles por orden |
 | Backend `EvidenciaRepositoryTest` | 4/4 · pendientes por fecha y filtro por tipo, detalle por id y aula, y evidencia de otra aula |
-| Backend `EvidenciaServiceTest` | 14/14 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo, aula del docente y detalle con transcripción y puntaje |
+| Backend `EvidenciaServiceTest` | 16/16 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo, aula del docente, detalle con transcripción y puntaje, y palabras marcadas normalizadas |
 | Backend `EvidenciaControllerTest` | 21/21 · ruta, respuesta de audio y texto, filtro por tipo, detalle, audio completo, 206, 416, header y errores |
 | Backend `AlmacenAudioTest` | 10/10 · nombre desde archivo, URL y query, carpeta, rutas inválidas y tipo MIME |
 | Backend `AudioEvidenciaServiceTest` | 6/6 · audio del aula, texto, otra aula, aula inexistente, aula ajena y archivo faltante |
 | Backend `MigracionEvidenciaDetalleTest` | 3/3 · columnas de V13, rango 0-100 del puntaje y datos de prueba |
+| Backend `MigracionEvidenciaPalabrasTest` | 2/2 · columna de V14 y palabras marcadas en las evidencias de prueba sin ids quemados |
 | Backend `MigracionPuntajeEstudianteTest` | 6/6 · tabla, una fila por alumno, acumulados desde cero, valores no negativos, actualización y cascada |
 | Backend `PuntajeServiceTest` | 11/11 · acumulado nuevo y existente, umbrales de estrellas, puntajes límite 0 y 100, tipo y puntaje inválidos y alumno inexistente |
 | Backend `ReglaPuntuacionTest` | 3/3 · estrellas por umbral, umbrales crecientes y puntos no negativos |
@@ -115,12 +117,12 @@ npm run preview -- --port 4173
 | Backend `CatalogoControllerTest` | 4/4 · catálogo con `fuente` y `urlRecurso`, filtros, 403 y 404 |
 | Backend `ConfiguracionCorsTest` | 4/4 · origen local, varios orígenes, espacios y lista vacía |
 | Backend `OpenApiConfigTest` | 4/4 · servidor, información, esquemas de seguridad y orden de secciones |
-| Backend `test` | 285/285 |
+| Backend `test` | 289/289 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
 | Frontend `Evidencias.test.jsx` | 13/13 · tarjetas, orden, conteo por tipo, filtro y vuelta a todos los tipos, aula activa, cambio de aula, Actualizar, sin aulas, vacío, error y enlace Revisar evidencia |
-| Frontend `DetalleEvidencia.test.jsx` | 6/6 · audio y transcripción lado a lado, texto sin transcripción, avisos sin transcripción/puntaje, error con reintento y estado rechazada |
+| Frontend `DetalleEvidencia.test.jsx` | 7/7 · audio y transcripción lado a lado, palabras marcadas resaltadas, texto sin transcripción, avisos sin transcripción/puntaje, error con reintento y estado rechazada |
 | Frontend `ReproductorAudio.test.jsx` | 5/5 · descarga al pulsar, header del docente, blob, error con reintento, liberación y nombre genérico |
 | Frontend `Catalogo.test.jsx` | 12/12 · lecturas, filtros, búsqueda, modal, asignación, etiqueta Oficial y enlace al recurso |
-| Frontend `test`, `lint`, `build` | 110/110 · OK · OK |
+| Frontend `test`, `lint`, `build` | 111/111 · OK · OK |

@@ -259,6 +259,7 @@ class EvidenciaServiceTest {
                 "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
         ReflectionTestUtils.setField(audio, "id", 30L);
         audio.setTranscripcion("El sol brilla. Los niños juegan en el parque.");
+        audio.setPalabrasMarcadas("brilla, juegan");
         audio.setPuntajeIa((short) 85);
         audio.setResultadoIa("Lee con claridad y buen ritmo.");
         ReflectionTestUtils.setField(audio, "creadoEn",
@@ -285,11 +286,44 @@ class EvidenciaServiceTest {
         assertNull(detalle.texto());
         assertEquals("El sol brilla. Los niños juegan en el parque.",
                 detalle.transcripcion());
+        assertEquals(List.of("brilla", "juegan"), detalle.palabrasMarcadas());
         assertEquals((short) 85, detalle.puntajeIa());
         assertEquals("Lee con claridad y buen ritmo.", detalle.resultadoIa());
         assertEquals(Evidencia.PENDIENTE, detalle.estadoRevision());
         assertEquals(LocalDateTime.of(2026, 11, 10, 9, 0), detalle.creadoEn());
         assertNull(detalle.revisadoEn());
+    }
+
+    @Test
+    void normalizaLasPalabrasMarcadasYDescartaDuplicados() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+        audio.setPalabrasMarcadas("  brilla , juegan, brilla ,, ");
+        audio.setPuntajeIa((short) 85);
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+
+        EvidenciaDetalleResponse detalle = service.detalle(1L, 10L, 30L);
+
+        assertEquals(List.of("brilla", "juegan"), detalle.palabrasMarcadas());
+    }
+
+    @Test
+    void unaEvidenciaSinPalabrasMarcadasDevuelveListaVacia() {
+        Evidencia texto = Evidencia.texto(estudiante, nivelTexto,
+                "Mi mamá prepara sopa. Yo pongo la mesa.");
+        ReflectionTestUtils.setField(texto, "id", 29L);
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(29L, 10L))
+                .thenReturn(Optional.of(texto));
+
+        EvidenciaDetalleResponse detalle = service.detalle(1L, 10L, 29L);
+
+        assertEquals(List.of(), detalle.palabrasMarcadas());
     }
 
     @Test
@@ -313,6 +347,7 @@ class EvidenciaServiceTest {
         assertEquals("Mi mamá prepara sopa. Yo pongo la mesa.", detalle.texto());
         assertNull(detalle.audioUrl());
         assertNull(detalle.transcripcion());
+        assertEquals(List.of(), detalle.palabrasMarcadas());
         assertEquals((short) 80, detalle.puntajeIa());
         assertEquals(Evidencia.APROBADA, detalle.estadoRevision());
         assertEquals(LocalDateTime.of(2026, 11, 11, 8, 0), detalle.revisadoEn());

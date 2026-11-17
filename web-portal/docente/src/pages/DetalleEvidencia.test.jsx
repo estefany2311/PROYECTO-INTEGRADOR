@@ -22,6 +22,7 @@ const AUDIO = {
   audioUrl: "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3",
   texto: null,
   transcripcion: "El sol brilla. Los niños juegan en el parque.",
+  palabrasMarcadas: ["brilla", "juegan"],
   puntajeIa: 85,
   resultadoIa: "Lee con claridad y buen ritmo.",
   estadoRevision: "pendiente",
@@ -43,6 +44,7 @@ const TEXTO = {
   audioUrl: null,
   texto: "Mi mamá prepara sopa. Yo pongo la mesa.",
   transcripcion: null,
+  palabrasMarcadas: [],
   puntajeIa: 80,
   resultadoIa: "Escribe oraciones completas.",
   estadoRevision: "aprobada",
@@ -85,8 +87,16 @@ describe("Detalle de la evidencia (T-374)", () => {
     expect(
       screen.getByRole("heading", { name: "Transcripción de la IA" })
     ).toBeInTheDocument();
+    const comparacion = screen.getByRole("region", {
+      name: "Contenido del alumno y transcripción de la IA",
+    });
+    expect(comparacion).toHaveTextContent(
+      "El sol brilla. Los niños juegan en el parque."
+    );
+    expect(screen.getByText("brilla").tagName).toBe("MARK");
+    expect(screen.getByText("juegan").tagName).toBe("MARK");
     expect(
-      screen.getByText("El sol brilla. Los niños juegan en el parque.")
+      screen.getByText("La IA marcó 2 palabras para revisar.")
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Escuchar audio" })
@@ -100,6 +110,21 @@ describe("Detalle de la evidencia (T-374)", () => {
     expect(
       screen.getByRole("link", { name: "Volver a evidencias" })
     ).toHaveAttribute("href", "/evidencias");
+  });
+
+  it("resalta las palabras marcadas sin distinguir mayúsculas ni tildes", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue({
+      ...AUDIO,
+      transcripcion: "Mi mamá me ama. Yo la abrazo todos los días.",
+      palabrasMarcadas: ["dias", "ABRAZO"],
+    });
+    mostrar();
+
+    expect(
+      await screen.findByRole("heading", { name: "Minji Prueba" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("días").tagName).toBe("MARK");
+    expect(screen.getByText("abrazo").tagName).toBe("MARK");
   });
 
   it("muestra el texto original del alumno y explica que no hay transcripción", async () => {
@@ -128,6 +153,7 @@ describe("Detalle de la evidencia (T-374)", () => {
     expect(screen.getByText("Escribe oraciones completas.")).toBeInTheDocument();
     expect(screen.getAllByText("Aprobada").length).toBeGreaterThan(0);
     expect(screen.queryByText("Aún no revisada")).not.toBeInTheDocument();
+    expect(screen.queryByText(/La IA marcó/)).not.toBeInTheDocument();
   });
 
   it("avisa cuando la IA todavía no transcribió el audio", async () => {
