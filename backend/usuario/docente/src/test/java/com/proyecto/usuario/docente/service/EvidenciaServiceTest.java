@@ -327,6 +327,26 @@ class EvidenciaServiceTest {
     }
 
     @Test
+    void devuelveLasPalabrasMarcadasDeUnaEvidenciaDeTexto() {
+        Evidencia texto = Evidencia.texto(estudiante, nivelTexto,
+                "Mi mamá prepara sopa. Yo pongo la mesa.");
+        ReflectionTestUtils.setField(texto, "id", 29L);
+        texto.setPalabrasMarcadas("sopa, mesa");
+        texto.setEstadoRevision(Evidencia.RECHAZADA);
+        texto.setRevisadoEn(LocalDateTime.of(2026, 11, 11, 8, 0));
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(29L, 10L))
+                .thenReturn(Optional.of(texto));
+
+        EvidenciaDetalleResponse detalle = service.detalle(1L, 10L, 29L);
+
+        assertEquals(List.of("sopa", "mesa"), detalle.palabrasMarcadas());
+        assertEquals(Evidencia.RECHAZADA, detalle.estadoRevision());
+        assertEquals(LocalDateTime.of(2026, 11, 11, 8, 0), detalle.revisadoEn());
+    }
+
+    @Test
     void devuelveElDetalleDeUnTextoRevisadoConSuPuntaje() {
         Evidencia texto = Evidencia.texto(estudiante, nivelTexto,
                 "Mi mamá prepara sopa. Yo pongo la mesa.");

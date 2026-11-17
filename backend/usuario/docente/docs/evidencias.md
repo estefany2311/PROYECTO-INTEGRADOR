@@ -238,8 +238,14 @@ quemar ids. El portal las resalta en el contenido y avisa cuántas marcó la IA.
 | `MigracionEvidenciaDetalleTest` | Columnas de V13, rango 0–100 del puntaje y datos de prueba sin ids quemados. |
 | `MigracionEvidenciaPalabrasTest` | Columna de V14 y palabras marcadas en las evidencias de prueba sin ids quemados. |
 | `EvidenciaRepositoryTest` | Detalle por id y aula, sin importar el estado, y evidencia de otra aula vacía. |
-| `EvidenciaServiceTest` | Audio con transcripción, puntaje y palabras marcadas, normalización de la lista, texto revisado, evidencia de otra aula, aula inexistente y aula ajena. |
-| `EvidenciaControllerTest` | Ruta del detalle, respuesta de audio y texto con `palabrasMarcadas`, 404, 403 y header obligatorio. |
+| `EvidenciaServiceTest` | Audio con transcripción, puntaje y palabras marcadas, normalización de la lista, marcas en una evidencia de texto, texto revisado, evidencia de otra aula, aula inexistente y aula ajena. |
+| `EvidenciaControllerTest` | Ruta del detalle, respuesta de audio y texto con `palabrasMarcadas`, evidencia rechazada, detalle sin evaluación de la IA, 404, 403 y header obligatorio. |
+
+T-376 cierra las pruebas del detalle: el backend cubre el caso de una evidencia
+rechazada y el de una evidencia que la IA todavía no evaluó (`transcripcion`,
+`puntajeIa` y `resultadoIa` nulos, `palabrasMarcadas` vacío), y el portal cubre el
+botón **Actualizar**, las marcas en una evidencia de texto y un detalle sin
+`palabrasMarcadas`.
 
 ## 9. Audio seguro de la evidencia (T-372, US-32)
 
@@ -351,4 +357,4 @@ Errores:
 | `AudioEvidenciaServiceTest` | Audio del aula, evidencia de texto, evidencia de otra aula, aula inexistente, aula ajena y archivo que no está en la carpeta. |
 | `EvidenciaControllerTest` | Audio completo, `206` con `Content-Range`, `416`, formato de `Range` inválido, `400` de texto, `403`, `404` y header obligatorio. |
 | `ReproductorAudio.test.jsx` | No descarga hasta el clic, descarga con el header y reproduce desde un blob, error con reintento, liberación del blob y nombre genérico. |
-| `DetalleEvidencia.test.jsx` | Audio y transcripción lado a lado, palabras marcadas resaltadas, texto sin transcripción, avisos sin transcripción/puntaje, error con reintento y estado rechazada. |
+| `DetalleEvidencia.test.jsx` | Audio y transcripción lado a lado, palabras marcadas resaltadas (audio y texto), texto sin transcripción, detalle sin `palabrasMarcadas`, avisos sin transcripción/puntaje, actualización con el botón Actualizar, error con reintento y estado rechazada. |

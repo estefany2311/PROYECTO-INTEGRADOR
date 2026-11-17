@@ -251,6 +251,51 @@ class EvidenciaControllerTest {
     }
 
     @Test
+    void devuelveElDetalleDeUnaEvidenciaRechazada() throws Exception {
+        when(service.detalle(1L, 10L, 31L)).thenReturn(new EvidenciaDetalleResponse(
+                31L, 7L, "Minji", "Prueba", (short) 5, "5.º",
+                (short) 3, "Cuento corto", "oralidad", "audio",
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel3.mp3", null,
+                "Había una vez un conejo que quería volar.",
+                List.of("conejo", "despegaba"),
+                (short) 40, "El audio no responde al reto.",
+                "rechazada", LocalDateTime.of(2026, 11, 8, 10, 0),
+                LocalDateTime.of(2026, 11, 9, 9, 0)));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias/31")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estadoRevision").value("rechazada"))
+                .andExpect(jsonPath("$.revisadoEn").exists())
+                .andExpect(jsonPath("$.puntajeIa").value(40))
+                .andExpect(jsonPath("$.palabrasMarcadas[0]").value("conejo"))
+                .andExpect(jsonPath("$.palabrasMarcadas[1]").value("despegaba"));
+
+        verify(service).detalle(1L, 10L, 31L);
+    }
+
+    @Test
+    void elDetalleSinEvaluacionDeLaIaDevuelveCamposVacios() throws Exception {
+        when(service.detalle(1L, 10L, 30L)).thenReturn(new EvidenciaDetalleResponse(
+                30L, 7L, "Minji", "Prueba", (short) 5, "5.º",
+                (short) 1, "Primeros pasos", "lectura", "audio",
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3", null,
+                null, List.of(), null, null,
+                "pendiente", LocalDateTime.of(2026, 11, 10, 9, 0), null));
+
+        mvc.perform(get("/api/docente/aulas/10/evidencias/30")
+                        .header("X-Docente-Id", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.transcripcion").doesNotExist())
+                .andExpect(jsonPath("$.puntajeIa").doesNotExist())
+                .andExpect(jsonPath("$.resultadoIa").doesNotExist())
+                .andExpect(jsonPath("$.palabrasMarcadas").isEmpty())
+                .andExpect(jsonPath("$.revisadoEn").doesNotExist());
+
+        verify(service).detalle(1L, 10L, 30L);
+    }
+
+    @Test
     void unaEvidenciaDeOtraAulaDevuelve404() throws Exception {
         when(service.detalle(1L, 10L, 99L))
                 .thenThrow(new ReglaNegocioException(

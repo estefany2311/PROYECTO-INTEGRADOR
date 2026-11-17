@@ -223,4 +223,61 @@ describe("Detalle de la evidencia (T-374)", () => {
     expect(screen.getAllByText("Rechazada").length).toBeGreaterThan(0);
     expect(screen.queryByText("Aún no revisada")).not.toBeInTheDocument();
   });
+
+  it("actualiza el detalle al pulsar Actualizar", async () => {
+    api.obtenerDetalleEvidencia
+      .mockResolvedValueOnce(AUDIO)
+      .mockResolvedValueOnce({
+        ...AUDIO,
+        estadoRevision: "aprobada",
+        resultadoIa: "Revisado por la docente.",
+        revisadoEn: "2026-11-11T10:00:00",
+      });
+    mostrar();
+
+    expect(
+      await screen.findByText("Lee con claridad y buen ritmo.")
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Actualizar" }));
+
+    expect(
+      await screen.findByText("Revisado por la docente.")
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Aprobada").length).toBeGreaterThan(0);
+    expect(api.obtenerDetalleEvidencia).toHaveBeenCalledTimes(2);
+  });
+
+  it("resalta las palabras marcadas en una evidencia de texto", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue({
+      ...TEXTO,
+      palabrasMarcadas: ["sopa", "mesa"],
+    });
+    mostrar("10", "29");
+
+    expect(
+      await screen.findByRole("heading", { name: "Breysi Zavala" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("sopa").tagName).toBe("MARK");
+    expect(screen.getByText("mesa").tagName).toBe("MARK");
+    expect(
+      screen.getByText("La IA marcó 2 palabras para revisar.")
+    ).toBeInTheDocument();
+  });
+
+  it("tolera un detalle sin palabras marcadas", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue({
+      ...AUDIO,
+      palabrasMarcadas: undefined,
+    });
+    mostrar();
+
+    expect(
+      await screen.findByRole("heading", { name: "Minji Prueba" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("El sol brilla. Los niños juegan en el parque.")
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/La IA marcó/)).not.toBeInTheDocument();
+  });
 });

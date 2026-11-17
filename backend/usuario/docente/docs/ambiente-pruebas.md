@@ -101,8 +101,8 @@ npm run preview -- --port 4173
 | Backend `MigracionEvidenciaTest` | 6/6 · tabla, audio/texto, estado de revisión, cascada e índices |
 | Backend `MigracionEvidenciaDatosPruebaTest` | 5/5 · datos de audio y texto, estados y niveles por orden |
 | Backend `EvidenciaRepositoryTest` | 4/4 · pendientes por fecha y filtro por tipo, detalle por id y aula, y evidencia de otra aula |
-| Backend `EvidenciaServiceTest` | 16/16 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo, aula del docente, detalle con transcripción y puntaje, y palabras marcadas normalizadas |
-| Backend `EvidenciaControllerTest` | 21/21 · ruta, respuesta de audio y texto, filtro por tipo, detalle, audio completo, 206, 416, header y errores |
+| Backend `EvidenciaServiceTest` | 17/17 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo, aula del docente, detalle con transcripción y puntaje, palabras marcadas normalizadas y marcas en una evidencia de texto |
+| Backend `EvidenciaControllerTest` | 23/23 · ruta, respuesta de audio y texto, filtro por tipo, detalle, detalle rechazado, detalle sin evaluación de la IA, audio completo, 206, 416, header y errores |
 | Backend `AlmacenAudioTest` | 10/10 · nombre desde archivo, URL y query, carpeta, rutas inválidas y tipo MIME |
 | Backend `AudioEvidenciaServiceTest` | 6/6 · audio del aula, texto, otra aula, aula inexistente, aula ajena y archivo faltante |
 | Backend `MigracionEvidenciaDetalleTest` | 3/3 · columnas de V13, rango 0-100 del puntaje y datos de prueba |
@@ -117,12 +117,12 @@ npm run preview -- --port 4173
 | Backend `CatalogoControllerTest` | 4/4 · catálogo con `fuente` y `urlRecurso`, filtros, 403 y 404 |
 | Backend `ConfiguracionCorsTest` | 4/4 · origen local, varios orígenes, espacios y lista vacía |
 | Backend `OpenApiConfigTest` | 4/4 · servidor, información, esquemas de seguridad y orden de secciones |
-| Backend `test` | 289/289 |
+| Backend `test` | 292/292 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
 | Frontend `Evidencias.test.jsx` | 13/13 · tarjetas, orden, conteo por tipo, filtro y vuelta a todos los tipos, aula activa, cambio de aula, Actualizar, sin aulas, vacío, error y enlace Revisar evidencia |
-| Frontend `DetalleEvidencia.test.jsx` | 7/7 · audio y transcripción lado a lado, palabras marcadas resaltadas, texto sin transcripción, avisos sin transcripción/puntaje, error con reintento y estado rechazada |
+| Frontend `DetalleEvidencia.test.jsx` | 10/10 · audio y transcripción lado a lado, palabras marcadas resaltadas (audio y texto), texto sin transcripción, detalle sin `palabrasMarcadas`, avisos sin transcripción/puntaje, actualización con el botón Actualizar, error con reintento y estado rechazada |
 | Frontend `ReproductorAudio.test.jsx` | 5/5 · descarga al pulsar, header del docente, blob, error con reintento, liberación y nombre genérico |
 | Frontend `Catalogo.test.jsx` | 12/12 · lecturas, filtros, búsqueda, modal, asignación, etiqueta Oficial y enlace al recurso |
-| Frontend `test`, `lint`, `build` | 111/111 · OK · OK |
+| Frontend `test`, `lint`, `build` | 114/114 · OK · OK |
