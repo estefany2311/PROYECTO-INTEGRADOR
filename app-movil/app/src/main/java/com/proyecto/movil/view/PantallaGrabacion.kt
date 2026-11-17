@@ -46,6 +46,7 @@ import com.proyecto.movil.viewmodel.GrabacionUiState
 import com.proyecto.movil.viewmodel.GrabacionViewModel
 import com.proyecto.movil.viewmodel.LecturaUiState
 import com.proyecto.movil.viewmodel.LecturaViewModel
+import com.proyecto.movil.viewmodel.Reproduccion
 
 @Composable
 fun PantallaGrabacion(
@@ -57,6 +58,7 @@ fun PantallaGrabacion(
     ConPermisoMicrofono(onAhoraNo = onVolver) {
         val lectura by lecturaViewModel.uiState.collectAsStateWithLifecycle()
         val grabacion by grabacionViewModel.uiState.collectAsStateWithLifecycle()
+        val reproduccion by grabacionViewModel.reproduccion.collectAsStateWithLifecycle()
 
         LaunchedEffect(nivelId) {
             lecturaViewModel.cargar(nivelId)
@@ -69,7 +71,9 @@ fun PantallaGrabacion(
             onVolver = onVolver,
             onGrabar = { grabacionViewModel.grabar(nivelId) },
             onTerminar = grabacionViewModel::terminar,
-            onGrabarOtraVez = grabacionViewModel::grabarOtraVez
+            onGrabarOtraVez = grabacionViewModel::grabarOtraVez,
+            reproduccion = reproduccion,
+            onEscuchar = grabacionViewModel::escuchar
         )
     }
 }
@@ -82,7 +86,9 @@ fun ContenidoGrabacion(
     onVolver: () -> Unit,
     onGrabar: () -> Unit,
     onTerminar: () -> Unit,
-    onGrabarOtraVez: () -> Unit
+    onGrabarOtraVez: () -> Unit,
+    reproduccion: Reproduccion = Reproduccion(),
+    onEscuchar: () -> Unit = {}
 ) {
     Column(
         Modifier.fillMaxSize().background(ColoresAventura.Cielo).padding(24.dp),
@@ -113,17 +119,18 @@ fun ContenidoGrabacion(
             }
         }
         Spacer(Modifier.height(20.dp))
-        ControlesGrabacion(estado, onGrabar, onTerminar, onGrabarOtraVez, onVolver)
+        ControlesGrabacion(estado, reproduccion, onGrabar, onTerminar, onGrabarOtraVez, onEscuchar)
     }
 }
 
 @Composable
 private fun ControlesGrabacion(
     estado: GrabacionUiState,
+    reproduccion: Reproduccion,
     onGrabar: () -> Unit,
     onTerminar: () -> Unit,
     onGrabarOtraVez: () -> Unit,
-    onVolver: () -> Unit
+    onEscuchar: () -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth()) {
         when (estado) {
@@ -184,6 +191,8 @@ private fun ControlesGrabacion(
                     modifier = Modifier.testTag("aviso_guardada")
                 )
                 Spacer(Modifier.height(12.dp))
+                ReproductorGrabacion(reproduccion, estado.grabacion.duracionMs, onEscuchar)
+                Spacer(Modifier.height(12.dp))
                 OutlinedButton(
                     onClick = onGrabarOtraVez,
                     shape = RoundedCornerShape(32.dp),
@@ -204,6 +213,50 @@ private fun ControlesGrabacion(
                     Text("Intentar otra vez", fontSize = 20.sp, color = ColoresAventura.TextoOscuro)
                 }
             }
+        }
+    }
+}
+
+// T-407: botón para escuchar o pausar, barra de avance y tiempo
+@Composable
+private fun ReproductorGrabacion(reproduccion: Reproduccion, duracionMs: Long, onEscuchar: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .testTag("reproductor_grabacion")
+    ) {
+        val descripcion = if (reproduccion.reproduciendo) "Pausar mi grabación" else "Escuchar mi grabación"
+        Button(
+            onClick = onEscuchar,
+            shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Turquesa),
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier.size(64.dp).semantics { contentDescription = descripcion }.testTag("boton_escuchar")
+        ) {
+            Icon(
+                painterResource(if (reproduccion.reproduciendo) R.drawable.ic_pausa else R.drawable.ic_play),
+                contentDescription = null, tint = Color.White, modifier = Modifier.size(36.dp)
+            )
+        }
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            LinearProgressIndicator(
+                progress = { if (duracionMs > 0) (reproduccion.posicionMs.toFloat() / duracionMs).coerceIn(0f, 1f) else 0f },
+                color = ColoresAventura.Turquesa,
+                trackColor = ColoresAventura.Cielo,
+                modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)).testTag("barra_reproduccion")
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                reproduccion.error ?: "${formatoTiempo(reproduccion.posicionMs)} / ${formatoTiempo(duracionMs)}",
+                fontSize = 18.sp,
+                color = ColoresAventura.TextoOscuro,
+                modifier = Modifier.testTag("tiempo_reproduccion")
+            )
         }
     }
 }
@@ -318,9 +371,16 @@ fun GrabacionGuardadaPreview() = GrabacionDePrueba(
     GrabacionUiState.Grabada(com.proyecto.movil.model.audio.Grabacion(java.io.File("nivel_1.wav"), 45_000), deAntes = true)
 )
 
+@Preview(name = "Grabación · escuchando", widthDp = 800, heightDp = 1280, showBackground = true)
 @Composable
-private fun GrabacionDePrueba(estado: GrabacionUiState) {
+fun GrabacionEscuchandoPreview() = GrabacionDePrueba(
+    GrabacionUiState.Grabada(com.proyecto.movil.model.audio.Grabacion(java.io.File("nivel_1.wav"), 45_000)),
+    Reproduccion(reproduciendo = true, posicionMs = 18_000)
+)
+
+@Composable
+private fun GrabacionDePrueba(estado: GrabacionUiState, reproduccion: Reproduccion = Reproduccion()) {
     AppMovilTheme(dynamicColor = false) {
-        ContenidoGrabacion(LECTURA_PRUEBA, estado, onVolver = {}, onGrabar = {}, onTerminar = {}, onGrabarOtraVez = {})
+        ContenidoGrabacion(LECTURA_PRUEBA, estado, onVolver = {}, onGrabar = {}, onTerminar = {}, onGrabarOtraVez = {}, reproduccion = reproduccion)
     }
 }
