@@ -64,6 +64,21 @@ class EvidenciaRepositoryTest {
                 """, id, nivelId, tipo, tipo, tipo, estado, diasAtras);
     }
 
+    // T-377 (US-33): la evidencia guarda la nota final y el estado corregida
+    @Test
+    void guardaLaCalificacionFinalYElEstadoCorregida() {
+        jdbc.update("""
+                UPDATE evidencia
+                SET estado_revision = 'corregida', calificacion_final = 90
+                WHERE id = -5003
+                """);
+
+        Evidencia corregida = evidenciaRepository.findById(-5003L).orElseThrow();
+
+        assertEquals(Evidencia.CORREGIDA, corregida.getEstadoRevision());
+        assertEquals((short) 90, corregida.getCalificacionFinal());
+    }
+
     @Test
     void devuelveSoloLasPendientesDeLaMasRecienteALaMasAntigua() {
         List<Evidencia> pendientes = evidenciaRepository

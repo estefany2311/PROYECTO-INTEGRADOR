@@ -10,17 +10,21 @@ import java.time.LocalDateTime;
  * Karla registra la evidencia desde la tablet y el docente la revisa en US-31.
  * Una evidencia de audio guarda su URL y una de texto su contenido; la base
  * valida con un CHECK que coincida el tipo con el contenido.</p>
+ *
+ * <p>T-377 (US-33): la revisión suma el estado {@code corregida} y la
+ * {@code calificacionFinal} que deja el docente al ajustar la nota de la IA.</p>
  */
 @Entity
 @Table(name = "evidencia")
 public class Evidencia {
 
-    // valores permitidos; coinciden con los CHECK de la migración V10
+    // valores permitidos; coinciden con los CHECK de las migraciones V10 y V15
     public static final String AUDIO = "audio";
     public static final String TEXTO = "texto";
     public static final String PENDIENTE = "pendiente";
     public static final String APROBADA = "aprobada";
     public static final String RECHAZADA = "rechazada";
+    public static final String CORREGIDA = "corregida";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -61,6 +65,10 @@ public class Evidencia {
 
     @Column(name = "estado_revision", nullable = false)
     private String estadoRevision = PENDIENTE;
+
+    // T-377 (US-33): nota final del docente (0 a 100); nula mientras no revisa
+    @Column(name = "calificacion_final")
+    private Short calificacionFinal;
 
     @Column(name = "creado_en", nullable = false, insertable = false, updatable = false)
     private LocalDateTime creadoEn;
@@ -110,6 +118,8 @@ public class Evidencia {
     public void setPuntajeIa(Short puntajeIa) { this.puntajeIa = puntajeIa; }
     public String getEstadoRevision() { return estadoRevision; }
     public void setEstadoRevision(String estadoRevision) { this.estadoRevision = estadoRevision; }
+    public Short getCalificacionFinal() { return calificacionFinal; }
+    public void setCalificacionFinal(Short calificacionFinal) { this.calificacionFinal = calificacionFinal; }
     public LocalDateTime getCreadoEn() { return creadoEn; }
     public LocalDateTime getRevisadoEn() { return revisadoEn; }
     public void setRevisadoEn(LocalDateTime revisadoEn) { this.revisadoEn = revisadoEn; }

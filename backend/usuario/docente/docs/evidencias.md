@@ -22,15 +22,16 @@ Migración: `backend/usuario/docente/src/main/resources/db/migration/V10__eviden
 | `audio_url` | `VARCHAR(500)` | URL o ruta del audio; obligatoria cuando `tipo = 'audio'`. |
 | `texto` | `TEXT` | Texto escrito por el alumno; obligatorio cuando `tipo = 'texto'`. |
 | `resultado_ia` | `TEXT` | Resultado o retroalimentación del motor de IA. Puede ser nulo mientras no se evalúa. |
-| `estado_revision` | `VARCHAR(15)` | `pendiente` (por defecto), `aprobada` o `rechazada`. |
+| `estado_revision` | `VARCHAR(15)` | `pendiente` (por defecto), `aprobada`, `rechazada` o `corregida` (V15, US-33). |
 | `creado_en` | `TIMESTAMP` | Fecha de registro; por defecto `now()`. |
 | `revisado_en` | `TIMESTAMP` | Fecha en que el docente revisó la evidencia. |
+| `calificacion_final` | `SMALLINT` | Nota final que deja el docente, de 0 a 100 (V15, US-33). Nula mientras no revisa. |
 
 ### Reglas de integridad
 
 - El `CHECK` `chk_evidencia_contenido` exige `audio_url` para las evidencias de audio y
   `texto` para las de texto.
-- `estado_revision` solo acepta `pendiente`, `aprobada` o `rechazada`.
+- `estado_revision` solo acepta `pendiente`, `aprobada`, `rechazada` o `corregida`.
 - `ON DELETE CASCADE` limpia las evidencias cuando se borra el alumno o el nivel.
 
 ### Índices
@@ -42,7 +43,8 @@ Migración: `backend/usuario/docente/src/main/resources/db/migration/V10__eviden
 ## 3. Modelo Java
 
 - `model/Evidencia.java`: entidad JPA con las constantes `AUDIO`, `TEXTO`, `PENDIENTE`,
-  `APROBADA` y `RECHAZADA`, y las fábricas `Evidencia.audio(...)` y `Evidencia.texto(...)`.
+  `APROBADA`, `RECHAZADA` y `CORREGIDA`, y las fábricas `Evidencia.audio(...)` y
+  `Evidencia.texto(...)`.
 - `repository/EvidenciaRepository.java`: consultas de pendientes por aula, con el
   alumno, su grado y el nivel cargados con `@EntityGraph` (T-298).
 
@@ -358,3 +360,35 @@ Errores:
 | `EvidenciaControllerTest` | Audio completo, `206` con `Content-Range`, `416`, formato de `Range` inválido, `400` de texto, `403`, `404` y header obligatorio. |
 | `ReproductorAudio.test.jsx` | No descarga hasta el clic, descarga con el header y reproduce desde un blob, error con reintento, liberación del blob y nombre genérico. |
 | `DetalleEvidencia.test.jsx` | Audio y transcripción lado a lado, palabras marcadas resaltadas (audio y texto), texto sin transcripción, detalle sin `palabrasMarcadas`, avisos sin transcripción/puntaje, actualización con el botón Actualizar, error con reintento y estado rechazada. |
+
+## 10. Calificación final y estado corregida (T-377, US-33)
+
+El docente debe **aprobar o corregir la calificación de la IA** para que la evaluación
+sea justa. T-377 prepara la tabla `evidencia` para esa revisión; los endpoints y los
+botones llegan en T-378 y T-381.
+
+### Migración V15
+
+`V15__evidencia_calificacion_final.sql` hace dos cambios:
+
+| Cambio | Regla |
+|---|---|
+| Columna `calificacion_final` | `SMALLINT` de 0 a 100 (`chk_evidencia_calificacion_final`). Nula mientras el docente no revisa. |
+| Estado `corregida` | El `CHECK` de `estado_revision` pasa a aceptar `pendiente`, `aprobada`, `rechazada` y `corregida`. |
+
+El `CHECK` de V10 se reemplaza buscando su nombre por definición (no se asume el nombre
+que le dio Postgres). Se conserva `rechazada` porque las evidencias revisadas en US-31
+siguen siendo válidas.
+
+### Modelo Java
+
+`Evidencia` agrega la constante `CORREGIDA`, el campo `calificacionFinal` con su
+`get`/`set` y el comentario de la revisión. El estado por defecto sigue siendo
+`pendiente` y la calificación final nace nula.
+
+### Pruebas
+
+| Prueba | Cobertura |
+|---|---|
+| `MigracionEvidenciaCalificacionTest` | Columna `calificacion_final`, rango 0–100 y el `CHECK` del estado con `corregida` sin perder los estados anteriores. |
+| `EvidenciaRepositoryTest` | Actualiza una evidencia a `corregida` con nota final y la vuelve a leer desde PostgreSQL. |
