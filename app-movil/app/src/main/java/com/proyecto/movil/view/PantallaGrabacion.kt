@@ -52,6 +52,7 @@ import com.proyecto.movil.viewmodel.Reproduccion
 fun PantallaGrabacion(
     nivelId: Int,
     onVolver: () -> Unit,
+    onEnviar: () -> Unit = {},
     lecturaViewModel: LecturaViewModel = viewModel(),
     grabacionViewModel: GrabacionViewModel = viewModel()
 ) {
@@ -73,7 +74,11 @@ fun PantallaGrabacion(
             onTerminar = grabacionViewModel::terminar,
             onGrabarOtraVez = grabacionViewModel::grabarOtraVez,
             reproduccion = reproduccion,
-            onEscuchar = grabacionViewModel::escuchar
+            onEscuchar = grabacionViewModel::escuchar,
+            onEnviar = {
+                grabacionViewModel.pausar()
+                onEnviar()   // US-13 (T-417): aquí se sube el audio
+            }
         )
     }
 }
@@ -88,7 +93,8 @@ fun ContenidoGrabacion(
     onTerminar: () -> Unit,
     onGrabarOtraVez: () -> Unit,
     reproduccion: Reproduccion = Reproduccion(),
-    onEscuchar: () -> Unit = {}
+    onEscuchar: () -> Unit = {},
+    onEnviar: () -> Unit = {}
 ) {
     Column(
         Modifier.fillMaxSize().background(ColoresAventura.Cielo).padding(24.dp),
@@ -119,7 +125,7 @@ fun ContenidoGrabacion(
             }
         }
         Spacer(Modifier.height(20.dp))
-        ControlesGrabacion(estado, reproduccion, onGrabar, onTerminar, onGrabarOtraVez, onEscuchar)
+        ControlesGrabacion(estado, reproduccion, onGrabar, onTerminar, onGrabarOtraVez, onEscuchar, onEnviar)
     }
 }
 
@@ -130,7 +136,8 @@ private fun ControlesGrabacion(
     onGrabar: () -> Unit,
     onTerminar: () -> Unit,
     onGrabarOtraVez: () -> Unit,
-    onEscuchar: () -> Unit
+    onEscuchar: () -> Unit,
+    onEnviar: () -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth()) {
         when (estado) {
@@ -214,6 +221,17 @@ private fun ControlesGrabacion(
                     Text("Intentar otra vez", fontSize = 20.sp, color = ColoresAventura.TextoOscuro)
                 }
             }
+        }
+        // T-409: se ve siempre (menos al grabar), pero solo se activa cuando hay grabación
+        if (estado !is GrabacionUiState.Grabando) {
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onEnviar,
+                enabled = estado is GrabacionUiState.Grabada,
+                colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Turquesa),
+                shape = RoundedCornerShape(36.dp),
+                modifier = Modifier.fillMaxWidth().height(72.dp).testTag("boton_enviar_grabacion")
+            ) { Text("Enviar", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
         }
     }
 }
