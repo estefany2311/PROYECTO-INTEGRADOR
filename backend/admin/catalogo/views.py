@@ -6,13 +6,14 @@ from django.db import transaction
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 
 from usuarios.permissions import TienePermiso
 from . import biblioteca
 from .models import Lectura, RecursoOficial
 from .serializers import (ImportarLecturaSerializer, LecturaSerializer, RangoPaginasSerializer,
-                          RecursoOficialSerializer)
+                          RecursoLecturaSerializer, RecursoOficialSerializer)
 from .servicios import lectura_esta_asignada
 
 
@@ -67,6 +68,19 @@ class LecturaViewSet(viewsets.ModelViewSet):
         lectura.activo = False
         lectura.save(update_fields=['activo'])
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    @action(detail=True, methods=['get', 'post'], parser_classes=[MultiPartParser, FormParser])
+    def recursos(self, request, pk=None):
+        """US-42: GET lista los recursos de la lectura; POST sube una imagen o un audio (T-343)."""
+        lectura = self.get_object()
+        if request.method == 'GET':
+            recursos = lectura.recursos.select_related('subido_por')
+            return Response(RecursoLecturaSerializer(recursos, many=True, context={'request': request}).data)
+
+        serializer = RecursoLecturaSerializer(data=request.data, context={'request': request, 'lectura': lectura})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(lectura=lectura, subido_por=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class RecursoOficialViewSet(viewsets.ReadOnlyModelViewSet):
