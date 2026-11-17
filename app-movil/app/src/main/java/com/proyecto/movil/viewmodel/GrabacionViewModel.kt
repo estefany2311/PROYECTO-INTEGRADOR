@@ -137,7 +137,7 @@ class GrabacionViewModel(
         }
     }
 
-    // Pausa donde iba
+    // T-410: también se pausa cuando la app pasa a segundo plano o se va a enviar
     fun pausar() {
         avance?.cancel()
         reproductor.pausar()
@@ -159,6 +159,7 @@ class GrabacionViewModel(
 
     // Si el niño sale de la pantalla mientras graba, se apaga el micrófono y se borra la grabación a medias
     override fun onCleared() {
+        liberarReproductor()   // T-410
         reloj?.cancel()
         if (grabadora.grabando) {
             grabadora.detener()

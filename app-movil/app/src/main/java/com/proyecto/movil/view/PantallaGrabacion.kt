@@ -21,6 +21,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -60,6 +62,9 @@ fun PantallaGrabacion(
         val lectura by lecturaViewModel.uiState.collectAsStateWithLifecycle()
         val grabacion by grabacionViewModel.uiState.collectAsStateWithLifecycle()
         val reproduccion by grabacionViewModel.reproduccion.collectAsStateWithLifecycle()
+
+        // T-410: si la app pasa a segundo plano, se pausa el audio
+        LifecycleEventEffect(Lifecycle.Event.ON_STOP) { grabacionViewModel.pausar() }
 
         LaunchedEffect(nivelId) {
             lecturaViewModel.cargar(nivelId)
