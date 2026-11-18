@@ -1,13 +1,18 @@
+import os
+import shutil
+import tempfile
+
 from rest_framework import status
 from rest_framework.test import APITestCase
 from unittest import mock
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.db import IntegrityError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from usuarios.models import Rol, Usuario
-from .models import Lectura, RecursoOficial
+from .models import Lectura, RecursoLectura, RecursoOficial
  
  
 class LecturaModelTests(APITestCase):
@@ -587,3 +592,144 @@ class RecursoOficialAPITests(APITestCase):
     def test_sin_token_devuelve_401(self):
         self.client.force_authenticate(None)
         self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+    
+
+# =====================================================================
+# US-42 · Recursos de una lectura: subida, validación y eliminación (T-347)
+# =====================================================================
+MB = 1024 * 1024
+
+
+def archivo_png(nombre='zorro.png', tamano=1024):
+    """Un PNG falso pero con la firma real del formato (los primeros 8 bytes)."""
+    return SimpleUploadedFile(nombre, b'\x89PNG\r\n\x1a\n' + b'\0' * (tamano - 8), content_type='image/png')
+
+
+def archivo_jpg(nombre='condor.jpg', tamano=1024):
+    return SimpleUploadedFile(nombre, b'\xff\xd8\xff\xe0' + b'\0' * (tamano - 4), content_type='image/jpeg')
+
+
+def archivo_mp3(nombre='narracion.mp3', tamano=1024):
+    return SimpleUploadedFile(nombre, b'ID3' + b'\0' * (tamano - 3), content_type='audio/mpeg')
+
+
+class RecursoLecturaAPITests(APITestCase):
+    """T-343 a T-346: subir, validar, listar y eliminar imágenes y audios de una lectura."""
+
+    def setUp(self):
+        # Carpeta temporal en lugar de media/: no se ensucia la carpeta real y se borra al terminar
+        self.media = tempfile.mkdtemp()
+        ajuste = override_settings(MEDIA_ROOT=self.media)
+        ajuste.enable()
+        self.addCleanup(ajuste.disable)
+        self.addCleanup(shutil.rmtree, self.media, ignore_errors=True)
+
+        rol_admin, _ = Rol.objects.get_or_create(nombre='ADMIN')
+        rol_docente, _ = Rol.objects.get_or_create(nombre='DOCENTE')
+        self.admin = Usuario.objects.create_user(
+            username='admin', email='admin@test.pe', password='clave-segura-1', rol=rol_admin)
+        self.docente = Usuario.objects.create_user(
+            username='rquispe', email='rquispe@test.pe', password='clave-segura-1', rol=rol_docente)
+        self.lectura = Lectura.objects.create(
+            titulo='El cóndor y el zorro', texto='Había una vez un cóndor que vivía en la montaña.',
+            tipo_reto='lectura')
+        self.url = f'/api/lecturas/{self.lectura.id}/recursos/'
+        self.client.force_authenticate(self.admin)
+
+    def subir(self, archivo, descripcion=''):
+        return self.client.post(self.url, {'archivo': archivo, 'descripcion': descripcion}, format='multipart')
+
+    # --- Subidas válidas ---
+    def test_sube_una_imagen_png_y_completa_sus_datos(self):
+        resp = self.subir(archivo_png(tamano=2048), descripcion='Portada')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual((resp.data['tipo'], resp.data['nombre_original'], resp.data['tamano']),
+                         ('imagen', 'zorro.png', 2048))
+        recurso = RecursoLectura.objects.get()
+        self.assertEqual((recurso.lectura, recurso.subido_por, recurso.descripcion),
+                         (self.lectura, self.admin, 'Portada'))
+        self.assertTrue(os.path.exists(recurso.archivo.path))   # el archivo quedó guardado
+
+    def test_sube_una_imagen_jpg(self):
+        resp = self.subir(archivo_jpg())
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.data['tipo'], 'imagen')
+
+    def test_sube_un_audio_mp3(self):
+        resp = self.subir(archivo_mp3())
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.data['tipo'], 'audio')
+
+    def test_lista_los_recursos_de_la_lectura(self):
+        self.subir(archivo_png())
+        self.subir(archivo_mp3())
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual([r['tipo'] for r in resp.data], ['imagen', 'audio'])
+
+    # --- Tipo inválido ---
+    def test_tipo_de_archivo_no_permitido_devuelve_400(self):
+        pdf = SimpleUploadedFile('cuento.pdf', b'%PDF-1.4 contenido', content_type='application/pdf')
+        resp = self.subir(pdf)
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['archivo'][0]),
+                         '«cuento.pdf»: tipo de archivo no permitido. Solo imágenes (JPG, PNG) o audios (MP3).')
+        self.assertFalse(RecursoLectura.objects.exists())
+
+    def test_extension_png_con_contenido_falso_devuelve_400(self):
+        # Un archivo cualquiera renombrado a .png no pasa
+        falso = SimpleUploadedFile('virus.png', b'MZ esto es un ejecutable', content_type='image/png')
+        resp = self.subir(falso)
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['archivo'][0]), '«virus.png»: el contenido no corresponde a un archivo PNG.')
+
+    # --- Archivo muy grande ---
+    def test_imagen_de_mas_de_2_mb_devuelve_400(self):
+        resp = self.subir(archivo_png('grande.png', tamano=int(2.5 * MB)))
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['archivo'][0]),
+                         '«grande.png» pesa 2,5 MB: el máximo para una imagen es 2 MB.')
+
+    def test_imagen_de_justo_2_mb_es_valida(self):
+        resp = self.subir(archivo_png('justo.png', tamano=2 * MB))
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+    def test_audio_de_mas_de_5_mb_devuelve_400(self):
+        resp = self.subir(archivo_mp3('largo.mp3', tamano=6 * MB))
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['archivo'][0]),
+                         '«largo.mp3» pesa 6,0 MB: el máximo para un audio es 5 MB.')
+
+    # --- Máximo de recursos ---
+    def test_no_se_pueden_subir_mas_de_6_recursos(self):
+        for i in range(6):
+            self.assertEqual(self.subir(archivo_png(f'imagen{i}.png')).status_code, status.HTTP_201_CREATED)
+        resp = self.subir(archivo_png('septima.png'))
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('ya tiene 6 recursos', str(resp.data['archivo'][0]))
+        self.assertEqual(self.lectura.recursos.count(), 6)
+
+    # --- Permisos y lectura inexistente ---
+    def test_lectura_que_no_existe_devuelve_404(self):
+        resp = self.client.post('/api/lecturas/9999/recursos/', {'archivo': archivo_png()}, format='multipart')
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_docente_no_puede_subir_recursos(self):
+        self.client.force_authenticate(self.docente)
+        self.assertEqual(self.subir(archivo_png()).status_code, status.HTTP_403_FORBIDDEN)
+
+    # --- T-346: eliminar ---
+    def test_eliminar_quita_el_recurso_y_su_archivo(self):
+        recurso_id = self.subir(archivo_png()).data['id']
+        ruta = RecursoLectura.objects.get(pk=recurso_id).archivo.path
+        resp = self.client.delete(f'{self.url}{recurso_id}/')
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(RecursoLectura.objects.filter(pk=recurso_id).exists())
+        self.assertFalse(os.path.exists(ruta))   # también se borró del disco
+
+    def test_eliminar_un_recurso_que_no_existe_devuelve_404(self):
+        resp = self.client.delete(f'{self.url}9999/')
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(str(resp.data['detail']), 'El recurso ya no existe.')
