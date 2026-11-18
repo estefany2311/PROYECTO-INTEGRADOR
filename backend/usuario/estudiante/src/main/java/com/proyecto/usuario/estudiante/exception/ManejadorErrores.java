@@ -104,6 +104,12 @@ public class ManejadorErrores {
         return respuesta(HttpStatus.CONTENT_TOO_LARGE, "La grabación es demasiado grande");
     }
 
+    // T-415 · 503: el servicio de voz a texto no responde
+    @ExceptionHandler(ServicioVozNoDisponibleException.class)
+    public ResponseEntity<Map<String, Object>> servicioVoz(ServicioVozNoDisponibleException e) {
+        return respuesta(HttpStatus.SERVICE_UNAVAILABLE, "No pudimos escuchar tu lectura ahora. Intenta en un momento");
+    }
+
     // T-413 · 400: falta la parte "audio" del formulario
     @ExceptionHandler(MissingServletRequestPartException.class)
     public ResponseEntity<Map<String, Object>> parteFaltante(MissingServletRequestPartException e) {
