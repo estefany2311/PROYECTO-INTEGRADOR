@@ -8,6 +8,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -76,6 +78,36 @@ public class ManejadorErrores {
     @ExceptionHandler(ConsignaNoDisponibleException.class)
     public ResponseEntity<Map<String, Object>> consignaNoDisponible(ConsignaNoDisponibleException e) {
         return respuesta(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    // T-413 · 404: la lectura que se grabó no existe
+    @ExceptionHandler(LecturaNoEncontradaException.class)
+    public ResponseEntity<Map<String, Object>> lecturaNoEncontrada(LecturaNoEncontradaException e) {
+        return respuesta(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    // T-413 · 400: audio vacío, muy corto, muy largo o nivel de escritura
+    @ExceptionHandler(AudioInvalidoException.class)
+    public ResponseEntity<Map<String, Object>> audioInvalido(AudioInvalidoException e) {
+        return respuesta(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    // T-413 · 415: no es un WAV mono de 16 kHz y 16 bits
+    @ExceptionHandler(FormatoAudioNoSoportadoException.class)
+    public ResponseEntity<Map<String, Object>> formatoAudio(FormatoAudioNoSoportadoException e) {
+        return respuesta(HttpStatus.UNSUPPORTED_MEDIA_TYPE, e.getMessage());
+    }
+
+    // T-413 · 413: el archivo pasa el límite de spring.servlet.multipart.max-file-size
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> audioMuyGrande(MaxUploadSizeExceededException e) {
+        return respuesta(HttpStatus.CONTENT_TOO_LARGE, "La grabación es demasiado grande");
+    }
+
+    // T-413 · 400: falta la parte "audio" del formulario
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<Map<String, Object>> parteFaltante(MissingServletRequestPartException e) {
+        return respuesta(HttpStatus.BAD_REQUEST, "Falta el " + e.getRequestPartName());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
