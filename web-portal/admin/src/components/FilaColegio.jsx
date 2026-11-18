@@ -12,7 +12,7 @@ export default function FilaColegio({ colegio, puede, onAsignar, onEditar, onAlt
     <tr className={c.activo ? "" : "inactivo"}>
       <td>{c.codigo_modular}</td>
       <td className="fw-medium">{c.nombre}</td>
-      <td>{c.region}{c.distrito ? ` / ${c.distrito}` : ""}</td>
+      <td>{[c.region, c.provincia, c.distrito].filter(Boolean).join(" / ")}</td>
       <td>
         {c.total_docentes > 0 ? (
           <span className="d-inline-flex align-items-center">

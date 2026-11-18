@@ -9,13 +9,13 @@ import { erroresDeServidor } from "../utils/errores";
 import { REGIONES } from "../utils/colegios";
 import Modal from "./Modal";
 
-const COLEGIO_VACIO = { codigo_modular: "", nombre: "", region: "", distrito: "" };
+const COLEGIO_VACIO = { codigo_modular: "", nombre: "", region: "", provincia: "", distrito: "" };
 
 export default function ModalColegio({ colegio, onCerrar, onGuardado, onNoAutorizado }) {
   const editando = Boolean(colegio);
   const [datos, setDatos] = useState(
     editando
-      ? { codigo_modular: colegio.codigo_modular, nombre: colegio.nombre, region: colegio.region, distrito: colegio.distrito }
+      ? { codigo_modular: colegio.codigo_modular, nombre: colegio.nombre, region: colegio.region, provincia: colegio.provincia ?? "", distrito: colegio.distrito }
       : COLEGIO_VACIO
   );
   const [errores, setErrores] = useState({});
@@ -95,10 +95,11 @@ export default function ModalColegio({ colegio, onCerrar, onGuardado, onNoAutori
             value={datos.nombre} onChange={cambiar} />
           {feedback("nombre")}
         </div>
-        <div className="col-12">
-          <label className="form-label" htmlFor="distrito">Distrito / Centro poblado</label>
-          <input id="distrito" name="distrito" className={clase("distrito")} value={datos.distrito} onChange={cambiar} />
-          {feedback("distrito")}
+          <div className="col-12">
+          <label className="form-label" htmlFor="provincia">Provincia</label>
+          <input id="provincia" name="provincia" className={clase("provincia")} placeholder="Quispicanchi"
+            value={datos.provincia} onChange={cambiar} />
+          {feedback("provincia")}
         </div>
       </form>
     </Modal>
