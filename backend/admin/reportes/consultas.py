@@ -262,3 +262,91 @@ def rendimiento_por_aula(colegio_id):
         for (aula_id, nombre, docente_id, alumnos, evaluaciones, general, lectura, escritura, oralidad,
              verde, amarillo, rojo, sin_evaluar) in filas
     ]
+
+
+
+
+
+# =====================================================================
+# US-48 · Mapa de calor: desempeño por zona y competencia (T-349)
+# =====================================================================
+AGRUPACIONES = ('region', 'provincia')
+SIN_PROVINCIA = 'Sin provincia'
+
+
+def _zona_de(colegio, agrupar):
+    """Nombre de la zona de un colegio: 'Cusco' o 'Cusco / Quispicanchi'."""
+    if agrupar == 'region':
+        return colegio.region
+    return f'{colegio.region} / {colegio.provincia or SIN_PROVINCIA}'
+
+
+def desempeno_por_zona(agrupar='region', grado=None):
+    """T-349: promedio de cada competencia por zona (región o provincia) de los colegios activos.
+
+    Un alumno pertenece al colegio del docente de su aula (colegio_docentes).
+    Las zonas con colegios pero sin evaluaciones aparecen con los promedios en None.
+    """
+    if agrupar not in AGRUPACIONES:
+        raise ValueError(f'agrupar debe ser una de {AGRUPACIONES}')
+
+    from instituciones.models import Colegio
+
+    # 1) Todas las zonas con al menos un colegio activo (aunque no tengan evaluaciones)
+    resultado = {}
+    for colegio in Colegio.objects.filter(activo=True):
+        zona = _zona_de(colegio, agrupar)
+        fila = resultado.setdefault(zona, {
+            'zona': zona, 'region': colegio.region, 'colegios': 0, 'alumnos': 0, 'evaluaciones': 0,
+            'promedio_general': None, 'promedios': {c: None for c in COMPETENCIAS},
+        })
+        fila['colegios'] += 1
+
+    if not resultado or not tablas_disponibles():
+        return sorted(resultado.values(), key=lambda f: f['zona'])
+
+    # 2) Promedios por zona, calculados en la base de datos
+    if agrupar == 'region':
+        campo_zona = 'c.region'
+    else:
+        campo_zona = "c.region || ' / ' || COALESCE(NULLIF(c.provincia, ''), %s)"
+
+    condiciones, parametros = ['e.activo', 'c.activo'], []
+    if agrupar == 'provincia':
+        parametros.append(SIN_PROVINCIA)
+    if grado is not None:
+        condiciones.append('e.grado_id = %s')
+        parametros.append(grado)
+
+    sql = f"""
+        WITH alumnos AS (
+            SELECT DISTINCT e.id AS estudiante_id, {campo_zona} AS zona
+            FROM estudiante e
+            JOIN aula a ON a.id = e.aula_id
+            JOIN colegio_docentes cd ON cd.docente_id = a.docente_id
+            JOIN colegios c ON c.id = cd.colegio_id
+            WHERE {' AND '.join(condiciones)}
+        )
+        SELECT al.zona,
+               COUNT(DISTINCT al.estudiante_id) AS alumnos,
+               COUNT(ev.id) AS evaluaciones,
+               ROUND(AVG(ev.puntaje)::numeric, 1) AS general,
+               ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'lectura'))::numeric, 1) AS lectura,
+               ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'escritura'))::numeric, 1) AS escritura,
+               ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'oralidad'))::numeric, 1) AS oralidad
+        FROM alumnos al
+        LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id
+        GROUP BY al.zona
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(sql, parametros)
+        for zona, alumnos, evaluaciones, general, lectura, escritura, oralidad in cursor.fetchall():
+            if zona in resultado:
+                resultado[zona].update(
+                    alumnos=alumnos,
+                    evaluaciones=evaluaciones,
+                    promedio_general=_numero(general),
+                    promedios={'lectura': _numero(lectura), 'escritura': _numero(escritura),
+                               'oralidad': _numero(oralidad)},
+                )
+    return sorted(resultado.values(), key=lambda f: f['zona'])
