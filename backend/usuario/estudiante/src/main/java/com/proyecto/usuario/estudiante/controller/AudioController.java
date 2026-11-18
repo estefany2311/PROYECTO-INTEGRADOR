@@ -4,6 +4,7 @@ import com.proyecto.usuario.estudiante.dto.AudioRecibidoResponse;
 import com.proyecto.usuario.estudiante.service.AudioService;
 import com.proyecto.usuario.estudiante.service.AutenticadorTablet;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +25,7 @@ public class AudioController {
     }
 
     @PostMapping(value = "/{nivelId}/audio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
     public AudioRecibidoResponse subir(
             @PathVariable int nivelId,
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,

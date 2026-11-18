@@ -44,14 +44,15 @@ class AudioControllerTest {
     }
 
     @Test
-    void audioValidoResponde200ConSuDuracion() throws Exception {
+    void audioValidoResponde201ConLaEvidencia() throws Exception {
         when(service.recibir(eq(7L), eq(1), eq(3L), any()))
-                .thenReturn(new AudioRecibidoResponse(null, 1, 3L, 3_000, AudioService.VALIDADO));
+                .thenReturn(new AudioRecibidoResponse(50L, 1, 3L, 3_000, AudioService.RECIBIDO));
 
         mvc.perform(multipart("/api/estudiante/niveles/1/audio").file(audio).param("lecturaId", "3").header("Authorization", TOKEN))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.evidenciaId").value(50))
                 .andExpect(jsonPath("$.duracionMs").value(3000))
-                .andExpect(jsonPath("$.estado").value("validado"));
+                .andExpect(jsonPath("$.estado").value("recibido"));
     }
 
     @Test
