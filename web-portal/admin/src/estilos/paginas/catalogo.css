@@ -135,3 +135,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.pagina-catalogo .tarjeta-recurso .acciones-recurso {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+}

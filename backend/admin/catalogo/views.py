@@ -70,6 +70,7 @@ class LecturaViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
     
     @action(detail=True, methods=['get', 'post'], parser_classes=[MultiPartParser, FormParser])
+    
     def recursos(self, request, pk=None):
         """US-42: GET lista los recursos de la lectura; POST sube una imagen o un audio (T-343)."""
         lectura = self.get_object()
@@ -81,6 +82,19 @@ class LecturaViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save(lectura=lectura, subido_por=request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=True, methods=['delete'], url_path=r'recursos/(?P<recurso_id>\d+)')
+    
+    def eliminar_recurso(self, request, pk=None, recurso_id=None):
+        """US-42 (T-346): quita un recurso de la lectura y borra su archivo de la carpeta media."""
+        lectura = self.get_object()
+        recurso = lectura.recursos.filter(pk=recurso_id).first()
+        if recurso is None:
+            return Response({'detail': 'El recurso ya no existe.'}, status=status.HTTP_404_NOT_FOUND)
+        recurso.archivo.delete(save=False)   # borra el archivo del disco
+        recurso.delete()                     # borra la fila de la tabla
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 
 class RecursoOficialViewSet(viewsets.ReadOnlyModelViewSet):

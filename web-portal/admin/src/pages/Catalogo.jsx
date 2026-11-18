@@ -293,6 +293,7 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
         <ModalRecursos
           lectura={porRecursos}
           puedeSubir={puede("catalogo.crear")}
+          puedeEliminar={puede("catalogo.editar")}
           onCerrar={() => setPorRecursos(null)}
           onNoAutorizado={onNoAutorizado}
         />

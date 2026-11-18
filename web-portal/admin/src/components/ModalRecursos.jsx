@@ -1,10 +1,10 @@
 // Componente: ModalRecursos
 // Padre: Catalogo
-// Recibe (props): lectura (a la que se le asocian los recursos), puedeSubir (permiso catalogo.crear)
+// Recibe (props): lectura (a la que se le asocian los recursos), puedeSubir (catalogo.crear), puedeEliminar (catalogo.editar)
 // Avisa al padre con: onCerrar(), onNoAutorizado()
 // Hijos: Modal
 import { useEffect, useRef, useState } from "react";
-import { listarRecursosLectura, subirRecursoLectura } from "../api";
+import { eliminarRecursoLectura, listarRecursosLectura, subirRecursoLectura } from "../api";
 import Modal from "./Modal";
 
 const MB = 1024 * 1024;
@@ -32,13 +32,15 @@ function errorDeArchivo(archivo) {
   return "";
 }
 
-export default function ModalRecursos({ lectura, puedeSubir, onCerrar, onNoAutorizado }) {
+export default function ModalRecursos({ lectura, puedeSubir, puedeEliminar, onCerrar, onNoAutorizado }) {
   const [recursos, setRecursos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [subiendo, setSubiendo] = useState(false);
   const [descripcion, setDescripcion] = useState("");
   const [arrastrando, setArrastrando] = useState(false);
+  const [porConfirmar, setPorConfirmar] = useState(null);   // id del recurso que pide confirmación
+  const [eliminando, setEliminando] = useState(false);
   const selector = useRef(null);
 
   useEffect(() => {
@@ -53,6 +55,28 @@ export default function ModalRecursos({ lectura, puedeSubir, onCerrar, onNoAutor
   }, [lectura.id]);
 
   const lleno = recursos.length >= MAX_RECURSOS;
+  
+  // T-346: se quita de la lista con filter() cuando el servidor responde 204
+  const eliminar = async (recurso) => {
+    setEliminando(true);
+    setError("");
+    try {
+      await eliminarRecursoLectura(lectura.id, recurso.id);
+      setRecursos(recursos.filter((r) => r.id !== recurso.id));
+    } catch (err) {
+      if (err.estado === 401) return onNoAutorizado();
+      if (err.estado === 404) {
+        // Ya no existía (otro admin lo borró): igual se quita de la lista
+        setRecursos(recursos.filter((r) => r.id !== recurso.id));
+        setError(`«${recurso.nombre_original}» ya no existía.`);
+      } else {
+        setError(err.datos?.detail ?? err.mensaje ?? "No se pudo eliminar el recurso.");
+      }
+    } finally {
+      setEliminando(false);
+      setPorConfirmar(null);
+    }
+  };
 
   const subir = async (archivo) => {
     if (!archivo) return;
@@ -144,10 +168,29 @@ export default function ModalRecursos({ lectura, puedeSubir, onCerrar, onNoAutor
                     ? <img src={r.archivo} alt={r.descripcion || r.nombre_original} loading="lazy" />
                     : <audio controls preload="none" src={r.archivo}>Tu navegador no puede reproducir el audio.</audio>}
                 </div>
-                <div className="datos">
+                                <div className="datos">
                   <b title={r.nombre_original}>{r.nombre_original}</b>
                   <span className="note">{r.tipo === "imagen" ? "Imagen" : "Audio"} · {tamanoLegible(r.tamano)}</span>
                   {r.descripcion && <span className="note d-block">{r.descripcion}</span>}
+                  {puedeEliminar && (
+                    <div className="acciones-recurso">
+                      {porConfirmar === r.id ? (
+                        <>
+                          <span className="note">¿Eliminar?</span>
+                          <button type="button" className="btn btn-sm btn-danger" disabled={eliminando} onClick={() => eliminar(r)}>
+                            {eliminando ? "…" : "Sí"}
+                          </button>
+                          <button type="button" className="btn btn-sm btn-light" disabled={eliminando} onClick={() => setPorConfirmar(null)}>
+                            No
+                          </button>
+                        </>
+                      ) : (
+                        <button type="button" className="icon-btn" title="Eliminar" onClick={() => setPorConfirmar(r.id)}>
+                          <i className="bi bi-trash3"></i>
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

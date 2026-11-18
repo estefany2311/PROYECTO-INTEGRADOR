@@ -105,6 +105,9 @@ export const subirRecursoLectura = (lecturaId, archivo, descripcion = "") => {
   return pedir(`/lecturas/${lecturaId}/recursos/`, { method: "POST", body: datos });
 };
 
+export const eliminarRecursoLectura = (lecturaId, recursoId) =>
+  pedir(`/lecturas/${lecturaId}/recursos/${recursoId}/`, { method: "DELETE" });
+
 export const cambiarEstadoUsuario = (id, isActive) =>
   pedir(`/usuarios/${id}/estado/`, { method: "PATCH", body: JSON.stringify({ is_active: isActive }) });
 
