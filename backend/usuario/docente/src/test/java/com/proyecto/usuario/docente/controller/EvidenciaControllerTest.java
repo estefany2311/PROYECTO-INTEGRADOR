@@ -2,6 +2,7 @@ package com.proyecto.usuario.docente.controller;
 
 import com.proyecto.usuario.docente.dto.CorregirEvidenciaRequest;
 import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
+import com.proyecto.usuario.docente.dto.HistorialCalificacionResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
 import com.proyecto.usuario.docente.exception.ManejadorErrores;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
@@ -197,7 +198,10 @@ class EvidenciaControllerTest {
                 "El sol brilla. Los niños juegan en el parque.",
                 List.of("brilla", "juegan"),
                 (short) 85, null, null, "Lee con claridad y buen ritmo.",
-                "pendiente", LocalDateTime.of(2026, 11, 10, 9, 0), null));
+                "pendiente", LocalDateTime.of(2026, 11, 10, 9, 0), null,
+                List.of(new HistorialCalificacionResponse(
+                        1L, 1L, (short) 85, (short) 85, null, "aprobada",
+                        LocalDateTime.of(2026, 11, 17, 9, 0)))));
 
         mvc.perform(get("/api/docente/aulas/10/evidencias/30")
                         .header("X-Docente-Id", 1))
@@ -220,7 +224,10 @@ class EvidenciaControllerTest {
                         .value("Lee con claridad y buen ritmo."))
                 .andExpect(jsonPath("$.estadoRevision").value("pendiente"))
                 .andExpect(jsonPath("$.creadoEn").exists())
-                .andExpect(jsonPath("$.revisadoEn").doesNotExist());
+                .andExpect(jsonPath("$.revisadoEn").doesNotExist())
+                .andExpect(jsonPath("$.historial").isNotEmpty())
+                .andExpect(jsonPath("$.historial[0].accion").value("aprobada"))
+                .andExpect(jsonPath("$.historial[0].notaDocente").value(85));
 
         verify(service).detalle(1L, 10L, 30L);
     }
@@ -234,7 +241,7 @@ class EvidenciaControllerTest {
                 List.of(),
                 (short) 80, (short) 80, null, "Escribe oraciones completas.",
                 "aprobada", LocalDateTime.of(2026, 11, 9, 15, 30),
-                LocalDateTime.of(2026, 11, 10, 8, 0)));
+                LocalDateTime.of(2026, 11, 10, 8, 0), List.of()));
 
         mvc.perform(get("/api/docente/aulas/10/evidencias/29")
                         .header("X-Docente-Id", 1))
@@ -263,7 +270,7 @@ class EvidenciaControllerTest {
                 List.of("conejo", "despegaba"),
                 (short) 40, null, null, "El audio no responde al reto.",
                 "rechazada", LocalDateTime.of(2026, 11, 8, 10, 0),
-                LocalDateTime.of(2026, 11, 9, 9, 0)));
+                LocalDateTime.of(2026, 11, 9, 9, 0), List.of()));
 
         mvc.perform(get("/api/docente/aulas/10/evidencias/31")
                         .header("X-Docente-Id", 1))
@@ -284,7 +291,8 @@ class EvidenciaControllerTest {
                 (short) 1, "Primeros pasos", "lectura", "audio",
                 "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3", null,
                 null, List.of(), null, null, null, null,
-                "pendiente", LocalDateTime.of(2026, 11, 10, 9, 0), null));
+                "pendiente", LocalDateTime.of(2026, 11, 10, 9, 0), null,
+                List.of()));
 
         mvc.perform(get("/api/docente/aulas/10/evidencias/30")
                         .header("X-Docente-Id", 1))
@@ -323,7 +331,7 @@ class EvidenciaControllerTest {
                 List.of("brilla", "juegan"),
                 (short) 85, (short) 85, null, "Lee con claridad y buen ritmo.",
                 "aprobada", LocalDateTime.of(2026, 11, 10, 9, 0),
-                LocalDateTime.of(2026, 11, 17, 10, 0)));
+                LocalDateTime.of(2026, 11, 17, 10, 0), List.of()));
 
         mvc.perform(post("/api/docente/aulas/10/evidencias/30/aprobar")
                         .header("X-Docente-Id", 1))
@@ -349,7 +357,7 @@ class EvidenciaControllerTest {
                         (short) 85, (short) 70, "El audio tiene ruido de fondo.",
                         "Lee con claridad y buen ritmo.",
                         "corregida", LocalDateTime.of(2026, 11, 10, 9, 0),
-                        LocalDateTime.of(2026, 11, 17, 10, 0)));
+                        LocalDateTime.of(2026, 11, 17, 10, 0), List.of()));
 
         mvc.perform(post("/api/docente/aulas/10/evidencias/30/corregir")
                         .header("X-Docente-Id", 1)

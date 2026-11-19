@@ -3,17 +3,21 @@ package com.proyecto.usuario.docente.service;
 import com.proyecto.usuario.docente.dto.CorregirEvidenciaRequest;
 import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
+import com.proyecto.usuario.docente.dto.HistorialCalificacionResponse;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
 import com.proyecto.usuario.docente.model.Aula;
 import com.proyecto.usuario.docente.model.Evidencia;
 import com.proyecto.usuario.docente.model.Estudiante;
 import com.proyecto.usuario.docente.model.Grado;
+import com.proyecto.usuario.docente.model.HistorialCalificacion;
 import com.proyecto.usuario.docente.model.Nivel;
 import com.proyecto.usuario.docente.repository.AulaRepository;
 import com.proyecto.usuario.docente.repository.EvidenciaRepository;
+import com.proyecto.usuario.docente.repository.HistorialCalificacionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -51,6 +55,9 @@ class EvidenciaServiceTest {
     @Mock
     PuntajeService puntajeService;
 
+    @Mock
+    HistorialCalificacionRepository historialRepository;
+
     EvidenciaService service;
     Aula aula;
     Estudiante estudiante;
@@ -59,7 +66,8 @@ class EvidenciaServiceTest {
 
     @BeforeEach
     void preparar() {
-        service = new EvidenciaService(aulaRepository, evidenciaRepository, puntajeService);
+        service = new EvidenciaService(aulaRepository, evidenciaRepository, puntajeService,
+                historialRepository);
 
         aula = new Aula();
         ReflectionTestUtils.setField(aula, "id", 10L);
@@ -557,5 +565,102 @@ class EvidenciaServiceTest {
 
         verify(puntajeService, never())
                 .recalcularPorCambioDeNota(any(), anyString(), anyInt(), anyInt());
+    }
+
+    // T-380 (US-33): historial de calificaciones (nota IA vs. nota docente)
+
+    @Test
+    void aprobarRegistraElHistorialConLaNotaDeLaIa() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+        audio.setPuntajeIa((short) 85);
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+
+        service.aprobar(1L, 10L, 30L);
+
+        ArgumentCaptor<HistorialCalificacion> captor =
+                ArgumentCaptor.forClass(HistorialCalificacion.class);
+        verify(historialRepository).save(captor.capture());
+
+        HistorialCalificacion historial = captor.getValue();
+        assertEquals(audio, historial.getEvidencia());
+        assertEquals(1L, historial.getDocenteId());
+        assertEquals(Evidencia.APROBADA, historial.getAccion());
+        assertEquals((short) 85, historial.getNotaIa());
+        assertEquals((short) 85, historial.getNotaDocente());
+        assertNull(historial.getMotivo());
+    }
+
+    @Test
+    void corregirRegistraElHistorialConLaNotaDelDocenteYElMotivo() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+        audio.setPuntajeIa((short) 85);
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+
+        service.corregir(1L, 10L, 30L,
+                new CorregirEvidenciaRequest((short) 70, "  El audio tiene ruido.  "));
+
+        ArgumentCaptor<HistorialCalificacion> captor =
+                ArgumentCaptor.forClass(HistorialCalificacion.class);
+        verify(historialRepository).save(captor.capture());
+
+        HistorialCalificacion historial = captor.getValue();
+        assertEquals(Evidencia.CORREGIDA, historial.getAccion());
+        assertEquals((short) 85, historial.getNotaIa());
+        assertEquals((short) 70, historial.getNotaDocente());
+        assertEquals("El audio tiene ruido.", historial.getMotivo());
+        assertEquals(1L, historial.getDocenteId());
+    }
+
+    @Test
+    void elDetalleDevuelveElHistorialDeLaMasRecienteALaMasAntigua() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+        audio.setPuntajeIa((short) 85);
+        audio.setCalificacionFinal((short) 70);
+        audio.setEstadoRevision(Evidencia.CORREGIDA);
+
+        HistorialCalificacion correccion = HistorialCalificacion.registrar(
+                audio, 1L, Evidencia.CORREGIDA, (short) 85, (short) 70, "Ajuste.");
+        ReflectionTestUtils.setField(correccion, "id", 2L);
+        ReflectionTestUtils.setField(correccion, "creadoEn",
+                LocalDateTime.of(2026, 11, 18, 10, 0));
+
+        HistorialCalificacion aprobacion = HistorialCalificacion.registrar(
+                audio, 1L, Evidencia.APROBADA, (short) 85, (short) 85, null);
+        ReflectionTestUtils.setField(aprobacion, "id", 1L);
+        ReflectionTestUtils.setField(aprobacion, "creadoEn",
+                LocalDateTime.of(2026, 11, 17, 9, 0));
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+        when(historialRepository.findByEvidenciaIdOrderByCreadoEnDescIdDesc(30L))
+                .thenReturn(List.of(correccion, aprobacion));
+
+        EvidenciaDetalleResponse detalle = service.detalle(1L, 10L, 30L);
+
+        assertEquals(2, detalle.historial().size());
+        HistorialCalificacionResponse masReciente = detalle.historial().get(0);
+        assertEquals(2L, masReciente.id());
+        assertEquals(Evidencia.CORREGIDA, masReciente.accion());
+        assertEquals((short) 85, masReciente.notaIa());
+        assertEquals((short) 70, masReciente.notaDocente());
+        assertEquals("Ajuste.", masReciente.motivo());
+        assertEquals(LocalDateTime.of(2026, 11, 18, 10, 0), masReciente.creadoEn());
+
+        HistorialCalificacionResponse anterior = detalle.historial().get(1);
+        assertEquals(Evidencia.APROBADA, anterior.accion());
+        assertNull(anterior.motivo());
     }
 }

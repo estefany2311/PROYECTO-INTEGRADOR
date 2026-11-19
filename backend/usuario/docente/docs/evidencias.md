@@ -206,7 +206,8 @@ Respuesta (`200`):
   "resultadoIa": "Lee con claridad y buen ritmo.",
   "estadoRevision": "pendiente",
   "creadoEn": "2026-11-10T09:00:00",
-  "revisadoEn": null
+  "revisadoEn": null,
+  "historial": []
 }
 ```
 
@@ -214,7 +215,8 @@ En una evidencia de texto, `audioUrl` y `transcripcion` llegan nulos y `texto` t
 que escribió el alumno. `tipoReto` sale del nivel (`lectura`, `escritura` u `oralidad`)
 para saber qué competencia evaluó la IA. `palabrasMarcadas` llega como `[]` si la IA no
 marcó ninguna palabra. `calificacionFinal` y `motivoCorreccion` llegan nulos mientras el
-docente no revisa la evidencia (T-378).
+docente no revisa la evidencia (T-378). `historial` trae las revisiones del docente, de la
+más reciente a la más antigua (T-380); llega vacío si la evidencia nunca se revisó.
 
 Errores:
 
@@ -445,7 +447,8 @@ el reto. Ver `puntaje-estudiante.md`, sección 8.
 ### Migración V16
 
 `V16__evidencia_motivo_correccion.sql` agrega `motivo_correccion TEXT` a `evidencia`.
-El historial completo de notas (IA vs. docente) llega en T-380.
+El historial completo de notas (IA vs. docente) llega en T-380 y se detalla en la
+sección 12.
 
 ### Errores
 
@@ -467,3 +470,76 @@ El historial completo de notas (IA vs. docente) llega en T-380.
 | `EvidenciaServiceTest` | Aprobar copia el puntaje y limpia el motivo; aprobar sin IA falla con 400; corregir guarda nota y motivo recortado; evidencia de otra aula da 404; el recálculo parte de la nota vigente y no se llama sin evaluación de la IA. |
 | `EvidenciaControllerTest` | `POST` aprobar y corregir, validación de motivo y rango, y 400 al aprobar sin evaluación de la IA. |
 | `EvidenciaRepositoryTest` | Persiste nota final y motivo de la corrección en PostgreSQL. |
+
+## 12. Historial de calificaciones (T-380, US-33)
+
+La evidencia guarda solo la **última** revisión. Para conservar la comparación entre la
+nota de la IA y la del docente, cada aprobación o corrección agrega una fila al historial.
+
+### Tabla `historial_calificacion`
+
+Migración: `V17__historial_calificacion.sql`.
+
+| Columna | Tipo | Regla |
+|---|---|---|
+| `id` | `BIGSERIAL` | Clave primaria. |
+| `evidencia_id` | `BIGINT` | Obligatorio. Referencia a `evidencia` y se borra en cascada con ella. |
+| `docente_id` | `BIGINT` | Obligatorio; quién hizo la revisión (igual que en `aula`, sin FK porque los docentes viven en el módulo de acceso). |
+| `nota_ia` | `SMALLINT` | Nota que había dado la IA; nula si la evidencia no tenía evaluación. `CHECK` de 0 a 100. |
+| `nota_docente` | `SMALLINT` | Nota que quedó tras la revisión. Obligatoria y con `CHECK` de 0 a 100. |
+| `motivo` | `TEXT` | Motivo de la corrección; nulo en las aprobaciones. |
+| `accion` | `VARCHAR(15)` | `aprobada` o `corregida` (`CHECK`). |
+| `creado_en` | `TIMESTAMP` | Momento de la revisión; por defecto `now()`. |
+
+El índice `idx_historial_calificacion_evidencia (evidencia_id, creado_en DESC)` sirve la
+consulta del detalle.
+
+### Cuándo se escribe
+
+- `POST .../aprobar` agrega una fila con `accion = aprobada`, `nota_ia` y
+  `nota_docente` iguales a `puntajeIa` y `motivo` nulo.
+- `POST .../corregir` agrega una fila con `accion = corregida`, `nota_ia` igual a
+  `puntajeIa`, `nota_docente` igual a la nota enviada y el `motivo` recortado.
+
+Ambas filas se guardan en la misma transacción que la evidencia, así que si la revisión
+falla no queda historial suelto. La evidencia sigue mostrando solo la última revisión.
+
+### En el detalle
+
+`GET .../evidencias/{evidenciaId}` devuelve `historial`, de la revisión más reciente a la
+más antigua:
+
+```json
+"historial": [
+  {
+    "id": 12,
+    "docenteId": 1,
+    "notaIa": 85,
+    "notaDocente": 70,
+    "motivo": "El audio tiene ruido de fondo.",
+    "accion": "corregida",
+    "creadoEn": "2026-11-18T10:00:00"
+  },
+  {
+    "id": 11,
+    "docenteId": 1,
+    "notaIa": 85,
+    "notaDocente": 85,
+    "motivo": null,
+    "accion": "aprobada",
+    "creadoEn": "2026-11-17T09:00:00"
+  }
+]
+```
+
+Las evidencias revisadas antes de V17 no tienen filas de historial: la tabla no se
+rellena hacia atrás porque no hay un motivo ni un docente registrados en la evidencia.
+
+### Pruebas
+
+| Prueba | Cobertura |
+|---|---|
+| `MigracionHistorialCalificacionTest` | Tabla, columnas, cascada, `CHECK` de notas y acciones, e índice por evidencia. |
+| `HistorialCalificacionRepositoryTest` | Guarda y lee el historial del más reciente al más antiguo, con nota IA, nota docente y motivo; borra en cascada con la evidencia. |
+| `EvidenciaServiceTest` | Aprobar y corregir registran la fila correcta; el detalle mapea el historial ordenado. |
+| `EvidenciaControllerTest` | El detalle expone el historial en el JSON. |

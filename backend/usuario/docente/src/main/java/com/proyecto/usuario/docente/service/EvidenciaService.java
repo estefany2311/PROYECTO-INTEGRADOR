@@ -3,12 +3,15 @@ package com.proyecto.usuario.docente.service;
 import com.proyecto.usuario.docente.dto.CorregirEvidenciaRequest;
 import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
+import com.proyecto.usuario.docente.dto.HistorialCalificacionResponse;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
 import com.proyecto.usuario.docente.model.Aula;
 import com.proyecto.usuario.docente.model.Evidencia;
 import com.proyecto.usuario.docente.model.Estudiante;
+import com.proyecto.usuario.docente.model.HistorialCalificacion;
 import com.proyecto.usuario.docente.repository.AulaRepository;
 import com.proyecto.usuario.docente.repository.EvidenciaRepository;
+import com.proyecto.usuario.docente.repository.HistorialCalificacionRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +37,9 @@ import java.util.Locale;
  *
  * <p>T-379 (US-33): al aprobar o corregir se ajustan las estrellas acumuladas
  * del alumno si la nota final cambia.</p>
+ *
+ * <p>T-380 (US-33): cada aprobación o corrección deja una fila en el historial
+ * de calificaciones, y el detalle devuelve ese historial.</p>
  */
 @Service
 public class EvidenciaService {
@@ -44,13 +50,16 @@ public class EvidenciaService {
     private final AulaRepository aulaRepository;
     private final EvidenciaRepository evidenciaRepository;
     private final PuntajeService puntajeService;
+    private final HistorialCalificacionRepository historialRepository;
 
     public EvidenciaService(AulaRepository aulaRepository,
                             EvidenciaRepository evidenciaRepository,
-                            PuntajeService puntajeService) {
+                            PuntajeService puntajeService,
+                            HistorialCalificacionRepository historialRepository) {
         this.aulaRepository = aulaRepository;
         this.evidenciaRepository = evidenciaRepository;
         this.puntajeService = puntajeService;
+        this.historialRepository = historialRepository;
     }
 
     @Transactional(readOnly = true)
@@ -91,6 +100,7 @@ public class EvidenciaService {
         evidencia.setEstadoRevision(Evidencia.APROBADA);
         evidencia.setRevisadoEn(LocalDateTime.now());
         recalcularPuntaje(evidencia, notaAnterior, evidencia.getCalificacionFinal());
+        registrarHistorial(docenteId, evidencia);
         return detalleRespuesta(evidencia);
     }
 
@@ -105,6 +115,7 @@ public class EvidenciaService {
         evidencia.setEstadoRevision(Evidencia.CORREGIDA);
         evidencia.setRevisadoEn(LocalDateTime.now());
         recalcularPuntaje(evidencia, notaAnterior, req.calificacionFinal());
+        registrarHistorial(docenteId, evidencia);
         return detalleRespuesta(evidencia);
     }
 
@@ -126,6 +137,34 @@ public class EvidenciaService {
                 evidencia.getNivel().getTipoReto(),
                 anterior,
                 nueva);
+    }
+
+    // T-380 (US-33): deja constancia de la revisión con la nota de la IA y la
+    // nota final del docente, para conservar el historial completo.
+    private void registrarHistorial(Long docenteId, Evidencia evidencia) {
+        historialRepository.save(HistorialCalificacion.registrar(
+                evidencia,
+                docenteId,
+                evidencia.getEstadoRevision(),
+                evidencia.getPuntajeIa(),
+                evidencia.getCalificacionFinal(),
+                evidencia.getMotivoCorreccion()));
+    }
+
+    // T-380 (US-33): historial del más reciente al más antiguo
+    private List<HistorialCalificacionResponse> historialDe(Evidencia evidencia) {
+        return historialRepository
+                .findByEvidenciaIdOrderByCreadoEnDescIdDesc(evidencia.getId())
+                .stream()
+                .map(historial -> new HistorialCalificacionResponse(
+                        historial.getId(),
+                        historial.getDocenteId(),
+                        historial.getNotaIa(),
+                        historial.getNotaDocente(),
+                        historial.getMotivo(),
+                        historial.getAccion(),
+                        historial.getCreadoEn()))
+                .toList();
     }
 
     private Evidencia evidenciaDelAula(Long docenteId, Long aulaId, Long evidenciaId) {
@@ -158,7 +197,8 @@ public class EvidenciaService {
                 evidencia.getResultadoIa(),
                 evidencia.getEstadoRevision(),
                 evidencia.getCreadoEn(),
-                evidencia.getRevisadoEn());
+                evidencia.getRevisadoEn(),
+                historialDe(evidencia));
     }
 
     // T-375 (US-32): la base guarda las palabras marcadas separadas por comas;
