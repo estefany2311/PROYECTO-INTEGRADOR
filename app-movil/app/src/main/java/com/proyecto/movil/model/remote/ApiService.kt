@@ -1,5 +1,6 @@
 package com.proyecto.movil.model.remote
 
+import com.proyecto.movil.model.AudioRecibido
 import com.proyecto.movil.model.CompletarNivelRequest
 import com.proyecto.movil.model.ConsignaNivel
 import com.proyecto.movil.model.InicioSesionRequest
@@ -10,11 +11,15 @@ import com.proyecto.movil.model.RespuestaOrtografia
 import com.proyecto.movil.model.ResultadoReto
 import com.proyecto.movil.model.SesionRespuesta
 import com.proyecto.movil.model.VerificarTextoRequest
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -52,4 +57,13 @@ interface ApiService {
         @Path("nivelId") nivelId: Int,
         @Body request: CompletarNivelRequest
     ): Response<ResultadoReto>
+
+    // T-417: sube la grabación de la lectura (T-413). Response<> para leer el mensaje de los 400/413/415
+    @Multipart
+    @POST("api/estudiante/niveles/{nivelId}/audio")
+    suspend fun subirAudio(
+        @Path("nivelId") nivelId: Int,
+        @Part("lecturaId") lecturaId: RequestBody,
+        @Part audio: MultipartBody.Part
+    ): Response<AudioRecibido>
 }

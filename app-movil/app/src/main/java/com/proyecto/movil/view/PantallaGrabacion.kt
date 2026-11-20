@@ -54,7 +54,6 @@ import com.proyecto.movil.viewmodel.Reproduccion
 fun PantallaGrabacion(
     nivelId: Int,
     onVolver: () -> Unit,
-    onEnviar: () -> Unit = {},
     lecturaViewModel: LecturaViewModel = viewModel(),
     grabacionViewModel: GrabacionViewModel = viewModel()
 ) {
@@ -71,8 +70,9 @@ fun PantallaGrabacion(
             grabacionViewModel.revisarGuardada(nivelId)   // T-317: si ya grabó este nivel, se muestra
         }
 
+        val lecturaActual = (lectura as? LecturaUiState.Exito)?.lectura
         ContenidoGrabacion(
-            lectura = (lectura as? LecturaUiState.Exito)?.lectura,
+            lectura = lecturaActual,
             estado = grabacion,
             onVolver = onVolver,
             onGrabar = { grabacionViewModel.grabar(nivelId) },
@@ -80,10 +80,8 @@ fun PantallaGrabacion(
             onGrabarOtraVez = grabacionViewModel::grabarOtraVez,
             reproduccion = reproduccion,
             onEscuchar = grabacionViewModel::escuchar,
-            onEnviar = {
-                grabacionViewModel.pausar()
-                onEnviar()   // US-13 (T-417): aquí se sube el audio
-            }
+            // T-417: sube el audio con el id de la lectura que tenía en pantalla
+            onEnviar = { lecturaActual?.let { grabacionViewModel.enviar(nivelId, it.lecturaId) } }
         )
     }
 }
@@ -108,7 +106,7 @@ fun ContenidoGrabacion(
         // Mientras graba no se puede volver: primero hay que terminar
         TextButton(
             onClick = onVolver,
-            enabled = estado !is GrabacionUiState.Grabando,
+            enabled = estado !is GrabacionUiState.Grabando && estado !is GrabacionUiState.Enviando,
             modifier = Modifier.align(Alignment.Start).testTag("boton_volver_grabacion")
         ) { Text("←  Volver", fontSize = 20.sp, color = ColoresAventura.TextoOscuro) }
 
@@ -130,7 +128,7 @@ fun ContenidoGrabacion(
             }
         }
         Spacer(Modifier.height(20.dp))
-        ControlesGrabacion(estado, reproduccion, onGrabar, onTerminar, onGrabarOtraVez, onEscuchar, onEnviar)
+        ControlesGrabacion(estado, reproduccion, onGrabar, onTerminar, onGrabarOtraVez, onEscuchar, onEnviar, onVolver)
     }
 }
 
@@ -142,7 +140,8 @@ private fun ControlesGrabacion(
     onTerminar: () -> Unit,
     onGrabarOtraVez: () -> Unit,
     onEscuchar: () -> Unit,
-    onEnviar: () -> Unit
+    onEnviar: () -> Unit,
+    onVolver: () -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth()) {
         when (estado) {
@@ -212,6 +211,49 @@ private fun ControlesGrabacion(
                     modifier = Modifier.fillMaxWidth().height(64.dp).testTag("boton_grabar_otra_vez")
                 ) { Text("Volver a grabar", fontSize = 22.sp, color = ColoresAventura.TextoOscuro) }
             }
+            is GrabacionUiState.Enviando -> EnviandoAudio(estado.progreso)
+            is GrabacionUiState.Enviada -> {
+                Text(
+                    "¡Enviamos tu lectura!",
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ColoresAventura.Turquesa,
+                    modifier = Modifier.testTag("lectura_enviada")
+                )
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onVolver,
+                    colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Turquesa),
+                    shape = RoundedCornerShape(36.dp),
+                    modifier = Modifier.fillMaxWidth().height(72.dp).testTag("boton_volver_mapa")
+                ) { Text("Volver al mapa", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+            }
+            is GrabacionUiState.ErrorEnvio -> {
+                Text(
+                    estado.mensaje,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = ColoresAventura.TextoOscuro,
+                    modifier = Modifier.testTag("error_envio")
+                )
+                Spacer(Modifier.height(12.dp))
+                // Sin internet: se reintenta con la misma grabación, que sigue guardada en la tablet
+                if (estado.puedeReintentar) {
+                    Button(
+                        onClick = onEnviar,
+                        colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Turquesa),
+                        shape = RoundedCornerShape(36.dp),
+                        modifier = Modifier.fillMaxWidth().height(72.dp).testTag("boton_reintentar_envio")
+                    ) { Text("Intentar otra vez", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+                    Spacer(Modifier.height(12.dp))
+                }
+                OutlinedButton(
+                    onClick = onGrabarOtraVez,
+                    shape = RoundedCornerShape(32.dp),
+                    modifier = Modifier.fillMaxWidth().height(64.dp).testTag("boton_grabar_otra_vez")
+                ) { Text("Volver a grabar", fontSize = 22.sp, color = ColoresAventura.TextoOscuro) }
+            }
             is GrabacionUiState.Error -> {
                 Text(
                     estado.mensaje,
@@ -227,8 +269,8 @@ private fun ControlesGrabacion(
                 }
             }
         }
-        // T-409: se ve siempre (menos al grabar), pero solo se activa cuando hay grabación
-        if (estado !is GrabacionUiState.Grabando) {
+        // T-409: se ve antes de grabar y con la grabación lista; solo se activa cuando hay grabación
+        if (estado is GrabacionUiState.Lista || estado is GrabacionUiState.Grabada || estado is GrabacionUiState.Error) {
             Spacer(Modifier.height(12.dp))
             Button(
                 onClick = onEnviar,
@@ -239,6 +281,28 @@ private fun ControlesGrabacion(
             ) { Text("Enviar", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
         }
     }
+}
+
+// T-417: barra de subida con el porcentaje
+@Composable
+private fun EnviandoAudio(progreso: Float) {
+    val porcentaje = (progreso.coerceIn(0f, 1f) * 100).toInt()
+    Text(
+        "Enviando tu lectura… $porcentaje %",
+        fontSize = 26.sp,
+        fontWeight = FontWeight.Bold,
+        color = ColoresAventura.Turquesa,
+        modifier = Modifier.testTag("texto_enviando")
+    )
+    Spacer(Modifier.height(12.dp))
+    LinearProgressIndicator(
+        progress = { progreso.coerceIn(0f, 1f) },
+        color = ColoresAventura.Turquesa,
+        trackColor = Color.White,
+        modifier = Modifier.fillMaxWidth().height(16.dp).clip(RoundedCornerShape(8.dp)).testTag("barra_envio")
+    )
+    Spacer(Modifier.height(8.dp))
+    Text("No cierres la app", fontSize = 18.sp, color = ColoresAventura.TextoOscuro)
 }
 
 // T-407: botón para escuchar o pausar, barra de avance y tiempo
@@ -400,6 +464,21 @@ fun GrabacionGuardadaPreview() = GrabacionDePrueba(
 fun GrabacionEscuchandoPreview() = GrabacionDePrueba(
     GrabacionUiState.Grabada(com.proyecto.movil.model.audio.Grabacion(java.io.File("nivel_1.wav"), 45_000)),
     Reproduccion(reproduciendo = true, posicionMs = 18_000)
+)
+
+@Preview(name = "Grabación · enviando", widthDp = 800, heightDp = 1280, showBackground = true)
+@Composable
+fun GrabacionEnviandoPreview() = GrabacionDePrueba(
+    GrabacionUiState.Enviando(com.proyecto.movil.model.audio.Grabacion(java.io.File("nivel_1.wav"), 45_000), 0.45f)
+)
+
+@Preview(name = "Grabación · sin internet", widthDp = 800, heightDp = 1280, showBackground = true)
+@Composable
+fun GrabacionErrorEnvioPreview() = GrabacionDePrueba(
+    GrabacionUiState.ErrorEnvio(
+        com.proyecto.movil.model.audio.Grabacion(java.io.File("nivel_1.wav"), 45_000),
+        GrabacionViewModel.MENSAJE_SIN_CONEXION, puedeReintentar = true
+    )
 )
 
 @Composable
