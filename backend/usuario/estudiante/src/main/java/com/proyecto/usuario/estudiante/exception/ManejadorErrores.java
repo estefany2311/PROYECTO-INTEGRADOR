@@ -104,6 +104,12 @@ public class ManejadorErrores {
         return respuesta(HttpStatus.CONTENT_TOO_LARGE, "La grabación es demasiado grande");
     }
 
+    // T-416 · 404: la grabación no existe o es de otro alumno
+    @ExceptionHandler(EvidenciaNoEncontradaException.class)
+    public ResponseEntity<Map<String, Object>> evidenciaNoEncontrada(EvidenciaNoEncontradaException e) {
+        return respuesta(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
     // T-415 · 503: el servicio de voz a texto no responde
     @ExceptionHandler(ServicioVozNoDisponibleException.class)
     public ResponseEntity<Map<String, Object>> servicioVoz(ServicioVozNoDisponibleException e) {

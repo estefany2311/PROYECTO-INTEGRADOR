@@ -2,6 +2,7 @@ package com.proyecto.usuario.estudiante.service;
 
 import com.proyecto.usuario.estudiante.dto.AudioRecibidoResponse;
 import com.proyecto.usuario.estudiante.dto.NivelDetalleResponse;
+import com.proyecto.usuario.estudiante.event.AudioRecibido;
 import com.proyecto.usuario.estudiante.exception.AudioInvalidoException;
 import com.proyecto.usuario.estudiante.exception.LecturaNoEncontradaException;
 import com.proyecto.usuario.estudiante.exception.NivelBloqueadoException;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -26,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-// T-413/T-414 (US-13): qué pasa cuando la tablet sube la grabación de una lectura
+// T-413/T-414/T-416 (US-13): qué pasa cuando la tablet sube la grabación de una lectura
 @ExtendWith(MockitoExtension.class)
 class AudioServiceTest {
 
@@ -38,12 +40,13 @@ class AudioServiceTest {
     @Mock LecturaRepository lecturas;
     @Mock AlmacenAudios almacen;
     @Mock EvidenciaRepository evidencias;
+    @Mock ApplicationEventPublisher eventos;
 
     private AudioService service;
 
     @BeforeEach
     void preparar() {
-        service = new AudioService(niveles, lecturas, new ValidadorWav(), almacen, evidencias, RELOJ);
+        service = new AudioService(niveles, lecturas, new ValidadorWav(), almacen, evidencias, eventos, RELOJ);
     }
 
     private static NivelDetalleResponse nivel(String tipo) {
@@ -60,9 +63,10 @@ class AudioServiceTest {
 
         AudioRecibidoResponse respuesta = service.recibir(7L, 1, 3L, audio);
 
-        assertEquals(new AudioRecibidoResponse(50L, 1, 3L, 4_000, AudioService.RECIBIDO), respuesta);
+        assertEquals(new AudioRecibidoResponse(50L, 1, 3L, 4_000, AudioService.PROCESANDO), respuesta);
         verify(evidencias).registrarLectura(50L, 3L, "Había una vez un cóndor.", 4_000, audio.length, AHORA);
         verify(almacen, never()).borrar(any());
+        verify(eventos).publishEvent(new AudioRecibido(50L, "est_7/nivel_1.wav"));   // T-416: manda a transcribir
     }
 
     @Test
@@ -76,6 +80,7 @@ class AudioServiceTest {
         assertThrows(IllegalStateException.class, () -> service.recibir(7L, 1, 3L, audio));
 
         verify(almacen).borrar("est_7/nivel_1.wav");
+        verifyNoInteractions(eventos);
     }
 
     @Test
@@ -84,7 +89,7 @@ class AudioServiceTest {
 
         assertThrows(NivelBloqueadoException.class, () -> service.recibir(7L, 2, 3L, wav(4_000)));
 
-        verifyNoInteractions(almacen, evidencias);
+        verifyNoInteractions(almacen, evidencias, eventos);
     }
 
     @Test
@@ -93,7 +98,7 @@ class AudioServiceTest {
 
         assertThrows(AudioInvalidoException.class, () -> service.recibir(7L, 2, 3L, wav(4_000)));
 
-        verifyNoInteractions(almacen, evidencias);
+        verifyNoInteractions(almacen, evidencias, eventos);
     }
 
     @Test
@@ -103,7 +108,7 @@ class AudioServiceTest {
 
         assertThrows(LecturaNoEncontradaException.class, () -> service.recibir(7L, 1, 99L, wav(4_000)));
 
-        verifyNoInteractions(almacen, evidencias);
+        verifyNoInteractions(almacen, evidencias, eventos);
     }
 
     @Test
@@ -113,6 +118,6 @@ class AudioServiceTest {
 
         assertThrows(AudioInvalidoException.class, () -> service.recibir(7L, 1, 3L, wav(300)));
 
-        verifyNoInteractions(almacen, evidencias);
+        verifyNoInteractions(almacen, evidencias, eventos);
     }
 }

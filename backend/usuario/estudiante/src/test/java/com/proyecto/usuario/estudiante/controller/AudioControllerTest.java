@@ -46,13 +46,13 @@ class AudioControllerTest {
     @Test
     void audioValidoResponde201ConLaEvidencia() throws Exception {
         when(service.recibir(eq(7L), eq(1), eq(3L), any()))
-                .thenReturn(new AudioRecibidoResponse(50L, 1, 3L, 3_000, AudioService.RECIBIDO));
+                .thenReturn(new AudioRecibidoResponse(50L, 1, 3L, 3_000, AudioService.PROCESANDO));
 
         mvc.perform(multipart("/api/estudiante/niveles/1/audio").file(audio).param("lecturaId", "3").header("Authorization", TOKEN))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.evidenciaId").value(50))
                 .andExpect(jsonPath("$.duracionMs").value(3000))
-                .andExpect(jsonPath("$.estado").value("recibido"));
+                .andExpect(jsonPath("$.estado").value("procesando"));
     }
 
     @Test

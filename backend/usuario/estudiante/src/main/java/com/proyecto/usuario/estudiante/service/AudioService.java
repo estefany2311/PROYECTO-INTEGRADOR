@@ -2,37 +2,42 @@ package com.proyecto.usuario.estudiante.service;
 
 import com.proyecto.usuario.estudiante.dto.AudioRecibidoResponse;
 import com.proyecto.usuario.estudiante.dto.NivelDetalleResponse;
+import com.proyecto.usuario.estudiante.event.AudioRecibido;
 import com.proyecto.usuario.estudiante.exception.AudioInvalidoException;
 import com.proyecto.usuario.estudiante.exception.LecturaNoEncontradaException;
 import com.proyecto.usuario.estudiante.model.Lectura;
 import com.proyecto.usuario.estudiante.repository.EvidenciaRepository;
 import com.proyecto.usuario.estudiante.repository.LecturaRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
 
-// T-413/T-414 (US-13): recibe la grabación de la lectura, la guarda y crea la evidencia
+// T-413/T-414/T-416 (US-13): recibe la grabación, la guarda, crea la evidencia y la manda a transcribir
 @Service
 public class AudioService {
 
-    public static final String RECIBIDO = "recibido";
+    public static final String PROCESANDO = "procesando";
 
     private final NivelService niveles;
     private final LecturaRepository lecturas;
     private final ValidadorWav validador;
     private final AlmacenAudios almacen;
     private final EvidenciaRepository evidencias;
+    private final ApplicationEventPublisher eventos;
     private final Clock reloj;
 
     public AudioService(NivelService niveles, LecturaRepository lecturas, ValidadorWav validador,
-                        AlmacenAudios almacen, EvidenciaRepository evidencias, Clock reloj) {
+                        AlmacenAudios almacen, EvidenciaRepository evidencias,
+                        ApplicationEventPublisher eventos, Clock reloj) {
         this.niveles = niveles;
         this.lecturas = lecturas;
         this.validador = validador;
         this.almacen = almacen;
         this.evidencias = evidencias;
+        this.eventos = eventos;
         this.reloj = reloj;
     }
 
@@ -51,7 +56,8 @@ public class AudioService {
             LocalDateTime ahora = LocalDateTime.now(reloj);
             long evidenciaId = evidencias.crearAudio(estudianteId, nivelId, clave, ahora);
             evidencias.registrarLectura(evidenciaId, lecturaId, lectura.texto(), duracionMs, audio.length, ahora);
-            return new AudioRecibidoResponse(evidenciaId, nivelId, lecturaId, duracionMs, RECIBIDO);
+            eventos.publishEvent(new AudioRecibido(evidenciaId, clave));   // T-416: Whisper empieza al confirmar
+            return new AudioRecibidoResponse(evidenciaId, nivelId, lecturaId, duracionMs, PROCESANDO);
         } catch (RuntimeException e) {
             almacen.borrar(clave);
             throw e;
