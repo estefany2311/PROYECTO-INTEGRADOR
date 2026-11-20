@@ -64,3 +64,32 @@ class ReporteAulasView(APIView):
                         'codigo_modular': colegio.codigo_modular, 'region': colegio.region},
             'aulas': consultas.rendimiento_por_aula(colegio.id),
         })
+
+
+
+
+class ReporteMapaCalorView(APIView):
+    """US-48 · T-350: datos del mapa de calor, desempeño por zona y competencia (solo administrador).
+
+    GET /api/reportes/mapa-calor/                       → por región, todos los grados
+    GET /api/reportes/mapa-calor/?agrupar=provincia     → por provincia
+    GET /api/reportes/mapa-calor/?agrupar=region&grado=3
+    """
+    permission_classes = [TienePermiso, EsAdmin]
+    modulo = 'reportes'
+
+    def get(self, request):
+        agrupar = request.query_params.get('agrupar') or 'region'
+        if agrupar not in consultas.AGRUPACIONES:
+            raise ValidationError({'agrupar': 'agrupar debe ser region o provincia.'})
+
+        grado = _entero(request.query_params.get('grado'), 'grado')
+        if grado is not None and not 1 <= grado <= 6:
+            raise ValidationError({'grado': 'El grado debe estar entre 1 y 6.'})
+
+        return Response({
+            'agrupar': agrupar,
+            'grado': grado,
+            'competencias': consultas.COMPETENCIAS,
+            'zonas': consultas.desempeno_por_zona(agrupar=agrupar, grado=grado),
+        })
