@@ -18,6 +18,7 @@ import com.proyecto.movil.view.PantallaCodigoAula
 import com.proyecto.movil.view.PantallaConsigna
 import com.proyecto.movil.view.PantallaDetalleNivel
 import com.proyecto.movil.view.PantallaEditor
+import com.proyecto.movil.view.PantallaEspera
 import com.proyecto.movil.view.PantallaGrabacion
 import com.proyecto.movil.view.PantallaLectura
 import com.proyecto.movil.view.PantallaMapa
@@ -102,7 +103,23 @@ fun NavegacionApp(almacen: IAlmacenSesion = Dependencias.almacenSesion) {
             )
         }
         composable(Rutas.GRABAR, arguments = ARGUMENTO_NIVEL) { entrada ->
-            PantallaGrabacion(nivelId = entrada.nivelId(), onVolver = { nav.popBackStack() })
+            PantallaGrabacion(
+                nivelId = entrada.nivelId(),
+                onVolver = { nav.popBackStack() },
+                // T-418: al enviar pasa a la espera; "atrás" ya no regresa a la grabación
+                onEnviada = { evidenciaId ->
+                    nav.navigate(Rutas.espera(evidenciaId)) { popUpTo(Rutas.GRABAR) { inclusive = true } }
+                }
+            )
+        }
+        composable(
+            Rutas.ESPERA,
+            arguments = listOf(navArgument(Rutas.ARG_EVIDENCIA) { type = NavType.LongType })
+        ) { entrada ->
+            PantallaEspera(
+                evidenciaId = entrada.arguments?.getLong(Rutas.ARG_EVIDENCIA) ?: 0L,
+                onVolverAlMapa = { nav.popBackStack(Rutas.MAPA, inclusive = false) }
+            )
         }
         composable(Rutas.CONSIGNA, arguments = ARGUMENTO_NIVEL) { entrada ->
             PantallaConsigna(

@@ -54,6 +54,7 @@ import com.proyecto.movil.viewmodel.Reproduccion
 fun PantallaGrabacion(
     nivelId: Int,
     onVolver: () -> Unit,
+    onEnviada: (Long) -> Unit = {},
     lecturaViewModel: LecturaViewModel = viewModel(),
     grabacionViewModel: GrabacionViewModel = viewModel()
 ) {
@@ -61,6 +62,11 @@ fun PantallaGrabacion(
         val lectura by lecturaViewModel.uiState.collectAsStateWithLifecycle()
         val grabacion by grabacionViewModel.uiState.collectAsStateWithLifecycle()
         val reproduccion by grabacionViewModel.reproduccion.collectAsStateWithLifecycle()
+
+        // T-418: cuando el audio ya está en el servidor, pasa a la pantalla de espera
+        LaunchedEffect(grabacion) {
+            (grabacion as? GrabacionUiState.Enviada)?.let { onEnviada(it.evidenciaId) }
+        }
 
         // T-410: si la app pasa a segundo plano, se pausa el audio
         LifecycleEventEffect(Lifecycle.Event.ON_STOP) { grabacionViewModel.pausar() }
