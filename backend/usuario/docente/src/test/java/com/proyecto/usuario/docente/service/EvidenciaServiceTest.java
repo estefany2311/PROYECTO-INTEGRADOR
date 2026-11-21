@@ -36,6 +36,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -662,5 +663,59 @@ class EvidenciaServiceTest {
         HistorialCalificacionResponse anterior = detalle.historial().get(1);
         assertEquals(Evidencia.APROBADA, anterior.accion());
         assertNull(anterior.motivo());
+    }
+
+    // T-382 (US-33): aprobación y corrección trabajando en secuencia
+
+    @Test
+    void aprobarDespuesDeCorregirVuelveALaNotaDeLaIaYLimpiaElMotivo() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+        audio.setPuntajeIa((short) 85);
+        audio.setCalificacionFinal((short) 70);
+        audio.setMotivoCorreccion("El audio tiene ruido.");
+        audio.setEstadoRevision(Evidencia.CORREGIDA);
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+
+        service.aprobar(1L, 10L, 30L);
+
+        assertEquals(Evidencia.APROBADA, audio.getEstadoRevision());
+        assertEquals((short) 85, audio.getCalificacionFinal());
+        assertNull(audio.getMotivoCorreccion());
+        assertNotNull(audio.getRevisadoEn());
+    }
+
+    @Test
+    void aprobarYCorregirAcumulanElHistorialDeLasDosRevisiones() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+        audio.setPuntajeIa((short) 85);
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+
+        service.aprobar(1L, 10L, 30L);
+        service.corregir(1L, 10L, 30L,
+                new CorregirEvidenciaRequest((short) 70, "El audio tiene ruido."));
+
+        ArgumentCaptor<HistorialCalificacion> captor =
+                ArgumentCaptor.forClass(HistorialCalificacion.class);
+        verify(historialRepository, times(2)).save(captor.capture());
+
+        List<HistorialCalificacion> filas = captor.getAllValues();
+        assertEquals(Evidencia.APROBADA, filas.get(0).getAccion());
+        assertEquals((short) 85, filas.get(0).getNotaDocente());
+        assertNull(filas.get(0).getMotivo());
+
+        assertEquals(Evidencia.CORREGIDA, filas.get(1).getAccion());
+        assertEquals((short) 85, filas.get(1).getNotaIa());
+        assertEquals((short) 70, filas.get(1).getNotaDocente());
+        assertEquals("El audio tiene ruido.", filas.get(1).getMotivo());
     }
 }

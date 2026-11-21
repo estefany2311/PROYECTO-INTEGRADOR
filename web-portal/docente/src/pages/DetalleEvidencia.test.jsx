@@ -439,4 +439,69 @@ describe("Aprobar y corregir la evidencia (T-381)", () => {
       screen.getByRole("button", { name: "Guardar corrección" })
     ).toBeInTheDocument();
   });
+
+  it("muestra el error del backend al aprobar y mantiene el estado", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue(AUDIO);
+    api.aprobarEvidencia.mockRejectedValue(
+      new Error("La evidencia no tiene evaluación de la IA")
+    );
+    mostrar();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Aprobar nota de la IA" })
+    );
+
+    const alerta = await screen.findByRole("alert");
+    expect(alerta).toHaveTextContent(
+      "La evidencia no tiene evaluación de la IA"
+    );
+    expect(screen.getAllByText("Pendiente").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Sin nota final")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Aprobar nota de la IA" })
+    ).toBeEnabled();
+  });
+
+  it("permite aprobar y después corregir en la misma pantalla", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue(AUDIO);
+    api.aprobarEvidencia.mockResolvedValue({
+      ...AUDIO,
+      calificacionFinal: 85,
+      estadoRevision: "aprobada",
+      revisadoEn: "2026-11-12T10:00:00",
+    });
+    api.corregirEvidencia.mockResolvedValue({
+      ...AUDIO,
+      calificacionFinal: 65,
+      motivoCorreccion: "El audio tiene ruido.",
+      estadoRevision: "corregida",
+      revisadoEn: "2026-11-12T10:30:00",
+    });
+    mostrar();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Aprobar nota de la IA" })
+    );
+    expect(await screen.findByLabelText("Nota final: 85")).toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Corregir nota" })
+    );
+    const nota = screen.getByLabelText(/Calificación final/);
+    expect(nota).toHaveValue(85);
+
+    await userEvent.clear(nota);
+    await userEvent.type(nota, "65");
+    await userEvent.type(
+      screen.getByLabelText("Motivo de la corrección"),
+      "El audio tiene ruido."
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Guardar corrección" })
+    );
+
+    expect(await screen.findByLabelText("Nota final: 65")).toBeInTheDocument();
+    expect(screen.getAllByText("Corregida").length).toBeGreaterThan(0);
+    expect(await screen.findByText("El audio tiene ruido.")).toBeInTheDocument();
+  });
 });

@@ -583,6 +583,12 @@ su color propio.
 
 ### Pruebas
 
+T-382 cubre los bordes de la aprobación y la corrección: validaciones del cuerpo,
+límite del motivo, evidencia de otra aula, header obligatorio, revisión después de una
+corrección y el flujo completo en la pantalla.
+
 | Prueba | Cobertura |
 |---|---|
-| `DetalleEvidencia.test.jsx` | Aprobar actualiza el detalle y la nota final; Aprobar deshabilitado sin evaluación de la IA; validación de nota y motivo; corrección con nota y motivo; cancelación sin llamada; error del backend con el formulario abierto. |
+| `DetalleEvidencia.test.jsx` | Aprobar actualiza el detalle y la nota final; Aprobar deshabilitado sin evaluación de la IA; validación de nota y motivo; corrección con nota y motivo; cancelación sin llamada; error del backend con el formulario abierto; error al aprobar; flujo aprobar y luego corregir en la misma pantalla. |
+| `EvidenciaServiceTest` | Aprobar después de corregir vuelve a la nota de la IA y limpia el motivo; aprobar y corregir acumulan dos filas en el historial con sus notas. |
+| `EvidenciaControllerTest` | Calificación obligatoria, nota negativa, motivo de más de 500 caracteres, `404` al corregir una evidencia de otra aula y header obligatorio al aprobar. |

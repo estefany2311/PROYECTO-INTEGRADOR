@@ -107,8 +107,8 @@ npm run preview -- --port 4173
 | Backend `MigracionEvidenciaDatosPruebaTest` | 5/5 · datos de audio y texto, estados y niveles por orden |
 | Backend `EvidenciaRepositoryTest` | 5/5 · pendientes por fecha y filtro por tipo, detalle por id y aula, evidencia de otra aula, y calificación final con estado `corregida` y motivo |
 | Backend `HistorialCalificacionRepositoryTest` | 2/2 · historial por evidencia ordenado y borrado en cascada con la evidencia |
-| Backend `EvidenciaServiceTest` | 27/27 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo, aula del docente, detalle con transcripción y puntaje, palabras marcadas, aprobar/corregir con motivo, recálculo de estrellas al cambiar la nota e historial de calificaciones |
-| Backend `EvidenciaControllerTest` | 28/28 · ruta, respuesta de audio y texto, filtro por tipo, detalle, detalle rechazado, detalle sin evaluación, audio completo, 206, 416, aprobar, corregir, validaciones, header y errores, e historial en el detalle |
+| Backend `EvidenciaServiceTest` | 29/29 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo, aula del docente, detalle con transcripción y puntaje, palabras marcadas, aprobar/corregir con motivo, recálculo de estrellas al cambiar la nota, historial de calificaciones, aprobar después de corregir y acumulación de ambas revisiones |
+| Backend `EvidenciaControllerTest` | 33/33 · ruta, respuesta de audio y texto, filtro por tipo, detalle, detalle rechazado, detalle sin evaluación, audio completo, 206, 416, aprobar, corregir, validaciones (motivo, rango, nota negativa, 500 caracteres), 404 en corrección, header obligatorio, errores e historial en el detalle |
 | Backend `AlmacenAudioTest` | 14/14 · ruta relativa con subcarpeta, URL y query, nombre simple, carpeta, rutas inválidas y tipo MIME |
 | Backend `AudioEvidenciaServiceTest` | 6/6 · audio del aula, texto, otra aula, aula inexistente, aula ajena y archivo faltante |
 | Backend `MigracionEvidenciaDetalleTest` | 3/3 · columnas de V13, rango 0-100 del puntaje y datos de prueba |
@@ -126,12 +126,12 @@ npm run preview -- --port 4173
 | Backend `CatalogoControllerTest` | 4/4 · catálogo con `fuente` y `urlRecurso`, filtros, 403 y 404 |
 | Backend `ConfiguracionCorsTest` | 4/4 · origen local, varios orígenes, espacios y lista vacía |
 | Backend `OpenApiConfigTest` | 4/4 · servidor, información, esquemas de seguridad y orden de secciones |
-| Backend `test` | 327/327 |
+| Backend `test` | 334/334 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
 | Frontend `Evidencias.test.jsx` | 13/13 · tarjetas, orden, conteo por tipo, filtro y vuelta a todos los tipos, aula activa, cambio de aula, Actualizar, sin aulas, vacío, error y enlace Revisar evidencia |
-| Frontend `DetalleEvidencia.test.jsx` | 16/16 · audio y transcripción lado a lado, palabras marcadas resaltadas (audio y texto), texto sin transcripción, detalle sin `palabrasMarcadas`, avisos sin transcripción/puntaje, actualización con el botón Actualizar, error con reintento, estado rechazada, aprobar, corregir con formulario, validaciones, cancelar y error del backend |
+| Frontend `DetalleEvidencia.test.jsx` | 18/18 · audio y transcripción lado a lado, palabras marcadas resaltadas (audio y texto), texto sin transcripción, detalle sin `palabrasMarcadas`, avisos sin transcripción/puntaje, actualización con el botón Actualizar, error con reintento, estado rechazada, aprobar, corregir con formulario, validaciones, cancelar, error del backend, error al aprobar y flujo aprobar → corregir |
 | Frontend `ReproductorAudio.test.jsx` | 5/5 · descarga al pulsar, header del docente, blob, error con reintento, liberación y nombre genérico |
 | Frontend `Catalogo.test.jsx` | 12/12 · lecturas, filtros, búsqueda, modal, asignación, etiqueta Oficial y enlace al recurso |
-| Frontend `test`, `lint`, `build` | 120/120 · OK · OK |
+| Frontend `test`, `lint`, `build` | 122/122 · OK · OK |

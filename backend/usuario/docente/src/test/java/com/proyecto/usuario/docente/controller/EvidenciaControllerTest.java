@@ -27,6 +27,8 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -414,6 +416,72 @@ class EvidenciaControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensaje")
                         .value("La evidencia no tiene evaluación de la IA"));
+    }
+
+    // T-382 (US-33): bordes de la aprobación y la corrección
+
+    @Test
+    void laCorreccionExigeLaCalificacionFinal() throws Exception {
+        mvc.perform(post("/api/docente/aulas/10/evidencias/30/corregir")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"motivo": "Nota ajustada."}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje")
+                        .value("Debes indicar la calificación final"));
+    }
+
+    @Test
+    void laCorreccionRechazaUnaNotaNegativa() throws Exception {
+        mvc.perform(post("/api/docente/aulas/10/evidencias/30/corregir")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"calificacionFinal": -1, "motivo": "Nota ajustada."}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje")
+                        .value("La calificación final no puede ser menor que 0"));
+    }
+
+    @Test
+    void laCorreccionLimitaElMotivoA500Caracteres() throws Exception {
+        mvc.perform(post("/api/docente/aulas/10/evidencias/30/corregir")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"calificacionFinal\": 70, \"motivo\": \""
+                                + "x".repeat(501) + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje")
+                        .value("El motivo no puede superar los 500 caracteres"));
+    }
+
+    @Test
+    void corregirUnaEvidenciaDeOtraAulaDevuelve404() throws Exception {
+        when(service.corregir(1L, 10L, 99L,
+                new CorregirEvidenciaRequest((short) 70, "Nota ajustada.")))
+                .thenThrow(new ReglaNegocioException(
+                        "La evidencia no existe en esta aula", HttpStatus.NOT_FOUND));
+
+        mvc.perform(post("/api/docente/aulas/10/evidencias/99/corregir")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"calificacionFinal": 70, "motivo": "Nota ajustada."}
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje")
+                        .value("La evidencia no existe en esta aula"));
+    }
+
+    @Test
+    void aprobarExigeElHeaderDelDocente() throws Exception {
+        mvc.perform(post("/api/docente/aulas/10/evidencias/30/aprobar"))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).aprobar(any(), any(), any());
     }
 
     @Test
