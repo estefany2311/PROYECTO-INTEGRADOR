@@ -118,6 +118,16 @@ public class PuntajeService {
                 });
     }
 
+    /**
+     * T-402 (US-22): estrellas (0 a 3) que gana un puntaje en un tipo de reto,
+     * según los umbrales de la US-53.
+     */
+    public int estrellasPara(String tipoReto, int puntajeObtenido) {
+        String tipo = normalizarTipo(tipoReto);
+        validarPuntaje(puntajeObtenido);
+        return REGLAS.get(tipo).estrellasPara(puntajeObtenido);
+    }
+
     private String normalizarTipo(String tipoReto) {
         if (tipoReto == null || tipoReto.isBlank()) {
             throw tipoInvalido();

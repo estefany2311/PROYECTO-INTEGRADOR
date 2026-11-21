@@ -12,6 +12,7 @@ package com.proyecto.usuario.docente.dto;
  * @param errores             palabras con error ortográfico
  * @param oraciones           oraciones del texto
  * @param oracionesCompletas  oraciones con mayúscula inicial y punto final
+ * @param estrellas           estrellas ganadas (0 a 3) según las reglas de puntuación
  * @param mensaje             retroalimentación para el alumno según el puntaje
  */
 public record ResultadoEscrituraResponse(
@@ -25,6 +26,7 @@ public record ResultadoEscrituraResponse(
         int errores,
         int oraciones,
         int oracionesCompletas,
+        int estrellas,
         String mensaje
 ) {
 }

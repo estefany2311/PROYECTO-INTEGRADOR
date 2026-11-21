@@ -23,18 +23,44 @@ import java.util.Arrays;
 @Service
 public class EscrituraService {
 
+    private static final String TIPO_RETO_ESCRITURA = "escritura";
+
     private final EvidenciaRepository evidenciaRepository;
     private final ConsignaEscrituraRepository consignaRepository;
+    private final PuntajeService puntajeService;
 
     public EscrituraService(EvidenciaRepository evidenciaRepository,
-                            ConsignaEscrituraRepository consignaRepository) {
+                            ConsignaEscrituraRepository consignaRepository,
+                            PuntajeService puntajeService) {
         this.evidenciaRepository = evidenciaRepository;
         this.consignaRepository = consignaRepository;
+        this.puntajeService = puntajeService;
     }
 
     @Transactional(readOnly = true)
     public ResultadoEscrituraResponse calcular(Long estudianteId, Long evidenciaId) {
         return resultadoDe(buscarTexto(estudianteId, evidenciaId));
+    }
+
+    /**
+     * T-402 (US-22): calcula el puntaje, lo guarda en la evidencia y suma las
+     * estrellas y los puntos del reto al acumulado del alumno (US-09).
+     *
+     * <p>Solo la primera vez: una evidencia que ya tiene puntaje no vuelve a
+     * sumar, así que pedir el resultado otra vez no duplica estrellas.</p>
+     */
+    @Transactional
+    public ResultadoEscrituraResponse evaluar(Long estudianteId, Long evidenciaId) {
+        Evidencia evidencia = buscarTexto(estudianteId, evidenciaId);
+        ResultadoEscrituraResponse resultado = resultadoDe(evidencia);
+
+        if (evidencia.getPuntajeIa() == null) {
+            evidencia.setPuntajeIa((short) resultado.puntajeEscritura());
+            evidencia.setResultadoIa(resultado.mensaje());
+            puntajeService.sumarAlCompletarReto(
+                    estudianteId, TIPO_RETO_ESCRITURA, resultado.puntajeEscritura());
+        }
+        return resultado;
     }
 
     // la evidencia debe ser del alumno y de tipo texto
@@ -62,12 +88,13 @@ public class EscrituraService {
         int consigna = FormulaEscritura.puntajeConsigna(oraciones);
         int puntaje = FormulaEscritura.puntajeEscritura(ortografia, longitud, consigna);
 
+        int estrellas = puntajeService.estrellasPara(TIPO_RETO_ESCRITURA, puntaje);
         String mensaje = MensajesEscritura.para(
                 puntaje, ortografia, longitud, consigna, errores, palabras, minimas);
 
         return new ResultadoEscrituraResponse(evidencia.getId(), puntaje, ortografia, longitud,
                 consigna, palabras, minimas, errores, oraciones.total(), oraciones.completas(),
-                mensaje);
+                estrellas, mensaje);
     }
 
     // palabras marcadas: "kasa, perro" -> 2
