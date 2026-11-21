@@ -1,5 +1,9 @@
 package com.proyecto.usuario.docente.service;
 
+import com.proyecto.usuario.docente.model.PalabraLeida;
+
+import java.util.List;
+
 /**
  * T-392 (US-15): fórmula del puntaje de fluidez lectora (0 a 100).
  *
@@ -27,6 +31,23 @@ public final class FormulaFluidez {
     public static final int PENALIZACION_VACILACION = 3;
 
     private FormulaFluidez() {
+    }
+
+    /**
+     * T-394: palabras por minuto de la lectura. Se mide sobre el tiempo que el
+     * alumno estuvo leyendo (de que empieza la primera palabra a que termina la
+     * última), sin contar el silencio antes y después de la grabación. Con menos
+     * de 2 palabras o sin tiempo transcurrido no hay ritmo que medir: devuelve 0.
+     */
+    public static double palabrasPorMinuto(List<PalabraLeida> palabras) {
+        if (palabras.size() < 2) {
+            return 0;
+        }
+        double segundos = palabras.get(palabras.size() - 1).fin() - palabras.get(0).inicio();
+        if (segundos <= 0) {
+            return 0;
+        }
+        return palabras.size() / (segundos / 60.0);
     }
 
     /** Puntaje de ritmo (0 a 100) según las palabras por minuto leídas y las esperadas. */
