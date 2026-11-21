@@ -24,7 +24,7 @@ class MigracionAsignacionFechaLimiteTest {
                 "db/migration/V19__asignacion_fecha_limite_y_estado.sql").getInputStream()) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8)
                     .toLowerCase()
-                    .replaceAll("\s+", " ");
+                    .replaceAll("\\s+", " ");
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

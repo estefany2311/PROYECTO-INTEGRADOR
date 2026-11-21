@@ -29,9 +29,9 @@ public final class FormulaEscritura {
     public static final double PESO_CONSIGNA = 0.2;
     public static final int CASTIGO_POR_PROPORCION_DE_ERRORES = 200;
 
-    private static final Pattern ESPACIOS = Pattern.compile("\s+");
+    private static final Pattern ESPACIOS = Pattern.compile("\\s+");
     // corta después de . ! ? seguidos de espacio
-    private static final Pattern FIN_DE_ORACION = Pattern.compile("(?<=[.!?])\s+");
+    private static final Pattern FIN_DE_ORACION = Pattern.compile("(?<=[.!?])\\s+");
     private static final Pattern TERMINA_BIEN = Pattern.compile(".*[.!?]$", Pattern.DOTALL);
 
     private FormulaEscritura() {

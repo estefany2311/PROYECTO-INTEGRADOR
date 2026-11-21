@@ -53,8 +53,9 @@ public final class MensajesEscritura {
         }
         if (longitud == menor) {
             int faltan = Math.max(1, palabrasMinimas - palabras);
-            return "Escribe un poco más: te faltaron " + faltan
-                    + (faltan == 1 ? " palabra." : " palabras.");
+            return faltan == 1
+                    ? "Escribe un poco más: te faltó 1 palabra."
+                    : "Escribe un poco más: te faltaron " + faltan + " palabras.";
         }
         return "Recuerda empezar cada oración con mayúscula y terminarla con punto.";
     }
