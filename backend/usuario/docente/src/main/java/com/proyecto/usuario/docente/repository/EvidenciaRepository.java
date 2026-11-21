@@ -26,4 +26,7 @@ public interface EvidenciaRepository extends JpaRepository<Evidencia, Long> {
     // El filtro por aula evita que un docente lea evidencias de otro.
     @EntityGraph(attributePaths = {"estudiante", "estudiante.grado", "nivel"})
     Optional<Evidencia> findByIdAndEstudianteAulaId(Long id, Long aulaId);
+
+    // T-386 (US-34): el alumno solo puede leer sus propias evidencias
+    Optional<Evidencia> findByIdAndEstudianteId(Long id, Long estudianteId);
 }
