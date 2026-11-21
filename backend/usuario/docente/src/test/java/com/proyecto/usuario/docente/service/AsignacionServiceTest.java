@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -192,6 +193,41 @@ class AsignacionServiceTest {
     }
 
     // Lectura no tiene setters (solo se lee): se simula con Mockito
+
+    // T-391 (US-38): la fecha límite es opcional y la tarea nace pendiente
+
+    @Test
+    void guardaLaFechaLimiteYLaTareaNacePendiente() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(5L, 10L)).thenReturn(Optional.of(ana));
+        Lectura lectura = lecturaActiva();
+        when(lecturaRepository.findById(7L)).thenReturn(Optional.of(lectura));
+        when(asignacionRepository.existsByEstudianteIdAndLecturaId(5L, 7L)).thenReturn(false);
+        when(asignacionRepository.saveAndFlush(any(Asignacion.class)))
+                .thenAnswer(i -> i.getArgument(0));
+
+        AsignacionResponse resp = service.asignar(1L, 10L,
+                new AsignarLecturaRequest(7L, 5L, java.time.LocalDate.of(2026, 12, 1)));
+
+        assertEquals(java.time.LocalDate.of(2026, 12, 1), resp.fechaLimite());
+        assertEquals("pendiente", resp.estado());
+    }
+
+    @Test
+    void sinFechaLimiteLaTareaNoVence() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(estudianteRepository.findByIdAndAulaId(5L, 10L)).thenReturn(Optional.of(ana));
+        Lectura lectura = lecturaActiva();
+        when(lecturaRepository.findById(7L)).thenReturn(Optional.of(lectura));
+        when(asignacionRepository.existsByEstudianteIdAndLecturaId(5L, 7L)).thenReturn(false);
+        when(asignacionRepository.saveAndFlush(any(Asignacion.class)))
+                .thenAnswer(i -> i.getArgument(0));
+
+        AsignacionResponse resp = service.asignar(1L, 10L, new AsignarLecturaRequest(7L, 5L));
+
+        assertNull(resp.fechaLimite());
+    }
+
     private Lectura lecturaActiva() {
         Lectura lectura = mock(Lectura.class);
         when(lectura.isActivo()).thenReturn(true);
