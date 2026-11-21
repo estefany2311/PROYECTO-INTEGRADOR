@@ -7,6 +7,7 @@ import com.proyecto.movil.model.ResultadoEnvio
 import com.proyecto.movil.model.audio.AlmacenGrabaciones
 import com.proyecto.movil.model.audio.GrabadoraWav
 import com.proyecto.movil.model.audio.Grabacion
+import com.proyecto.movil.model.audio.IColaEnvios
 import com.proyecto.movil.model.audio.IGrabadora
 import com.proyecto.movil.model.audio.IReproductor
 import com.proyecto.movil.model.audio.ReproductorAudio
@@ -35,6 +36,8 @@ sealed class GrabacionUiState {
     data class Enviando(val grabacion: Grabacion, val progreso: Float) : GrabacionUiState()
     data class Enviada(val evidenciaId: Long) : GrabacionUiState()
     data class ErrorEnvio(val grabacion: Grabacion, val mensaje: String, val puedeReintentar: Boolean) : GrabacionUiState()
+    // T-419: sin internet; quedó guardada y se enviará sola cuando vuelva la conexión
+    data class EnCola(val grabacion: Grabacion) : GrabacionUiState()
 }
 
 // T-407: estado del reproductor de la grabación
@@ -50,7 +53,10 @@ class GrabacionViewModel(
     // T-317: cada niño tiene sus grabaciones (varios usan la misma tablet)
     private val estudianteId: () -> Long = { Dependencias.almacenSesion.leer()?.estudianteId ?: 0L },
     private val reproductor: IReproductor = ReproductorAudio(),
-    private val audios: IAudioRepository = AudioRepository()
+    private val audios: IAudioRepository = AudioRepository(),
+    // T-419: se leen recién al enviar (las pruebas antiguas no las necesitan)
+    private val cola: () -> IColaEnvios = { Dependencias.colaEnvios },
+    private val hayInternet: () -> Boolean = { Dependencias.monitorRed.conectado.value }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<GrabacionUiState>(GrabacionUiState.Lista)
@@ -160,9 +166,15 @@ class GrabacionViewModel(
         val grabacion = when (val estado = _uiState.value) {
             is GrabacionUiState.Grabada -> estado.grabacion
             is GrabacionUiState.ErrorEnvio -> estado.grabacion
+            is GrabacionUiState.EnCola -> estado.grabacion
             else -> return
         }
         pausar()
+        // T-419: sin internet ni se intenta; queda en la cola
+        if (!hayInternet()) {
+            ponerEnCola(grabacion, nivelId, lecturaId)
+            return
+        }
         _uiState.value = GrabacionUiState.Enviando(grabacion, 0f)
         envio = viewModelScope.launch {
             val resultado = audios.enviar(nivelId, lecturaId, grabacion.archivo) { progreso ->
@@ -173,13 +185,22 @@ class GrabacionViewModel(
                 is ResultadoEnvio.Exito -> {
                     liberarReproductor()
                     almacen.borrar(estudianteId(), nivelId)   // T-317: ya está en el servidor
+                    cola().cancelar(estudianteId(), nivelId)   // por si estaba pendiente de antes
                     GrabacionUiState.Enviada(resultado.recibido.evidenciaId)
                 }
                 is ResultadoEnvio.Rechazado -> GrabacionUiState.ErrorEnvio(grabacion, resultado.mensaje, puedeReintentar = false)
-                ResultadoEnvio.SinConexion -> GrabacionUiState.ErrorEnvio(grabacion, MENSAJE_SIN_CONEXION, puedeReintentar = true)
+                ResultadoEnvio.SinConexion -> {
+                    ponerEnCola(grabacion, nivelId, lecturaId)   // T-419
+                    return@launch
+                }
                 ResultadoEnvio.SesionVencida -> GrabacionUiState.ErrorEnvio(grabacion, MENSAJE_SESION_VENCIDA, puedeReintentar = false)
             }
         }
+    }
+
+    private fun ponerEnCola(grabacion: Grabacion, nivelId: Int, lecturaId: Long) {
+        cola().programar(estudianteId(), nivelId, lecturaId)
+        _uiState.value = GrabacionUiState.EnCola(grabacion)
     }
 
     private fun alTerminarDeEscuchar() {

@@ -82,4 +82,17 @@ class EnvioPantallaTest {
         compose.onNodeWithTag("boton_grabar_otra_vez").performClick()
         assertEquals(1, clics["otraVez"])
     }
+
+    // T-419
+    @Test
+    fun enCola_avisaQueSeEnviaraSolaYPermiteIntentarAhora() {
+        mostrar(GrabacionUiState.EnCola(grabacion))
+
+        compose.onNodeWithTag("aviso_en_cola").assertTextContains("se enviará sola", substring = true)
+        compose.onNodeWithTag("boton_enviar_grabacion").assertDoesNotExist()
+        compose.onNodeWithTag("boton_enviar_ahora").performClick()
+        assertEquals(1, clics["enviar"])
+        compose.onNodeWithTag("boton_volver_en_cola").performClick()
+        assertEquals(1, clics["volver"])
+    }
 }

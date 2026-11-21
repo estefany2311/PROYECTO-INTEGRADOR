@@ -234,6 +234,37 @@ private fun ControlesGrabacion(
                     modifier = Modifier.fillMaxWidth().height(72.dp).testTag("boton_volver_mapa")
                 ) { Text("Volver al mapa", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
             }
+            // T-419: sin internet la grabación no se pierde; se envía sola después
+            is GrabacionUiState.EnCola -> {
+                Text(
+                    "No hay internet",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ColoresAventura.TextoOscuro,
+                    modifier = Modifier.testTag("titulo_en_cola")
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Tu lectura quedó guardada y se enviará sola cuando vuelva la conexión.",
+                    fontSize = 20.sp,
+                    textAlign = TextAlign.Center,
+                    color = ColoresAventura.TextoOscuro,
+                    modifier = Modifier.testTag("aviso_en_cola")
+                )
+                Spacer(Modifier.height(16.dp))
+                Button(
+                    onClick = onVolver,
+                    colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Turquesa),
+                    shape = RoundedCornerShape(36.dp),
+                    modifier = Modifier.fillMaxWidth().height(72.dp).testTag("boton_volver_en_cola")
+                ) { Text("Volver", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+                Spacer(Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = onEnviar,
+                    shape = RoundedCornerShape(32.dp),
+                    modifier = Modifier.fillMaxWidth().height(64.dp).testTag("boton_enviar_ahora")
+                ) { Text("Intentar ahora", fontSize = 22.sp, color = ColoresAventura.TextoOscuro) }
+            }
             is GrabacionUiState.ErrorEnvio -> {
                 Text(
                     estado.mensaje,

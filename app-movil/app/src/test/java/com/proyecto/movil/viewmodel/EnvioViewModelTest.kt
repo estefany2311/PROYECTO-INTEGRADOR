@@ -4,6 +4,7 @@ import com.proyecto.movil.model.AudioRecibido
 import com.proyecto.movil.model.ResultadoEnvio
 import com.proyecto.movil.model.audio.AlmacenGrabaciones
 import com.proyecto.movil.model.audio.Grabacion
+import com.proyecto.movil.model.audio.IColaEnvios
 import com.proyecto.movil.model.audio.IGrabadora
 import com.proyecto.movil.model.audio.IReproductor
 import com.proyecto.movil.model.repository.IAudioRepository
@@ -58,7 +59,14 @@ private class AudioRepositoryFalso : IAudioRepository {
     }
 }
 
-// T-417 (US-13): subir la grabación con barra de progreso y reintento
+private class ColaFalsa : IColaEnvios {
+    val programados = mutableListOf<Triple<Long, Int, Long>>()
+    val cancelados = mutableListOf<Pair<Long, Int>>()
+    override fun programar(estudianteId: Long, nivelId: Int, lecturaId: Long) { programados += Triple(estudianteId, nivelId, lecturaId) }
+    override fun cancelar(estudianteId: Long, nivelId: Int) { cancelados += estudianteId to nivelId }
+}
+
+// T-417/T-419 (US-13): subir la grabación con barra de progreso, reintento y cola sin internet
 @OptIn(ExperimentalCoroutinesApi::class)
 class EnvioViewModelTest {
 
@@ -68,6 +76,8 @@ class EnvioViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private lateinit var almacen: AlmacenGrabaciones
     private lateinit var audios: AudioRepositoryFalso
+    private lateinit var cola: ColaFalsa
+    private var internet = true
     private lateinit var viewModel: GrabacionViewModel
 
     private val recibido = AudioRecibido(50L, 1, 5L, 3_000, "procesando")
@@ -77,7 +87,9 @@ class EnvioViewModelTest {
         Dispatchers.setMain(dispatcher)
         almacen = AlmacenGrabaciones(File(carpeta.root, "grabaciones"))
         audios = AudioRepositoryFalso()
-        viewModel = GrabacionViewModel(GrabadoraQuieta(), almacen, { 7L }, ReproductorQuieto(), audios)
+        cola = ColaFalsa()
+        internet = true
+        viewModel = GrabacionViewModel(GrabadoraQuieta(), almacen, { 7L }, ReproductorQuieto(), audios, { cola }, { internet })
         // Una grabación de 1 segundo ya guardada en la tablet
         val wav = File(carpeta.root, "temporal.wav").apply { writeBytes(ByteArray(44 + 32_000)) }
         almacen.guardar(7L, 1, Grabacion(wav, 1_000))
@@ -122,23 +134,45 @@ class EnvioViewModelTest {
         assertNull(almacen.guardada(7L, 1))
     }
 
+    // T-419
     @Test
-    fun `sin internet se puede reintentar con la misma grabacion`() = runTest(dispatcher) {
+    fun `si se corta el internet al subir queda en la cola`() = runTest(dispatcher) {
         viewModel.enviar(1, 5L)
         audios.respuesta.complete(ResultadoEnvio.SinConexion)
         runCurrent()
 
-        val error = viewModel.uiState.value as GrabacionUiState.ErrorEnvio
-        assertTrue(error.puedeReintentar)
-        assertEquals(GrabacionViewModel.MENSAJE_SIN_CONEXION, error.mensaje)
+        assertTrue(viewModel.uiState.value is GrabacionUiState.EnCola)
+        assertEquals(listOf(Triple(7L, 1, 5L)), cola.programados)
         assertTrue(almacen.guardada(7L, 1) != null)   // la grabación sigue en la tablet
+    }
 
+    // T-419
+    @Test
+    fun `sin internet ni intenta subir y queda en la cola`() = runTest(dispatcher) {
+        internet = false
+
+        viewModel.enviar(1, 5L)
+        runCurrent()
+
+        assertEquals(0, audios.envios)
+        assertTrue(viewModel.uiState.value is GrabacionUiState.EnCola)
+        assertEquals(listOf(Triple(7L, 1, 5L)), cola.programados)
+    }
+
+    // T-419: "Intentar ahora" desde la cola; si sale bien se quita de la cola
+    @Test
+    fun `desde la cola puede intentar ahora`() = runTest(dispatcher) {
+        internet = false
+        viewModel.enviar(1, 5L)
+        runCurrent()
+
+        internet = true
         audios.respuesta = CompletableDeferred(ResultadoEnvio.Exito(recibido))
         viewModel.enviar(1, 5L)
         runCurrent()
 
-        assertEquals(2, audios.envios)
         assertEquals(GrabacionUiState.Enviada(50L), viewModel.uiState.value)
+        assertEquals(listOf(7L to 1), cola.cancelados)
     }
 
     @Test
