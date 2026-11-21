@@ -62,8 +62,12 @@ public class EscrituraService {
         int consigna = FormulaEscritura.puntajeConsigna(oraciones);
         int puntaje = FormulaEscritura.puntajeEscritura(ortografia, longitud, consigna);
 
+        String mensaje = MensajesEscritura.para(
+                puntaje, ortografia, longitud, consigna, errores, palabras, minimas);
+
         return new ResultadoEscrituraResponse(evidencia.getId(), puntaje, ortografia, longitud,
-                consigna, palabras, minimas, errores, oraciones.total(), oraciones.completas());
+                consigna, palabras, minimas, errores, oraciones.total(), oraciones.completas(),
+                mensaje);
     }
 
     // palabras marcadas: "kasa, perro" -> 2
