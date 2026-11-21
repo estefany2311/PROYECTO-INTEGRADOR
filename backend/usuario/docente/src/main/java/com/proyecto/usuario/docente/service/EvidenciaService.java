@@ -3,6 +3,7 @@ package com.proyecto.usuario.docente.service;
 import com.proyecto.usuario.docente.dto.CorregirEvidenciaRequest;
 import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
+import com.proyecto.usuario.docente.dto.GuardarComentarioRequest;
 import com.proyecto.usuario.docente.dto.HistorialCalificacionResponse;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
 import com.proyecto.usuario.docente.model.Aula;
@@ -37,6 +38,9 @@ import java.util.Locale;
  *
  * <p>T-379 (US-33): al aprobar o corregir se ajustan las estrellas acumuladas
  * del alumno si la nota final cambia.</p>
+ *
+ * <p>T-384 (US-34): {@link #guardarComentario} guarda la retroalimentación que
+ * el docente deja en la evidencia.</p>
  *
  * <p>T-380 (US-33): cada aprobación o corrección deja una fila en el historial
  * de calificaciones, y el detalle devuelve ese historial.</p>
@@ -119,6 +123,15 @@ public class EvidenciaService {
         return detalleRespuesta(evidencia);
     }
 
+    // T-384 (US-34): el docente deja su comentario de retroalimentación
+    @Transactional
+    public EvidenciaDetalleResponse guardarComentario(Long docenteId, Long aulaId, Long evidenciaId,
+                                                      GuardarComentarioRequest req) {
+        Evidencia evidencia = evidenciaDelAula(docenteId, aulaId, evidenciaId);
+        evidencia.setComentario(req.comentario().trim());
+        return detalleRespuesta(evidencia);
+    }
+
     // T-379 (US-33): la nota que está reflejada hoy en el acumulado del alumno
     private Short notaVigente(Evidencia evidencia) {
         return evidencia.getCalificacionFinal() != null
@@ -194,6 +207,7 @@ public class EvidenciaService {
                 evidencia.getPuntajeIa(),
                 evidencia.getCalificacionFinal(),
                 evidencia.getMotivoCorreccion(),
+                evidencia.getComentario(),
                 evidencia.getResultadoIa(),
                 evidencia.getEstadoRevision(),
                 evidencia.getCreadoEn(),

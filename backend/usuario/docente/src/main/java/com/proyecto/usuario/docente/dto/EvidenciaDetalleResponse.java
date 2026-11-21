@@ -14,7 +14,8 @@ import java.util.List;
  * Incluye también la revisión del docente: la {@code calificacionFinal} que deja
  * al aprobar o corregir, el {@code motivoCorreccion} y el estado de revisión.
  * T-380 (US-33) agrega el {@code historial} de revisiones (nota IA vs. nota
- * docente), del más reciente al más antiguo. Las fechas vienen resueltas para
+ * docente), del más reciente al más antiguo. T-384 (US-34) agrega el
+ * {@code comentario} de retroalimentación. Las fechas vienen resueltas para
  * que la pantalla no haga llamadas adicionales.</p>
  */
 public record EvidenciaDetalleResponse(
@@ -35,6 +36,7 @@ public record EvidenciaDetalleResponse(
         Short puntajeIa,
         Short calificacionFinal,
         String motivoCorreccion,
+        String comentario,
         String resultadoIa,
         String estadoRevision,
         LocalDateTime creadoEn,

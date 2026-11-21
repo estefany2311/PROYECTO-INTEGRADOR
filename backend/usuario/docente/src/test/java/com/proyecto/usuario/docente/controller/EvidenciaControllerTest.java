@@ -4,6 +4,7 @@ import com.proyecto.usuario.docente.dto.CorregirEvidenciaRequest;
 import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.HistorialCalificacionResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
+import com.proyecto.usuario.docente.dto.GuardarComentarioRequest;
 import com.proyecto.usuario.docente.exception.ManejadorErrores;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
 import com.proyecto.usuario.docente.service.AudioEvidenciaService;
@@ -33,6 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -199,7 +201,7 @@ class EvidenciaControllerTest {
                 "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3", null,
                 "El sol brilla. Los niños juegan en el parque.",
                 List.of("brilla", "juegan"),
-                (short) 85, null, null, "Lee con claridad y buen ritmo.",
+                (short) 85, null, null, null, "Lee con claridad y buen ritmo.",
                 "pendiente", LocalDateTime.of(2026, 11, 10, 9, 0), null,
                 List.of(new HistorialCalificacionResponse(
                         1L, 1L, (short) 85, (short) 85, null, "aprobada",
@@ -241,7 +243,7 @@ class EvidenciaControllerTest {
                 (short) 2, "Palabras nuevas", "escritura", "texto",
                 null, "Mi mamá prepara sopa. Yo pongo la mesa.", null,
                 List.of(),
-                (short) 80, (short) 80, null, "Escribe oraciones completas.",
+                (short) 80, (short) 80, null, null, "Escribe oraciones completas.",
                 "aprobada", LocalDateTime.of(2026, 11, 9, 15, 30),
                 LocalDateTime.of(2026, 11, 10, 8, 0), List.of()));
 
@@ -270,7 +272,7 @@ class EvidenciaControllerTest {
                 "https://cdn.ejemplo.pe/evidencias/minji-nivel3.mp3", null,
                 "Había una vez un conejo que quería volar.",
                 List.of("conejo", "despegaba"),
-                (short) 40, null, null, "El audio no responde al reto.",
+                (short) 40, null, null, null, "El audio no responde al reto.",
                 "rechazada", LocalDateTime.of(2026, 11, 8, 10, 0),
                 LocalDateTime.of(2026, 11, 9, 9, 0), List.of()));
 
@@ -292,7 +294,7 @@ class EvidenciaControllerTest {
                 30L, 7L, "Minji", "Prueba", (short) 5, "5.º",
                 (short) 1, "Primeros pasos", "lectura", "audio",
                 "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3", null,
-                null, List.of(), null, null, null, null,
+                null, List.of(), null, null, null, null, null,
                 "pendiente", LocalDateTime.of(2026, 11, 10, 9, 0), null,
                 List.of()));
 
@@ -331,7 +333,7 @@ class EvidenciaControllerTest {
                 "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3", null,
                 "El sol brilla. Los niños juegan en el parque.",
                 List.of("brilla", "juegan"),
-                (short) 85, (short) 85, null, "Lee con claridad y buen ritmo.",
+                (short) 85, (short) 85, null, null, "Lee con claridad y buen ritmo.",
                 "aprobada", LocalDateTime.of(2026, 11, 10, 9, 0),
                 LocalDateTime.of(2026, 11, 17, 10, 0), List.of()));
 
@@ -357,7 +359,7 @@ class EvidenciaControllerTest {
                         "El sol brilla. Los niños juegan en el parque.",
                         List.of("brilla", "juegan"),
                         (short) 85, (short) 70, "El audio tiene ruido de fondo.",
-                        "Lee con claridad y buen ritmo.",
+                        null, "Lee con claridad y buen ritmo.",
                         "corregida", LocalDateTime.of(2026, 11, 10, 9, 0),
                         LocalDateTime.of(2026, 11, 17, 10, 0), List.of()));
 
@@ -482,6 +484,80 @@ class EvidenciaControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(service, never()).aprobar(any(), any(), any());
+    }
+
+    // T-384 (US-34): comentario de retroalimentación
+
+    @Test
+    void guardaElComentarioDeRetroalimentacion() throws Exception {
+        when(service.guardarComentario(1L, 10L, 30L,
+                new GuardarComentarioRequest("Muy bien leído; practica las pausas.")))
+                .thenReturn(new EvidenciaDetalleResponse(
+                        30L, 7L, "Minji", "Prueba", (short) 5, "5.º",
+                        (short) 1, "Primeros pasos", "lectura", "audio",
+                        "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3", null,
+                        "El sol brilla. Los niños juegan en el parque.",
+                        List.of("brilla", "juegan"),
+                        (short) 85, null, null,
+                        "Muy bien leído; practica las pausas.",
+                        "Lee con claridad y buen ritmo.",
+                        "pendiente", LocalDateTime.of(2026, 11, 10, 9, 0), null,
+                        List.of()));
+
+        mvc.perform(put("/api/docente/aulas/10/evidencias/30/comentario")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"comentario": "Muy bien leído; practica las pausas."}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.comentario")
+                        .value("Muy bien leído; practica las pausas."));
+
+        verify(service).guardarComentario(1L, 10L, 30L,
+                new GuardarComentarioRequest("Muy bien leído; practica las pausas."));
+    }
+
+    @Test
+    void elComentarioEsObligatorio() throws Exception {
+        mvc.perform(put("/api/docente/aulas/10/evidencias/30/comentario")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"comentario": "   "}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje")
+                        .value("Debes escribir el comentario"));
+    }
+
+    @Test
+    void elComentarioLimitaA500Caracteres() throws Exception {
+        mvc.perform(put("/api/docente/aulas/10/evidencias/30/comentario")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"comentario\": \"" + "x".repeat(501) + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje")
+                        .value("El comentario no puede superar los 500 caracteres"));
+    }
+
+    @Test
+    void guardarComentarioDeUnaEvidenciaDeOtraAulaDevuelve404() throws Exception {
+        when(service.guardarComentario(1L, 10L, 99L,
+                new GuardarComentarioRequest("Muy bien leído.")))
+                .thenThrow(new ReglaNegocioException(
+                        "La evidencia no existe en esta aula", HttpStatus.NOT_FOUND));
+
+        mvc.perform(put("/api/docente/aulas/10/evidencias/99/comentario")
+                        .header("X-Docente-Id", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"comentario": "Muy bien leído."}
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje")
+                        .value("La evidencia no existe en esta aula"));
     }
 
     @Test

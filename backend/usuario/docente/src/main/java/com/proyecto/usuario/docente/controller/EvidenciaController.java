@@ -3,6 +3,7 @@ package com.proyecto.usuario.docente.controller;
 import com.proyecto.usuario.docente.dto.CorregirEvidenciaRequest;
 import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
+import com.proyecto.usuario.docente.dto.GuardarComentarioRequest;
 import com.proyecto.usuario.docente.service.AudioEvidenciaService;
 import com.proyecto.usuario.docente.service.AudioEvidenciaService.ArchivoAudio;
 import com.proyecto.usuario.docente.service.EvidenciaService;
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,6 +51,9 @@ import java.util.List;
  * <p>T-378 (US-33): POST .../evidencias/{evidenciaId}/aprobar acepta la nota de
  * la IA y POST .../evidencias/{evidenciaId}/corregir la cambia por la nota del
  * docente con su motivo.</p>
+ *
+ * <p>T-384 (US-34): PUT .../evidencias/{evidenciaId}/comentario guarda el
+ * comentario de retroalimentación del docente.</p>
  */
 @RestController
 @RequestMapping("/api/docente/aulas/{aulaId}/evidencias")
@@ -102,6 +107,17 @@ public class EvidenciaController {
             @PathVariable Long evidenciaId,
             @Valid @RequestBody CorregirEvidenciaRequest req) {
         return service.corregir(docenteId, aulaId, evidenciaId, req);
+    }
+
+    // T-384 (US-34): el docente guarda su comentario de retroalimentación
+    @PutMapping("/{evidenciaId}/comentario")
+    @Operation(summary = "Guarda el comentario de retroalimentación de la evidencia")
+    public EvidenciaDetalleResponse guardarComentario(
+            @RequestHeader("X-Docente-Id") Long docenteId,
+            @PathVariable Long aulaId,
+            @PathVariable Long evidenciaId,
+            @Valid @RequestBody GuardarComentarioRequest req) {
+        return service.guardarComentario(docenteId, aulaId, evidenciaId, req);
     }
 
     // T-372 (US-32): el audio solo lo puede pedir el docente dueño del aula

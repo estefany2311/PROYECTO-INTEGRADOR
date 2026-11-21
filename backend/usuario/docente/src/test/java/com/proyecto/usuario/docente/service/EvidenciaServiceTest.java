@@ -3,6 +3,7 @@ package com.proyecto.usuario.docente.service;
 import com.proyecto.usuario.docente.dto.CorregirEvidenciaRequest;
 import com.proyecto.usuario.docente.dto.EvidenciaDetalleResponse;
 import com.proyecto.usuario.docente.dto.EvidenciaPendienteResponse;
+import com.proyecto.usuario.docente.dto.GuardarComentarioRequest;
 import com.proyecto.usuario.docente.dto.HistorialCalificacionResponse;
 import com.proyecto.usuario.docente.exception.ReglaNegocioException;
 import com.proyecto.usuario.docente.model.Aula;
@@ -38,6 +39,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -717,5 +719,45 @@ class EvidenciaServiceTest {
         assertEquals((short) 85, filas.get(1).getNotaIa());
         assertEquals((short) 70, filas.get(1).getNotaDocente());
         assertEquals("El audio tiene ruido.", filas.get(1).getMotivo());
+    }
+
+    // T-384 (US-34): comentario de retroalimentación del docente
+
+    @Test
+    void guardarComentarioLoRecortaYLoDevuelveEnElDetalle() {
+        Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
+                "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+        ReflectionTestUtils.setField(audio, "id", 30L);
+        audio.setPuntajeIa((short) 85);
+
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(30L, 10L))
+                .thenReturn(Optional.of(audio));
+
+        EvidenciaDetalleResponse detalle = service.guardarComentario(1L, 10L, 30L,
+                new GuardarComentarioRequest("  Muy bien leído.  "));
+
+        assertEquals("Muy bien leído.", detalle.comentario());
+        assertEquals("Muy bien leído.", audio.getComentario());
+        // el comentario no cambia el estado ni la revisión de la calificación
+        assertEquals(Evidencia.PENDIENTE, audio.getEstadoRevision());
+        assertNull(audio.getRevisadoEn());
+        verifyNoInteractions(puntajeService);
+        // el historial solo se lee para armar el detalle; no se guarda nada
+        verify(historialRepository, never()).save(any());
+    }
+
+    @Test
+    void guardarComentarioDeUnaEvidenciaDeOtraAulaDevuelve404() {
+        when(aulaRepository.findById(10L)).thenReturn(Optional.of(aula));
+        when(evidenciaRepository.findByIdAndEstudianteAulaId(99L, 10L))
+                .thenReturn(Optional.empty());
+
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                () -> service.guardarComentario(1L, 10L, 99L,
+                        new GuardarComentarioRequest("Muy bien leído.")));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getEstado());
+        assertEquals("La evidencia no existe en esta aula", error.getMessage());
     }
 }
