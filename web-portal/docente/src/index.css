@@ -3040,3 +3040,121 @@ legend {
     grid-template-columns: 1fr;
   }
 }
+
+/* T-390 (US-38): seguimiento de tareas, con un color por estado */
+.tareas-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.tareas-resumen-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tareas-resumen-item b {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.tareas-resumen-item.activo {
+  border-color: currentColor;
+}
+
+.tareas-resumen-item.vencida,
+.tarea-estado.vencida {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+.tareas-resumen-item.pendiente,
+.tarea-estado.pendiente {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.tareas-resumen-item.entregada,
+.tarea-estado.entregada {
+  background: #D1FAE5;
+  color: #047857;
+}
+
+.tareas-lista {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tarea-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--borde);
+  border-left-width: 5px;
+  border-radius: 14px;
+  background: var(--tarjeta);
+}
+
+.tarea-card.tarea-vencida {
+  border-left-color: #F43F5E;
+}
+
+.tarea-card.tarea-pendiente {
+  border-left-color: #F59E0B;
+}
+
+.tarea-card.tarea-entregada {
+  border-left-color: #10B981;
+}
+
+.tarea-datos {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tarea-titulo {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.tarea-alumno,
+.tarea-fecha {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.tarea-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .tareas-resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .tarea-card {
+    flex-wrap: wrap;
+  }
+}

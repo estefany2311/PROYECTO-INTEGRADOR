@@ -138,6 +138,15 @@ export const asignarLectura = (aulaId, datos) =>
     body: JSON.stringify(datos),
   });
 
+// T-390 (US-38): seguimiento de las tareas del aula (endpoint de T-389).
+// estado opcional: pendiente, entregada o vencida.
+export const listarSeguimientoTareas = (aulaId, { estado } = {}) =>
+  pedir(
+    `/api/docente/aulas/${aulaId}/asignaciones${
+      estado ? `?estado=${encodeURIComponent(estado)}` : ""
+    }`
+  );
+
 // T-196: grupos del aula y asignación de una lectura a todo el grupo.
 // El backend es T-195: GET/POST .../grupos y POST .../grupos/{id}/asignaciones
 export const listarGrupos = (aulaId) =>

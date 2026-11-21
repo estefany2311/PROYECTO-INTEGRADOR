@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { hoyISO } from "../fechaLimite";
 import {
   listarAulas,
   listarEstudiantes,
@@ -35,6 +36,7 @@ export default function Grupos() {
   const [lecturas, setLecturas] = useState([]);
   const [cargandoLecturas, setCargandoLecturas] = useState(false);
   const [lecturaId, setLecturaId] = useState("");
+  const [fechaLimite, setFechaLimite] = useState("");
   const [errorAsignar, setErrorAsignar] = useState(null);
   const [asignandoLectura, setAsignandoLectura] = useState(false);
 
@@ -150,6 +152,7 @@ export default function Grupos() {
     setAsignando(grupo);
     setLecturas([]);
     setLecturaId("");
+    setFechaLimite("");
     setErrorAsignar(null);
     setCargandoLecturas(true);
 
@@ -174,6 +177,8 @@ export default function Grupos() {
     try {
       const resp = await asignarLecturaAGrupo(aulaId, grupo.id, {
         lecturaId: lectura.id,
+        // T-390 (US-38): opcional; se aplica a todas las tareas del grupo
+        ...(fechaLimite ? { fechaLimite } : {}),
       });
       setAsignando(null);
       setMensaje({
@@ -501,6 +506,19 @@ export default function Grupos() {
                     Se asignará a todos los alumnos del grupo. Si alguno ya la tenía, se omite.
                   </div>
                 )}
+
+                <label htmlFor="fecha-limite-grupo" className="form-label fw-semibold mt-3">
+                  Fecha límite <span className="text-secondary fw-normal">(opcional)</span>
+                </label>
+                <input
+                  id="fecha-limite-grupo"
+                  type="date"
+                  className="form-control"
+                  min={hoyISO()}
+                  value={fechaLimite}
+                  onChange={(ev) => setFechaLimite(ev.target.value)}
+                />
+                <div className="form-text">Si la dejas vacía, la tarea no vence.</div>
               </div>
 
               <div className="modal-footer border-0">

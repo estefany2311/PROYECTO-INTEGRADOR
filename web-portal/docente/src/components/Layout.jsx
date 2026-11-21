@@ -16,6 +16,7 @@ const MENU = [
       { ruta: "/aulas", icono: "bi-mortarboard-fill", color: "ico-azul", texto: "Mis aulas" },
       { ruta: "/alumnos", icono: "bi-people-fill", color: "ico-verde", texto: "Alumnos" },
       { ruta: "/grupos", icono: "bi-collection-fill", color: "ico-morado", texto: "Grupos" },
+      { ruta: "/tareas", icono: "bi-calendar-check-fill", color: "ico-naranja", texto: "Tareas" },
     ],
   },
   {
