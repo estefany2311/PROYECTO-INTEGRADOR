@@ -77,6 +77,10 @@ public class Evidencia {
     @Column(name = "motivo_correccion", columnDefinition = "text")
     private String motivoCorreccion;
 
+    // T-396 (US-15): fluidez lectora (0 a 100); nula mientras no se calcula
+    @Column(name = "puntaje_fluidez")
+    private Short puntajeFluidez;
+
     // T-383 (US-34): retroalimentación que el docente deja al alumno
     @Column(columnDefinition = "text")
     private String comentario;
@@ -133,6 +137,8 @@ public class Evidencia {
     public void setCalificacionFinal(Short calificacionFinal) { this.calificacionFinal = calificacionFinal; }
     public String getMotivoCorreccion() { return motivoCorreccion; }
     public void setMotivoCorreccion(String motivoCorreccion) { this.motivoCorreccion = motivoCorreccion; }
+    public Short getPuntajeFluidez() { return puntajeFluidez; }
+    public void setPuntajeFluidez(Short puntajeFluidez) { this.puntajeFluidez = puntajeFluidez; }
     public String getComentario() { return comentario; }
     public void setComentario(String comentario) { this.comentario = comentario; }
     public LocalDateTime getCreadoEn() { return creadoEn; }
