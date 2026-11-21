@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   aprobarEvidencia,
   corregirEvidencia,
+  guardarComentarioEvidencia,
   obtenerDetalleEvidencia,
 } from "../api";
 import { seleccionarAula } from "../aulaSeleccionada";
@@ -114,6 +115,12 @@ export default function DetalleEvidencia() {
   const [erroresForm, setErroresForm] = useState({});
   const [mensaje, setMensaje] = useState(null);
 
+  // T-385 (US-34): caja de comentario de retroalimentación para el alumno.
+  const [comentario, setComentario] = useState("");
+  const [errorComentario, setErrorComentario] = useState(null);
+  const [guardandoComentario, setGuardandoComentario] = useState(false);
+  const [mensajeComentario, setMensajeComentario] = useState(null);
+
   // Mantiene el aula activa del menú alineada con la evidencia abierta.
   useEffect(() => {
     if (aulaId) seleccionarAula(aulaId);
@@ -125,7 +132,10 @@ export default function DetalleEvidencia() {
 
     obtenerDetalleEvidencia(aulaId, evidenciaId)
       .then((data) => {
-        if (vigente) setDetalle(data);
+        if (vigente) {
+          setDetalle(data);
+          setComentario(data?.comentario ?? "");
+        }
       })
       .catch((e) => {
         if (vigente) setError(e.message);
@@ -210,6 +220,37 @@ export default function DetalleEvidencia() {
       setMensaje({ tipo: "error", texto: e.message });
     } finally {
       setAccion(null);
+    }
+  };
+
+  // T-385: valida igual que el backend (obligatorio, máximo 500) y guarda.
+  const guardarComentario = async (event) => {
+    event.preventDefault();
+    setMensajeComentario(null);
+    const texto = comentario.trim();
+    if (!texto) {
+      setErrorComentario("Debes escribir el comentario.");
+      return;
+    }
+    setErrorComentario(null);
+
+    setGuardandoComentario(true);
+    try {
+      const actualizado = await guardarComentarioEvidencia(
+        aulaId,
+        evidenciaId,
+        texto
+      );
+      setDetalle(actualizado);
+      setComentario(actualizado?.comentario ?? texto);
+      setMensajeComentario({
+        tipo: "ok",
+        texto: "El comentario quedó guardado.",
+      });
+    } catch (e) {
+      setMensajeComentario({ tipo: "error", texto: e.message });
+    } finally {
+      setGuardandoComentario(false);
     }
   };
 
@@ -634,6 +675,81 @@ export default function DetalleEvidencia() {
                 role={mensaje.tipo === "ok" ? "status" : "alert"}
               >
                 {mensaje.texto}
+              </div>
+            )}
+          </section>
+
+          <section
+            className="panel detalle-evidencia-revision"
+            aria-labelledby="titulo-comentario"
+          >
+            <div>
+              <h2 id="titulo-comentario" className="h5 fw-bold mb-1">
+                Comentario para el alumno
+              </h2>
+              <p className="text-secondary mb-0 small">
+                Deja una retroalimentación para orientar su mejora; el alumno la
+                verá en su app.
+              </p>
+            </div>
+
+            <form
+              className="detalle-revision-form"
+              onSubmit={guardarComentario}
+              noValidate
+            >
+              <div className="detalle-revision-campo">
+                <label htmlFor="comentario-docente" className="form-label">
+                  Comentario
+                </label>
+                <textarea
+                  id="comentario-docente"
+                  className={`form-control ${errorComentario ? "is-invalid" : ""}`}
+                  rows="3"
+                  maxLength="500"
+                  value={comentario}
+                  onChange={(event) => setComentario(event.target.value)}
+                  aria-invalid={Boolean(errorComentario)}
+                  aria-describedby={
+                    errorComentario ? "error-comentario-docente" : undefined
+                  }
+                />
+                <div className="detalle-revision-contador">
+                  {errorComentario ? (
+                    <p
+                      id="error-comentario-docente"
+                      className="detalle-revision-error"
+                    >
+                      {errorComentario}
+                    </p>
+                  ) : (
+                    <span />
+                  )}
+                  <span className="text-secondary small">
+                    {comentario.length}/500
+                  </span>
+                </div>
+              </div>
+
+              <div className="detalle-revision-acciones">
+                <button
+                  type="submit"
+                  className="btn btn-primary rounded-pill"
+                  disabled={guardandoComentario}
+                >
+                  {guardandoComentario ? "Guardando…" : "Guardar comentario"}
+                </button>
+              </div>
+            </form>
+
+            {mensajeComentario && (
+              <div
+                className={`alert ${
+                  mensajeComentario.tipo === "ok" ? "alert-success" : "alert-danger"
+                } mb-0`}
+                role={mensajeComentario.tipo === "ok" ? "status" : "alert"}
+              >
+                {mensajeComentario.texto}
               </div>
             )}
           </section>

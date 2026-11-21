@@ -80,6 +80,14 @@ export const corregirEvidencia = (aulaId, evidenciaId, datos) =>
     body: JSON.stringify(datos),
   });
 
+// T-385 (US-34): el docente guarda su comentario de retroalimentación (T-384).
+// El backend lo exige no vacío y de hasta 500 caracteres; devuelve el detalle.
+export const guardarComentarioEvidencia = (aulaId, evidenciaId, comentario) =>
+  pedir(`/api/docente/aulas/${aulaId}/evidencias/${evidenciaId}/comentario`, {
+    method: "PUT",
+    body: JSON.stringify({ comentario }),
+  });
+
 export const listarEstudiantes = (aulaId) =>
   pedir(`/api/docente/aulas/${aulaId}/estudiantes`);
 export const crearEstudiante = (aulaId, datos) =>
