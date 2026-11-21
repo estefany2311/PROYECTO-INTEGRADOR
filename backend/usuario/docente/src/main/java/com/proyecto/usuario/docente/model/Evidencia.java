@@ -13,6 +13,9 @@ import java.time.LocalDateTime;
  *
  * <p>T-377 (US-33): la revisión suma el estado {@code corregida} y la
  * {@code calificacionFinal} que deja el docente al ajustar la nota de la IA.</p>
+ *
+ * <p>T-383 (US-34): el docente puede dejar un {@code comentario} de
+ * retroalimentación para orientar al alumno.</p>
  */
 @Entity
 @Table(name = "evidencia")
@@ -74,6 +77,10 @@ public class Evidencia {
     @Column(name = "motivo_correccion", columnDefinition = "text")
     private String motivoCorreccion;
 
+    // T-383 (US-34): retroalimentación que el docente deja al alumno
+    @Column(columnDefinition = "text")
+    private String comentario;
+
     @Column(name = "creado_en", nullable = false, insertable = false, updatable = false)
     private LocalDateTime creadoEn;
 
@@ -126,6 +133,8 @@ public class Evidencia {
     public void setCalificacionFinal(Short calificacionFinal) { this.calificacionFinal = calificacionFinal; }
     public String getMotivoCorreccion() { return motivoCorreccion; }
     public void setMotivoCorreccion(String motivoCorreccion) { this.motivoCorreccion = motivoCorreccion; }
+    public String getComentario() { return comentario; }
+    public void setComentario(String comentario) { this.comentario = comentario; }
     public LocalDateTime getCreadoEn() { return creadoEn; }
     public LocalDateTime getRevisadoEn() { return revisadoEn; }
     public void setRevisadoEn(LocalDateTime revisadoEn) { this.revisadoEn = revisadoEn; }

@@ -82,6 +82,20 @@ class EvidenciaRepositoryTest {
         assertEquals("El audio tiene ruido de fondo.", corregida.getMotivoCorreccion());
     }
 
+    // T-383 (US-34): la evidencia guarda el comentario de retroalimentación
+    @Test
+    void guardaElComentarioDeRetroalimentacion() {
+        jdbc.update("""
+                UPDATE evidencia
+                SET comentario = 'Muy bien leído; practica las pausas.'
+                WHERE id = -5003
+                """);
+
+        Evidencia revisada = evidenciaRepository.findById(-5003L).orElseThrow();
+
+        assertEquals("Muy bien leído; practica las pausas.", revisada.getComentario());
+    }
+
     @Test
     void devuelveSoloLasPendientesDeLaMasRecienteALaMasAntigua() {
         List<Evidencia> pendientes = evidenciaRepository

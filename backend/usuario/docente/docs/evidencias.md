@@ -26,6 +26,7 @@ Migración: `backend/usuario/docente/src/main/resources/db/migration/V10__eviden
 | `creado_en` | `TIMESTAMP` | Fecha de registro; por defecto `now()`. |
 | `revisado_en` | `TIMESTAMP` | Fecha en que el docente revisó la evidencia. |
 | `calificacion_final` | `SMALLINT` | Nota final que deja el docente, de 0 a 100 (V15, US-33). Nula mientras no revisa. |
+| `comentario` | `TEXT` | Comentario de retroalimentación del docente (V18, US-34). Opcional. |
 
 ### Reglas de integridad
 
@@ -43,8 +44,8 @@ Migración: `backend/usuario/docente/src/main/resources/db/migration/V10__eviden
 ## 3. Modelo Java
 
 - `model/Evidencia.java`: entidad JPA con las constantes `AUDIO`, `TEXTO`, `PENDIENTE`,
-  `APROBADA`, `RECHAZADA` y `CORREGIDA`, y las fábricas `Evidencia.audio(...)` y
-  `Evidencia.texto(...)`.
+  `APROBADA`, `RECHAZADA` y `CORREGIDA`, las fábricas `Evidencia.audio(...)` y
+  `Evidencia.texto(...)`, y el campo `comentario` de US-34 (T-383).
 - `repository/EvidenciaRepository.java`: consultas de pendientes por aula, con el
   alumno, su grado y el nivel cargados con `@EntityGraph` (T-298).
 
@@ -592,3 +593,26 @@ corrección y el flujo completo en la pantalla.
 | `DetalleEvidencia.test.jsx` | Aprobar actualiza el detalle y la nota final; Aprobar deshabilitado sin evaluación de la IA; validación de nota y motivo; corrección con nota y motivo; cancelación sin llamada; error del backend con el formulario abierto; error al aprobar; flujo aprobar y luego corregir en la misma pantalla. |
 | `EvidenciaServiceTest` | Aprobar después de corregir vuelve a la nota de la IA y limpia el motivo; aprobar y corregir acumulan dos filas en el historial con sus notas. |
 | `EvidenciaControllerTest` | Calificación obligatoria, nota negativa, motivo de más de 500 caracteres, `404` al corregir una evidencia de otra aula y header obligatorio al aprobar. |
+
+## 14. Comentario de retroalimentación (T-383, US-34)
+
+El docente puede dejar un comentario para orientar al alumno en su mejora. T-383
+prepara el almacenamiento; el endpoint llega en T-384, la caja en el detalle en T-385
+y la visualización en la app del alumno en T-386 (coordinado con Karla).
+
+### Migración V18
+
+`V18__evidencia_comentario.sql` agrega `comentario TEXT` a `evidencia`. Es opcional:
+las evidencias existentes quedan con `NULL` y no se rellena hacia atrás.
+
+### Modelo Java
+
+`Evidencia` agrega el campo `comentario` con su `get`/`set`. Aprobar o corregir la
+calificación no lo modifican.
+
+### Pruebas
+
+| Prueba | Cobertura |
+|---|---|
+| `MigracionEvidenciaComentarioTest` | Columna `comentario TEXT` y carácter opcional (sin `NOT NULL`). |
+| `EvidenciaRepositoryTest` | Guarda y lee el comentario desde PostgreSQL. |

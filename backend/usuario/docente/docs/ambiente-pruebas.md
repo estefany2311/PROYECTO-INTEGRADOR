@@ -105,7 +105,7 @@ npm run preview -- --port 4173
 | Backend `EvaluacionRepositoryTest` | 2/2 · promedio por aula e historial del alumno |
 | Backend `MigracionEvidenciaTest` | 6/6 · tabla, audio/texto, estado de revisión, cascada e índices |
 | Backend `MigracionEvidenciaDatosPruebaTest` | 5/5 · datos de audio y texto, estados y niveles por orden |
-| Backend `EvidenciaRepositoryTest` | 5/5 · pendientes por fecha y filtro por tipo, detalle por id y aula, evidencia de otra aula, y calificación final con estado `corregida` y motivo |
+| Backend `EvidenciaRepositoryTest` | 6/6 · pendientes por fecha y filtro por tipo, detalle por id y aula, evidencia de otra aula, calificación final con estado `corregida` y motivo, y comentario de retroalimentación |
 | Backend `HistorialCalificacionRepositoryTest` | 2/2 · historial por evidencia ordenado y borrado en cascada con la evidencia |
 | Backend `EvidenciaServiceTest` | 29/29 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo, aula del docente, detalle con transcripción y puntaje, palabras marcadas, aprobar/corregir con motivo, recálculo de estrellas al cambiar la nota, historial de calificaciones, aprobar después de corregir y acumulación de ambas revisiones |
 | Backend `EvidenciaControllerTest` | 33/33 · ruta, respuesta de audio y texto, filtro por tipo, detalle, detalle rechazado, detalle sin evaluación, audio completo, 206, 416, aprobar, corregir, validaciones (motivo, rango, nota negativa, 500 caracteres), 404 en corrección, header obligatorio, errores e historial en el detalle |
@@ -115,6 +115,7 @@ npm run preview -- --port 4173
 | Backend `MigracionEvidenciaPalabrasTest` | 2/2 · columna de V14 y palabras marcadas en las evidencias de prueba sin ids quemados |
 | Backend `MigracionEvidenciaCalificacionTest` | 3/3 · columna `calificacion_final`, rango 0-100 y estado `corregida` en el `CHECK` |
 | Backend `MigracionEvidenciaMotivoTest` | 1/1 · columna `motivo_correccion` de V16 |
+| Backend `MigracionEvidenciaComentarioTest` | 2/2 · columna `comentario` de V18 y carácter opcional |
 | Backend `MigracionHistorialCalificacionTest` | 4/4 · tabla, cascada, límites de notas y acciones, e índice del historial (V17) |
 | Backend `MigracionPuntajeEstudianteTest` | 6/6 · tabla, una fila por alumno, acumulados desde cero, valores no negativos, actualización y cascada |
 | Backend `PuntajeServiceTest` | 16/16 · acumulado nuevo y existente, umbrales de estrellas, puntajes límite 0 y 100, tipo y puntaje inválidos, alumno inexistente y recálculo al cambiar la nota (sube, baja, tope en 0, sin fila y sin cambio de tramo) |
@@ -126,7 +127,7 @@ npm run preview -- --port 4173
 | Backend `CatalogoControllerTest` | 4/4 · catálogo con `fuente` y `urlRecurso`, filtros, 403 y 404 |
 | Backend `ConfiguracionCorsTest` | 4/4 · origen local, varios orígenes, espacios y lista vacía |
 | Backend `OpenApiConfigTest` | 4/4 · servidor, información, esquemas de seguridad y orden de secciones |
-| Backend `test` | 334/334 |
+| Backend `test` | 337/337 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
