@@ -50,6 +50,32 @@ public final class FormulaFluidez {
         return palabras.size() / (segundos / 60.0);
     }
 
+    /**
+     * T-395: pausas entre palabras seguidas. Una pausa es el silencio entre el
+     * fin de una palabra y el inicio de la siguiente.
+     *
+     * @param pausasLargas  pausas mayores a la tolerancia del grado
+     * @param vacilaciones  pausas mayores a la mitad de la tolerancia pero que
+     *                      no llegan a pausa larga
+     */
+    public record AnalisisPausas(int pausasLargas, int vacilaciones) {
+    }
+
+    public static AnalisisPausas analizarPausas(List<PalabraLeida> palabras, double toleranciaPausas) {
+        int largas = 0;
+        int vacilaciones = 0;
+        for (int i = 1; i < palabras.size(); i++) {
+            // si el motor solapa dos palabras la pausa es 0, no negativa
+            double pausa = Math.max(0, palabras.get(i).inicio() - palabras.get(i - 1).fin());
+            if (pausa > toleranciaPausas) {
+                largas++;
+            } else if (pausa > toleranciaPausas / 2) {
+                vacilaciones++;
+            }
+        }
+        return new AnalisisPausas(largas, vacilaciones);
+    }
+
     /** Puntaje de ritmo (0 a 100) según las palabras por minuto leídas y las esperadas. */
     public static int puntajeRitmo(double palabrasPorMinuto, int esperadas) {
         double puntaje = palabrasPorMinuto / esperadas * 100;
