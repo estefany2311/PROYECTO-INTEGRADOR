@@ -505,3 +505,81 @@ describe("Aprobar y corregir la evidencia (T-381)", () => {
     expect(await screen.findByText("El audio tiene ruido.")).toBeInTheDocument();
   });
 });
+
+describe("Comentario de retroalimentación (T-385, T-387)", () => {
+  it("muestra el comentario ya guardado en la caja", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue({
+      ...AUDIO,
+      comentario: "Practica las pausas.",
+    });
+    mostrar();
+
+    expect(await screen.findByLabelText("Comentario")).toHaveValue(
+      "Practica las pausas."
+    );
+    expect(screen.getByText("20/500")).toBeInTheDocument();
+  });
+
+  it("no guarda un comentario vacío y muestra el error", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue(AUDIO);
+    mostrar();
+
+    await userEvent.type(await screen.findByLabelText("Comentario"), "   ");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Guardar comentario" })
+    );
+
+    expect(
+      await screen.findByText("Debes escribir el comentario.")
+    ).toBeInTheDocument();
+    expect(api.guardarComentarioEvidencia).not.toHaveBeenCalled();
+  });
+
+  it("guarda el comentario recortado y confirma", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue(AUDIO);
+    api.guardarComentarioEvidencia.mockResolvedValue({
+      ...AUDIO,
+      comentario: "Muy bien leído.",
+    });
+    mostrar();
+
+    await userEvent.type(
+      await screen.findByLabelText("Comentario"),
+      "  Muy bien leído.  "
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Guardar comentario" })
+    );
+
+    expect(api.guardarComentarioEvidencia).toHaveBeenCalledWith(
+      "10",
+      "30",
+      "Muy bien leído."
+    );
+    expect(
+      await screen.findByText("El comentario quedó guardado.")
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Comentario")).toHaveValue("Muy bien leído.");
+  });
+
+  it("muestra el error del backend y conserva lo escrito", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue(AUDIO);
+    api.guardarComentarioEvidencia.mockRejectedValue(
+      new Error("La evidencia no existe en esta aula")
+    );
+    mostrar();
+
+    await userEvent.type(
+      await screen.findByLabelText("Comentario"),
+      "Buen trabajo."
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Guardar comentario" })
+    );
+
+    expect(
+      await screen.findByText("La evidencia no existe en esta aula")
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Comentario")).toHaveValue("Buen trabajo.");
+  });
+});
