@@ -65,6 +65,21 @@ export const descargarAudioEvidencia = async (aulaId, evidenciaId) => {
 export const obtenerDetalleEvidencia = (aulaId, evidenciaId) =>
   pedir(`/api/docente/aulas/${aulaId}/evidencias/${evidenciaId}`);
 
+// T-381: el docente acepta la nota de la IA (endpoint de T-378). No lleva
+// cuerpo y devuelve el detalle actualizado.
+export const aprobarEvidencia = (aulaId, evidenciaId) =>
+  pedir(`/api/docente/aulas/${aulaId}/evidencias/${evidenciaId}/aprobar`, {
+    method: "POST",
+  });
+
+// T-381: el docente cambia la nota de la IA y explica por qué (T-378). El
+// backend valida la nota 0–100 y el motivo obligatorio de hasta 500 caracteres.
+export const corregirEvidencia = (aulaId, evidenciaId, datos) =>
+  pedir(`/api/docente/aulas/${aulaId}/evidencias/${evidenciaId}/corregir`, {
+    method: "POST",
+    body: JSON.stringify(datos),
+  });
+
 export const listarEstudiantes = (aulaId) =>
   pedir(`/api/docente/aulas/${aulaId}/estudiantes`);
 export const crearEstudiante = (aulaId, datos) =>

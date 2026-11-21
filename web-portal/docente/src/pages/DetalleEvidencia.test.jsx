@@ -281,3 +281,162 @@ describe("Detalle de la evidencia (T-374)", () => {
     expect(screen.queryByText(/La IA marcó/)).not.toBeInTheDocument();
   });
 });
+
+describe("Aprobar y corregir la evidencia (T-381)", () => {
+  it("aprueba la nota de la IA y muestra el detalle actualizado", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue(AUDIO);
+    api.aprobarEvidencia.mockResolvedValue({
+      ...AUDIO,
+      calificacionFinal: 85,
+      estadoRevision: "aprobada",
+      revisadoEn: "2026-11-12T10:00:00",
+    });
+    mostrar();
+
+    const aprobar = await screen.findByRole("button", {
+      name: "Aprobar nota de la IA",
+    });
+    expect(aprobar).toBeEnabled();
+    expect(screen.getByLabelText("Sin nota final")).toBeInTheDocument();
+
+    await userEvent.click(aprobar);
+
+    expect(api.aprobarEvidencia).toHaveBeenCalledWith("10", "30");
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "La evidencia quedó aprobada con la nota de la IA."
+    );
+    expect(screen.getAllByText("Aprobada").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Nota final: 85")).toBeInTheDocument();
+  });
+
+  it("deshabilita Aprobar cuando la IA todavía no evaluó", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue({
+      ...AUDIO,
+      puntajeIa: null,
+    });
+    mostrar();
+
+    expect(
+      await screen.findByRole("button", { name: "Aprobar nota de la IA" })
+    ).toBeDisabled();
+    expect(
+      screen.getByText(
+        "La IA todavía no evaluó esta evidencia; no hay nota que aprobar."
+      )
+    ).toBeInTheDocument();
+    expect(api.aprobarEvidencia).not.toHaveBeenCalled();
+  });
+
+  it("valida la nota y el motivo antes de corregir", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue(AUDIO);
+    mostrar();
+
+    await screen.findByRole("heading", { name: "Minji Prueba" });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Corregir nota" })
+    );
+
+    const nota = screen.getByLabelText(/Calificación final/);
+    expect(nota).toHaveValue(85);
+    await userEvent.clear(nota);
+    await userEvent.click(
+      screen.getByRole("button", { name: "Guardar corrección" })
+    );
+
+    expect(
+      screen.getByText("Escribe una calificación entera entre 0 y 100.")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Debes indicar el motivo de la corrección.")
+    ).toBeInTheDocument();
+    expect(api.corregirEvidencia).not.toHaveBeenCalled();
+  });
+
+  it("corrige la calificación con la nota y el motivo", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue(AUDIO);
+    api.corregirEvidencia.mockResolvedValue({
+      ...AUDIO,
+      calificacionFinal: 70,
+      motivoCorreccion: "El audio tiene ruido de fondo.",
+      estadoRevision: "corregida",
+      revisadoEn: "2026-11-12T10:30:00",
+    });
+    mostrar();
+
+    await screen.findByRole("heading", { name: "Minji Prueba" });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Corregir nota" })
+    );
+
+    const nota = screen.getByLabelText(/Calificación final/);
+    await userEvent.clear(nota);
+    await userEvent.type(nota, "70");
+    await userEvent.type(
+      screen.getByLabelText("Motivo de la corrección"),
+      "El audio tiene ruido de fondo."
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Guardar corrección" })
+    );
+
+    expect(api.corregirEvidencia).toHaveBeenCalledWith("10", "30", {
+      calificacionFinal: 70,
+      motivo: "El audio tiene ruido de fondo.",
+    });
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "La calificación quedó corregida y guardada."
+    );
+    expect(screen.getAllByText("Corregida").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Nota final: 70")).toBeInTheDocument();
+    expect(
+      screen.getByText("El audio tiene ruido de fondo.")
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Guardar corrección" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("cancela la corrección sin llamar al backend", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue(AUDIO);
+    mostrar();
+
+    await screen.findByRole("heading", { name: "Minji Prueba" });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Corregir nota" })
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    expect(
+      screen.queryByRole("button", { name: "Guardar corrección" })
+    ).not.toBeInTheDocument();
+    expect(api.corregirEvidencia).not.toHaveBeenCalled();
+  });
+
+  it("muestra el error del backend y deja el formulario abierto", async () => {
+    api.obtenerDetalleEvidencia.mockResolvedValue(AUDIO);
+    api.corregirEvidencia.mockRejectedValue(
+      new Error("El motivo no puede superar los 500 caracteres")
+    );
+    mostrar();
+
+    await screen.findByRole("heading", { name: "Minji Prueba" });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Corregir nota" })
+    );
+    await userEvent.type(
+      screen.getByLabelText("Motivo de la corrección"),
+      "Ruido"
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Guardar corrección" })
+    );
+
+    const alerta = await screen.findByRole("alert");
+    expect(alerta).toHaveTextContent(
+      "El motivo no puede superar los 500 caracteres"
+    );
+    expect(
+      screen.getByRole("button", { name: "Guardar corrección" })
+    ).toBeInTheDocument();
+  });
+});

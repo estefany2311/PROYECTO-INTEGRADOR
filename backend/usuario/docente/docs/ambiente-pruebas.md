@@ -87,6 +87,11 @@ npm run preview -- --port 4173
 | Abrir `/evidencias/9/3` | Audio original + transcripción lado a lado, puntaje 85 y resultado de la IA |
 | Palabras marcadas en `/evidencias/9/3` | «brilla» y «juegan» resaltadas · aviso «La IA marcó 2 palabras para revisar» |
 | Abrir `/evidencias/9/6` (texto) | Texto original y aviso de que la IA evaluó el texto directamente |
+| Aprobar la nota en `/evidencias/9/3` | Estado Aprobada · nota final 85 · mensaje de confirmación · historial actualizado |
+| Corregir la nota en `/evidencias/9/3` | Formulario con nota 0–100 y motivo · guarda nota 70 y motivo · estado Corregida |
+| Corregir sin nota o sin motivo | Mensajes de validación del formulario · no llama al backend |
+| Corregir con una nota fuera de 0–100 | Mensaje de validación del formulario · no llama al backend |
+| Evidencia sin evaluación de la IA | Botón Aprobar deshabilitado con el aviso correspondiente |
 | `/evidencias/9/999` | 404 · mensaje y botón Reintentar |
 | Filtro por tipo en `/evidencias` | Audio → 3 · Texto → 3 · sin resultados → aviso del filtro |
 | Build de producción con `npm run preview` | 200 |
@@ -126,7 +131,7 @@ npm run preview -- --port 4173
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |
 | Frontend `Evidencias.test.jsx` | 13/13 · tarjetas, orden, conteo por tipo, filtro y vuelta a todos los tipos, aula activa, cambio de aula, Actualizar, sin aulas, vacío, error y enlace Revisar evidencia |
-| Frontend `DetalleEvidencia.test.jsx` | 10/10 · audio y transcripción lado a lado, palabras marcadas resaltadas (audio y texto), texto sin transcripción, detalle sin `palabrasMarcadas`, avisos sin transcripción/puntaje, actualización con el botón Actualizar, error con reintento y estado rechazada |
+| Frontend `DetalleEvidencia.test.jsx` | 16/16 · audio y transcripción lado a lado, palabras marcadas resaltadas (audio y texto), texto sin transcripción, detalle sin `palabrasMarcadas`, avisos sin transcripción/puntaje, actualización con el botón Actualizar, error con reintento, estado rechazada, aprobar, corregir con formulario, validaciones, cancelar y error del backend |
 | Frontend `ReproductorAudio.test.jsx` | 5/5 · descarga al pulsar, header del docente, blob, error con reintento, liberación y nombre genérico |
 | Frontend `Catalogo.test.jsx` | 12/12 · lecturas, filtros, búsqueda, modal, asignación, etiqueta Oficial y enlace al recurso |
-| Frontend `test`, `lint`, `build` | 114/114 · OK · OK |
+| Frontend `test`, `lint`, `build` | 120/120 · OK · OK |

@@ -2768,6 +2768,12 @@ legend {
   color: #B91C1C;
 }
 
+/* T-381 (US-33): la docente cambió la nota de la IA */
+.detalle-estado.corregida {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
 .detalle-tipo {
   display: inline-flex;
   align-items: center;
@@ -2942,6 +2948,89 @@ legend {
   margin: 4px 0 0;
   color: #111827;
   font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* T-381 (US-33): aprobar la nota de la IA o corregirla con un motivo */
+.detalle-evidencia-revision {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detalle-revision-nota {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: #0F172A;
+}
+
+.detalle-revision-nota b {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.detalle-revision-nota span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.detalle-revision-motivo {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #EFF6FF;
+  color: #1E3A8A;
+  font-size: 0.86rem;
+}
+
+.detalle-revision-motivo i {
+  margin-top: 2px;
+  color: #2563EB;
+}
+
+.detalle-revision-acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detalle-revision-acciones .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.detalle-revision-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #E2E8F0;
+}
+
+.detalle-revision-campo .form-label {
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.detalle-revision-contador {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.detalle-revision-error {
+  margin: 0;
+  color: #B91C1C;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 

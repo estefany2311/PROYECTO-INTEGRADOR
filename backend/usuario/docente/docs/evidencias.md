@@ -547,3 +547,42 @@ rellena hacia atrás porque no hay un motivo ni un docente registrados en la evi
 | `HistorialCalificacionRepositoryTest` | Guarda y lee el historial del más reciente al más antiguo, con nota IA, nota docente y motivo; borra en cascada con la evidencia. |
 | `EvidenciaServiceTest` | Aprobar y corregir registran la fila correcta; el detalle mapea el historial ordenado. |
 | `EvidenciaControllerTest` | El detalle expone el historial en el JSON. |
+
+## 13. Botones Aprobar / Corregir en el portal (T-381, US-33)
+
+El detalle de la evidencia (`pages/DetalleEvidencia.jsx`) tiene una sección
+**Revisión del docente** que consume los endpoints de T-378 y muestra la
+`calificacionFinal`, el `motivoCorreccion` y el estado actualizado.
+
+### Aprobar
+
+El botón **Aprobar nota de la IA** llama a `POST .../aprobar` sin cuerpo. Si la
+evidencia no tiene `puntajeIa`, el botón queda deshabilitado y se explica que no hay
+nota que aprobar. Al responder el backend, la pantalla se actualiza con el detalle
+devuelto: estado `aprobada`, nota final igual al puntaje de la IA y mensaje de
+confirmación.
+
+### Corregir
+
+El botón **Corregir nota** abre un formulario con:
+
+| Campo | Regla en la interfaz |
+|---|---|
+| Calificación final | Entero entre 0 y 100; se precarga con la nota final o, si no existe, con el `puntajeIa`. |
+| Motivo de la corrección | Obligatorio, sin espacios en blanco y de hasta 500 caracteres; el contador muestra el avance. |
+
+Antes de llamar al backend se validan ambos campos y, si algo falta, no se envía la
+petición. El envío usa `POST .../corregir` con
+`{ "calificacionFinal": 70, "motivo": "..." }`, cierra el formulario y refleja el
+detalle actualizado con estado `corregida` y el motivo guardado. Si el backend
+responde con un error, el formulario sigue abierto y el mensaje se muestra en una
+alerta. **Cancelar** cierra el formulario sin llamadas.
+
+El estado `corregida` también se agregó a la cabecera y al panel de la evidencia, con
+su color propio.
+
+### Pruebas
+
+| Prueba | Cobertura |
+|---|---|
+| `DetalleEvidencia.test.jsx` | Aprobar actualiza el detalle y la nota final; Aprobar deshabilitado sin evaluación de la IA; validación de nota y motivo; corrección con nota y motivo; cancelación sin llamada; error del backend con el formulario abierto. |
