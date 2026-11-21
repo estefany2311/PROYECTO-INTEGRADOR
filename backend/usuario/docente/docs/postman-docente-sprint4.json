@@ -1,0 +1,692 @@
+{
+  "info": {
+    "name": "Docente - Sprint 4",
+    "description": "Colección del módulo Docente para el Sprint 4: comentario de retroalimentación (US-34), seguimiento de tareas con fecha límite (US-38) y los endpoints que consume la app del alumno (comentario, fluidez de la US-15, puntaje de escritura de la US-22 y entrega de tareas). Ajusta las variables con datos reales. Las rutas /api/docente usan X-Docente-Id; las rutas /api/estudiante usan Authorization: Bearer <token de la tablet>.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "docenteId",
+      "value": "1"
+    },
+    {
+      "key": "otroDocenteId",
+      "value": "2"
+    },
+    {
+      "key": "aulaId",
+      "value": "5"
+    },
+    {
+      "key": "estudianteId",
+      "value": "1"
+    },
+    {
+      "key": "lecturaId",
+      "value": "5"
+    },
+    {
+      "key": "grupoId",
+      "value": "1"
+    },
+    {
+      "key": "evidenciaId",
+      "value": "1"
+    },
+    {
+      "key": "evidenciaAudioId",
+      "value": "1"
+    },
+    {
+      "key": "evidenciaTextoId",
+      "value": "2"
+    },
+    {
+      "key": "asignacionId",
+      "value": "1"
+    },
+    {
+      "key": "fechaLimite",
+      "value": "2099-12-31"
+    },
+    {
+      "key": "tokenEstudiante",
+      "value": "<token de la tablet>"
+    }
+  ],
+  "item": [
+    {
+      "name": "Comentario de retroalimentación (US-34)",
+      "item": [
+        {
+          "name": "Guardar comentario",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/evidencias/{{evidenciaId}}/comentario",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "evidencias",
+                "{{evidenciaId}}",
+                "comentario"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comentario\": \"Muy bien leído; practica las pausas.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('devuelve el comentario', () => pm.expect(pm.response.json().comentario).to.eql('Muy bien leído; practica las pausas.'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Comentario vacío (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/evidencias/{{evidenciaId}}/comentario",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "evidencias",
+                "{{evidenciaId}}",
+                "comentario"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comentario\": \"   \"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('mensaje', () => pm.expect(pm.response.json().mensaje).to.eql('Debes escribir el comentario'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Evidencia de otra aula (404)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/evidencias/999999/comentario",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "evidencias",
+                "999999",
+                "comentario"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comentario\": \"Buen trabajo.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tareas y seguimiento (US-38)",
+      "item": [
+        {
+          "name": "Asignar lectura con fecha límite",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/asignaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "asignaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lecturaId\": \"{{lecturaId}}\",\n  \"estudianteId\": \"{{estudianteId}}\",\n  \"fechaLimite\": \"{{fechaLimite}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 o 409 si ya la tenía', () => pm.expect([201, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fecha límite en el pasado (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/asignaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "asignaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lecturaId\": \"{{lecturaId}}\",\n  \"estudianteId\": \"{{estudianteId}}\",\n  \"fechaLimite\": \"2020-01-01\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('mensaje', () => pm.expect(pm.response.json().mensaje).to.eql('La fecha límite no puede estar en el pasado'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Asignar lectura a un grupo con fecha límite",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/grupos/{{grupoId}}/asignaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "grupos",
+                "{{grupoId}}",
+                "asignaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lecturaId\": \"{{lecturaId}}\",\n  \"fechaLimite\": \"{{fechaLimite}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seguimiento de tareas del aula",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/asignaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "asignaciones"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('resumen y tareas', () => { const r = pm.response.json(); pm.expect(r).to.have.property('pendientes'); pm.expect(r).to.have.property('entregadas'); pm.expect(r).to.have.property('vencidas'); pm.expect(r.tareas).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seguimiento: solo vencidas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/asignaciones?estado=vencida",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "asignaciones"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "vencida"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('todas vencidas', () => pm.response.json().tareas.forEach(t => pm.expect(t.estado).to.eql('vencida')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seguimiento: estado inválido (400)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/asignaciones?estado=atrasada",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "asignaciones"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "atrasada"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seguimiento de un aula de otro docente (403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Docente-Id",
+                "value": "{{docenteId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/asignaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docente",
+                "aulas",
+                "{{aulaId}}",
+                "asignaciones"
+              ]
+            },
+            "description": "Cambia el header X-Docente-Id por {{otroDocenteId}} antes de enviarla."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "App del alumno (token)",
+      "item": [
+        {
+          "name": "Comentario del docente en una evidencia",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEstudiante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/estudiante/evidencias/{{evidenciaId}}/comentario",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estudiante",
+                "evidencias",
+                "{{evidenciaId}}",
+                "comentario"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('trae el comentario', () => pm.expect(pm.response.json()).to.have.property('comentario'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fluidez lectora de una lectura (US-15)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEstudiante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/estudiante/evidencias/{{evidenciaAudioId}}/fluidez",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estudiante",
+                "evidencias",
+                "{{evidenciaAudioId}}",
+                "fluidez"
+              ]
+            },
+            "description": "Usa las palabras con tiempos que dejó el motor de voz. 409: la lectura todavía se está procesando."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 o 409 si se procesa', () => pm.expect([200, 409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Puntaje de escritura de un texto (US-22)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEstudiante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/estudiante/evidencias/{{evidenciaTextoId}}/escritura",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estudiante",
+                "evidencias",
+                "{{evidenciaTextoId}}",
+                "escritura"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('puntaje de 0 a 100', () => pm.expect(pm.response.json().puntajeEscritura).to.be.within(0, 100));",
+                  "pm.test('estrellas de 0 a 3', () => pm.expect(pm.response.json().estrellas).to.be.within(0, 3));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Entregar una tarea (US-38)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEstudiante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/estudiante/asignaciones/{{asignacionId}}/entregar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estudiante",
+                "asignaciones",
+                "{{asignacionId}}",
+                "entregar"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('entregada', () => pm.expect(pm.response.json().estado).to.eql('entregada'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin token (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/estudiante/evidencias/{{evidenciaId}}/comentario",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estudiante",
+                "evidencias",
+                "{{evidenciaId}}",
+                "comentario"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
