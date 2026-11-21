@@ -104,7 +104,7 @@ npm run preview -- --port 4173
 | Backend `HistorialCalificacionRepositoryTest` | 2/2 · historial por evidencia ordenado y borrado en cascada con la evidencia |
 | Backend `EvidenciaServiceTest` | 27/27 · mapeo, filtro por tipo y texto, tipo en blanco, tipo inválido, resultado IA nulo, aula del docente, detalle con transcripción y puntaje, palabras marcadas, aprobar/corregir con motivo, recálculo de estrellas al cambiar la nota e historial de calificaciones |
 | Backend `EvidenciaControllerTest` | 28/28 · ruta, respuesta de audio y texto, filtro por tipo, detalle, detalle rechazado, detalle sin evaluación, audio completo, 206, 416, aprobar, corregir, validaciones, header y errores, e historial en el detalle |
-| Backend `AlmacenAudioTest` | 10/10 · nombre desde archivo, URL y query, carpeta, rutas inválidas y tipo MIME |
+| Backend `AlmacenAudioTest` | 14/14 · ruta relativa con subcarpeta, URL y query, nombre simple, carpeta, rutas inválidas y tipo MIME |
 | Backend `AudioEvidenciaServiceTest` | 6/6 · audio del aula, texto, otra aula, aula inexistente, aula ajena y archivo faltante |
 | Backend `MigracionEvidenciaDetalleTest` | 3/3 · columnas de V13, rango 0-100 del puntaje y datos de prueba |
 | Backend `MigracionEvidenciaPalabrasTest` | 2/2 · columna de V14 y palabras marcadas en las evidencias de prueba sin ids quemados |
@@ -121,7 +121,7 @@ npm run preview -- --port 4173
 | Backend `CatalogoControllerTest` | 4/4 · catálogo con `fuente` y `urlRecurso`, filtros, 403 y 404 |
 | Backend `ConfiguracionCorsTest` | 4/4 · origen local, varios orígenes, espacios y lista vacía |
 | Backend `OpenApiConfigTest` | 4/4 · servidor, información, esquemas de seguridad y orden de secciones |
-| Backend `test` | 323/323 |
+| Backend `test` | 327/327 |
 | Frontend `DetalleEstudiante.test.jsx` | 10/10 · resumen por competencia, fortalezas/dificultades, competencias parciales, aula activa, sin datos y error con reintento |
 | Frontend `GraficoEvolucion.test.jsx` | 5/5 · orden, leyenda, etiqueta accesible y estados vacío/una evaluación |
 | Frontend `FortalezasDificultades.test.jsx` | 4/4 · clasificación, sin dificultades, amarillo y estado vacío |

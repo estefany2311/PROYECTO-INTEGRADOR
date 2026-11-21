@@ -280,21 +280,25 @@ El control valida en este orden:
 `application.properties`:
 
 ```properties
-app.evidencias.directorio=./evidencias
+# La misma carpeta que usa el backend estudiante
+app.evidencias.directorio=${estudiante.audios.carpeta:${user.home}/plataforma-educativa/audios}
 ```
 
-En despliegue se sobreescribe con la variable `APP_EVIDENCIAS_DIRECTORIO`. La carpeta
-está en `.gitignore`: los audios no se versionan.
+En despliegue se sobreescribe con la variable `APP_EVIDENCIAS_DIRECTORIO` (o con
+`ESTUDIANTE_AUDIOS_CARPETA`). Los backends docente y estudiante deben apuntar a la
+**misma carpeta**; por defecto es `~/plataforma-educativa/audios`, fuera del repositorio.
 
-`audio_url` puede guardarse como **nombre de archivo** (`evidencia-30.mp3`) o como
-**URL completa** (`https://cdn.ejemplo.pe/audios/evidencia-30.mp3?v=3`). En ambos casos
-se usa solo el último segmento, sin la query string, y se resuelve dentro de la carpeta.
-Un nombre con `..`, una ruta absoluta o un archivo que no existe responde `404`; nunca
-se sirve un archivo de fuera de la carpeta.
+`audio_url` guarda una **ruta relativa** a esa carpeta, con la subcarpeta del alumno
+delante: `est_7/nivel_1_20261117-221100_ab12cd34.wav`. También se acepta una **URL
+completa** (`https://cdn.ejemplo.pe/audios/evidencia-30.mp3?v=3`), de la que se usa solo
+el nombre. Se rechazan las rutas absolutas, los segmentos `..` y los nombres con
+caracteres no permitidos; un archivo que no existe responde `404`. Nunca se sirve un
+archivo de fuera de la carpeta.
 
-> **Para Karla (T-413 / T-414):** al guardar el audio deje el archivo en
-> `app.evidencias.directorio` y guarde en `audio_url` el nombre del archivo o su URL.
-> El docente solo necesita que el nombre final coincida con el archivo.
+> **Para Karla (US-13):** el docente lee de la misma carpeta que configura
+> `estudiante.audios.carpeta` (`~/plataforma-educativa/audios`). No hay que copiar
+> archivos: basta con guardar en `audio_url` la ruta relativa tal como la genera el
+> backend estudiante (`est_7/...`).
 
 ### Respuestas
 
@@ -360,7 +364,7 @@ Errores:
 
 | Prueba | Cobertura |
 |---|---|
-| `AlmacenAudioTest` | Nombre desde archivo, URL y query string; resolución dentro de la carpeta; `..`, nombre vacío y archivo inexistente; rutas absolutas que no escapan; tipo MIME por extensión. |
+| `AlmacenAudioTest` | Ruta relativa con subcarpeta (`est_7/...`), URL completa y query string; nombre simple; `..`, ruta absoluta, nombre vacío y archivo inexistente; tipo MIME por extensión. |
 | `AudioEvidenciaServiceTest` | Audio del aula, evidencia de texto, evidencia de otra aula, aula inexistente, aula ajena y archivo que no está en la carpeta. |
 | `EvidenciaControllerTest` | Audio completo, `206` con `Content-Range`, `416`, formato de `Range` inválido, `400` de texto, `403`, `404` y header obligatorio. |
 | `ReproductorAudio.test.jsx` | No descarga hasta el clic, descarga con el header y reproduce desde un blob, error con reintento, liberación del blob y nombre genérico. |

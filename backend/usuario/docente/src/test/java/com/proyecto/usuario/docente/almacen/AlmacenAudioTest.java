@@ -15,8 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * T-372 (US-32): la carpeta de audios solo entrega archivos que están dentro de
- * ella y acepta tanto un nombre simple como la URL completa que guarda el
- * módulo estudiante.
+ * ella; acepta una ruta relativa con la subcarpeta del alumno o la URL completa
+ * que guarda el módulo estudiante.
  */
 class AlmacenAudioTest {
 
@@ -65,6 +65,37 @@ class AlmacenAudioTest {
     }
 
     @Test
+    void resuelveUnaRutaRelativaConLaSubcarpetaDelAlumno() throws Exception {
+        Path carpetaAlumno = Files.createDirectories(carpeta.resolve("est_7"));
+        Path archivo = carpetaAlumno.resolve("nivel_1_20261117-221100_ab12cd34.wav");
+        Files.write(archivo, new byte[]{1, 2, 3});
+
+        Path resuelto = almacen.resolver(
+                "est_7/nivel_1_20261117-221100_ab12cd34.wav");
+
+        assertEquals(archivo.toAbsolutePath().normalize(), resuelto);
+    }
+
+    @Test
+    void resuelveUnaRutaRelativaConBarrasInvertidas() throws Exception {
+        Path carpetaAlumno = Files.createDirectories(carpeta.resolve("est_7"));
+        Path archivo = carpetaAlumno.resolve("voz.wav");
+        Files.write(archivo, new byte[]{1});
+
+        assertEquals(archivo.toAbsolutePath().normalize(),
+                almacen.resolver("est_7\\voz.wav"));
+    }
+
+    @Test
+    void resuelveUnaUrlCompletaPorElNombreDelArchivo() throws Exception {
+        Path archivo = carpeta.resolve("evidencia-30.mp3");
+        Files.write(archivo, new byte[]{1});
+
+        assertEquals(archivo.toAbsolutePath().normalize(),
+                almacen.resolver("https://cdn.ejemplo.pe/audios/evidencia-30.mp3?v=3"));
+    }
+
+    @Test
     void unArchivoQueNoExisteDevuelve404() {
         ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
                 () -> almacen.resolver("no-existe.mp3"));
@@ -82,24 +113,36 @@ class AlmacenAudioTest {
     }
 
     @Test
+    void rechazaUnaRutaQueIntentaSalirDeLaCarpeta() throws Exception {
+        Files.createDirectories(carpeta.resolve("est_7"));
+        Path fuera = carpeta.getParent().resolve("fuera-t372.wav");
+        Files.write(fuera, new byte[]{9});
+        try {
+            ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                    () -> almacen.resolver("est_7/../../fuera-t372.wav"));
+
+            assertEquals(HttpStatus.NOT_FOUND, error.getEstado());
+        } finally {
+            Files.deleteIfExists(fuera);
+        }
+    }
+
+    @Test
     void rechazaUnNombreVacio() {
         assertThrows(ReglaNegocioException.class, () -> almacen.resolver(""));
         assertThrows(ReglaNegocioException.class, () -> almacen.resolver(null));
     }
 
     @Test
-    void unaRutaAbsolutaNoEscapaDeLaCarpeta() throws Exception {
-        Path fuera = carpeta.getParent().resolve("secreto-fuera.mp3");
-        Files.write(fuera, new byte[]{9});
+    void rechazaUnaRutaAbsolutaAunqueElArchivoExistaEnLaCarpeta() throws Exception {
         Path dentro = carpeta.resolve("secreto-fuera.mp3");
         Files.write(dentro, new byte[]{1});
-        try {
-            // de la ruta absoluta solo se usa el nombre; se sirve el de la carpeta
-            assertEquals(dentro.toAbsolutePath().normalize(),
-                    almacen.resolver(fuera.toString()));
-        } finally {
-            Files.deleteIfExists(fuera);
-        }
+
+        // una ruta absoluta no se interpreta como relativa a la carpeta
+        ReglaNegocioException error = assertThrows(ReglaNegocioException.class,
+                () -> almacen.resolver(dentro.toAbsolutePath().toString()));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getEstado());
     }
 
     @Test
