@@ -144,11 +144,19 @@ export const actualizarReglaDesbloqueo = (nivelId, datos) =>
 pedir(`/configuracion/desbloqueo/${nivelId}/`, { method: "PATCH", body: JSON.stringify(datos) });
 
 
-// US-47 · Reportes consolidados (T-267 y T-268)
-export const obtenerReporteColegios = (colegio = "") =>
-  pedir(`/reportes/colegios/${colegio ? `?${new URLSearchParams({ colegio })}` : ""}`);
+// US-49 · T-356: arma ?grado=&desde=&hasta= solo con los filtros que tienen valor
+const parametrosReporte = (valores) => {
+  const params = new URLSearchParams();
+  Object.entries(valores).forEach(([clave, valor]) => { if (valor) params.set(clave, valor); });
+  const texto = params.toString();
+  return texto ? `?${texto}` : "";
+};
 
-export const obtenerReporteAulas = (colegioId) => pedir(`/reportes/colegios/${colegioId}/aulas/`);
+export const obtenerReporteColegios = (colegio = "", filtros = {}) =>
+  pedir(`/reportes/colegios/${parametrosReporte({ colegio, ...filtros })}`);
+
+export const obtenerReporteAulas = (colegioId, filtros = {}) =>
+  pedir(`/reportes/colegios/${colegioId}/aulas/${parametrosReporte(filtros)}`);
 
 // US-48 · Mapa de calor (T-350)
 export const obtenerMapaCalor = ({ agrupar = "region", grado = "" } = {}) => {
