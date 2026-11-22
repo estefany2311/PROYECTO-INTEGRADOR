@@ -138,6 +138,21 @@ class ReporteMapaCalorView(APIView):
             'zonas': consultas.desempeno_por_zona(agrupar=agrupar, **filtros),
         })
 
+def datos_para_exportar(request):
+    """US-50 · T-361: los mismos filtros de la pantalla de reportes (?colegio=&grado=&desde=&hasta=).
+
+    Devuelve las filas del reporte y los filtros aplicados (con el nombre del colegio) para el encabezado.
+    """
+    colegio_id = _entero(request.query_params.get('colegio'), 'colegio')
+    colegio = None
+    if colegio_id is not None:
+        colegio = Colegio.objects.filter(id=colegio_id, activo=True).first()
+        if colegio is None:
+            raise NotFound('El colegio no existe o está inactivo.')
+    filtros = filtros_reporte(request)          # grado, desde, hasta (con las validaciones de T-355)
+    filas = consultas.rendimiento_por_colegio(colegio_id=colegio_id, **filtros)
+    return filas, {'colegio': colegio.nombre if colegio else None, **filtros}
+
 
 class ReporteExcelView(APIView):
     """US-50 · T-358: descarga el reporte por colegio en Excel (solo administrador).
@@ -148,9 +163,9 @@ class ReporteExcelView(APIView):
     modulo = 'reportes'
 
     def get(self, request):
-        filas = consultas.rendimiento_por_colegio()
+        filas, filtros = datos_para_exportar(request)
         respuesta = HttpResponse(
-            exportar.excel_colegios(filas, generado=timezone.localtime()),
+            exportar.excel_colegios(filas, generado=timezone.localtime(), filtros=filtros),
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
         # "attachment" hace que el navegador lo descargue con ese nombre
@@ -167,8 +182,8 @@ class ReportePdfView(APIView):
     modulo = 'reportes'
 
     def get(self, request):
-        filas = consultas.rendimiento_por_colegio()
-        respuesta = HttpResponse(exportar.pdf_colegios(filas, generado=timezone.localtime()),
+        filas, filtros = datos_para_exportar(request)
+        respuesta = HttpResponse(exportar.pdf_colegios(filas, generado=timezone.localtime(), filtros=filtros),
                                  content_type='application/pdf')
         respuesta['Content-Disposition'] = f'attachment; filename="reporte-colegios-{date.today():%Y-%m-%d}.pdf"'
         return respuesta
