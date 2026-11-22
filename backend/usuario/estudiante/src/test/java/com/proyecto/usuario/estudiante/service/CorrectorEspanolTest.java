@@ -162,7 +162,7 @@ class CorrectorEspanolTest {
 
             assertEquals(List.of("aser", "boi", "llendo", "haci"), palabras(e));
             assertTrue(e.stream().allMatch(x -> x.tipo().equals(ErrorOrtografico.ORTOGRAFIA)));
-            assertNull(e.get(0).sugerencia());
+            assertTrue(e.get(0).sugerencias().contains("hacer"));   // US-20: ahora sí hay sugerencias
         }
 
         @Test
