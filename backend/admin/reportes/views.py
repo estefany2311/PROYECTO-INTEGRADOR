@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.http import HttpResponse
+from django.utils import timezone
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -138,8 +139,6 @@ class ReporteMapaCalorView(APIView):
         })
 
 
-
-
 class ReporteExcelView(APIView):
     """US-50 · T-358: descarga el reporte por colegio en Excel (solo administrador).
 
@@ -151,14 +150,12 @@ class ReporteExcelView(APIView):
     def get(self, request):
         filas = consultas.rendimiento_por_colegio()
         respuesta = HttpResponse(
-            exportar.excel_colegios(filas),
+            exportar.excel_colegios(filas, generado=timezone.localtime()),
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
         # "attachment" hace que el navegador lo descargue con ese nombre
         respuesta['Content-Disposition'] = f'attachment; filename="reporte-colegios-{date.today():%Y-%m-%d}.xlsx"'
         return respuesta
-
-
 
 
 class ReportePdfView(APIView):
@@ -171,6 +168,7 @@ class ReportePdfView(APIView):
 
     def get(self, request):
         filas = consultas.rendimiento_por_colegio()
-        respuesta = HttpResponse(exportar.pdf_colegios(filas), content_type='application/pdf')
+        respuesta = HttpResponse(exportar.pdf_colegios(filas, generado=timezone.localtime()),
+                                 content_type='application/pdf')
         respuesta['Content-Disposition'] = f'attachment; filename="reporte-colegios-{date.today():%Y-%m-%d}.pdf"'
         return respuesta

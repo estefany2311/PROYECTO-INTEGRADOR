@@ -6,6 +6,39 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 VERDE_YALLIQ = '0A8378'
+TITULO = 'Reporte de rendimiento por colegio'
+
+
+def describir_filtros(filtros=None):
+    """T-360: texto de los filtros aplicados, para el encabezado del archivo.
+
+    filtros: {'colegio': nombre o None, 'grado': 2 o None, 'desde': date o None, 'hasta': date o None}
+    """
+    filtros = filtros or {}
+    desde, hasta = filtros.get('desde'), filtros.get('hasta')
+    if desde and hasta:
+        periodo = f'del {desde:%d/%m/%Y} al {hasta:%d/%m/%Y}'
+    elif desde:
+        periodo = f'desde el {desde:%d/%m/%Y}'
+    elif hasta:
+        periodo = f'hasta el {hasta:%d/%m/%Y}'
+    else:
+        periodo = 'Todo el periodo'
+    partes = [
+        filtros.get('colegio') or 'Todos los colegios',
+        f"{filtros['grado']}.° grado" if filtros.get('grado') else 'Todos los grados',
+        periodo,
+    ]
+    return ' · '.join(partes)
+
+
+def encabezado(generado, filtros=None):
+    """T-360: las líneas de arriba del archivo: título, fecha de generación y filtros."""
+    return [
+        f'{TITULO} · Yalliq',
+        f'Generado el {generado:%d/%m/%Y a las %H:%M}',
+        f'Filtros: {describir_filtros(filtros)}',
+    ]
 
 # (título de la columna, ancho, cómo sacar el valor de una fila del reporte)
 COLUMNAS_COLEGIOS = [
@@ -25,15 +58,29 @@ COLUMNAS_COLEGIOS = [
 ]
 
 
-def excel_colegios(filas):
-    """T-358: reporte por colegio en Excel (.xlsx). Devuelve los bytes del archivo."""
+def excel_colegios(filas, generado, filtros=None):
+    """T-358: reporte por colegio en Excel (.xlsx). Devuelve los bytes del archivo.
+
+    T-360: arriba van el título, la fecha de generación y los filtros aplicados.
+    """
     libro = Workbook()
     hoja = libro.active
     hoja.title = 'Colegios'
 
+    # T-360: encabezado (filas 1 a 3) y una fila en blanco
+    titulo, fecha, texto_filtros = encabezado(generado, filtros)
+    hoja.append([titulo])
+    hoja['A1'].font = Font(bold=True, size=14, color=VERDE_YALLIQ)
+    hoja.append([fecha])
+    hoja.append([texto_filtros])
+    for celda in ('A2', 'A3'):
+        hoja[celda].font = Font(color='5E6B73')
+    hoja.append([])
+
     # Fila de títulos: verde Yalliq con letra blanca
     hoja.append([titulo for titulo, _, _ in COLUMNAS_COLEGIOS])
-    for celda in hoja[1]:
+    fila_titulos = hoja.max_row
+    for celda in hoja[fila_titulos]:
         celda.font = Font(bold=True, color='FFFFFF')
         celda.fill = PatternFill('solid', fgColor=VERDE_YALLIQ)
         celda.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
@@ -44,7 +91,7 @@ def excel_colegios(filas):
 
     for numero, (_, ancho, _) in enumerate(COLUMNAS_COLEGIOS, start=1):
         hoja.column_dimensions[get_column_letter(numero)].width = ancho
-    hoja.freeze_panes = 'A2'          # los títulos quedan fijos al bajar
+    hoja.freeze_panes = f'A{fila_titulos + 1}'   # el encabezado y los títulos quedan fijos al bajar
 
     salida = BytesIO()
     libro.save(salida)
@@ -70,8 +117,11 @@ def _texto(valor):
     return '—' if valor is None else str(valor)
 
 
-def pdf_colegios(filas):
-    """T-359: reporte por colegio en PDF (A4 horizontal). Devuelve los bytes del archivo."""
+def pdf_colegios(filas, generado, filtros=None):
+    """T-359: reporte por colegio en PDF (A4 horizontal). Devuelve los bytes del archivo.
+
+    T-360: debajo del título van la fecha de generación y los filtros aplicados.
+    """
     salida = BytesIO()
     documento = SimpleDocTemplate(
         salida, pagesize=landscape(A4), title='Reporte de colegios · Yalliq',
@@ -109,9 +159,13 @@ def pdf_colegios(filas):
         ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
     ]))
 
+    _, fecha, texto_filtros = encabezado(generado, filtros)
+    estilo_nota = estilos['Normal'].clone('nota', fontSize=9, textColor=colors.HexColor('#5E6B73'), alignment=1)
     contenido = [
-        Paragraph('Reporte de rendimiento por colegio', estilos['Title']),
-        Spacer(1, 0.3 * cm),
+        Paragraph(TITULO, estilos['Title']),
+        Paragraph(fecha, estilo_nota),
+        Paragraph(texto_filtros, estilo_nota),
+        Spacer(1, 0.4 * cm),
         tabla if filas else Paragraph('No hay colegios activos.', estilos['BodyText']),
     ]
     documento.build(contenido)
