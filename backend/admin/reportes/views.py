@@ -157,3 +157,20 @@ class ReporteExcelView(APIView):
         # "attachment" hace que el navegador lo descargue con ese nombre
         respuesta['Content-Disposition'] = f'attachment; filename="reporte-colegios-{date.today():%Y-%m-%d}.xlsx"'
         return respuesta
+
+
+
+
+class ReportePdfView(APIView):
+    """US-50 · T-359: descarga el reporte por colegio en PDF (solo administrador).
+
+    GET /api/reportes/colegios/pdf/
+    """
+    permission_classes = [TienePermiso, EsAdmin]
+    modulo = 'reportes'
+
+    def get(self, request):
+        filas = consultas.rendimiento_por_colegio()
+        respuesta = HttpResponse(exportar.pdf_colegios(filas), content_type='application/pdf')
+        respuesta['Content-Disposition'] = f'attachment; filename="reporte-colegios-{date.today():%Y-%m-%d}.pdf"'
+        return respuesta

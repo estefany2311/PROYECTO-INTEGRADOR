@@ -49,3 +49,70 @@ def excel_colegios(filas):
     salida = BytesIO()
     libro.save(salida)
     return salida.getvalue()
+
+
+# ---------------------------------------------------------------------
+# T-359: PDF
+# ---------------------------------------------------------------------
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import cm
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+# En el PDF no caben 13 columnas: se juntan los conteos del semáforo en una sola
+COLUMNAS_PDF = ['Colegio', 'Región', 'Alumnos', 'Lectura', 'Escritura', 'Oralidad', 'General',
+                'Logrado / Proceso / Inicio / Sin evaluar']
+
+
+def _texto(valor):
+    """Un promedio sin datos se muestra como guion."""
+    return '—' if valor is None else str(valor)
+
+
+def pdf_colegios(filas):
+    """T-359: reporte por colegio en PDF (A4 horizontal). Devuelve los bytes del archivo."""
+    salida = BytesIO()
+    documento = SimpleDocTemplate(
+        salida, pagesize=landscape(A4), title='Reporte de colegios · Yalliq',
+        leftMargin=1.5 * cm, rightMargin=1.5 * cm, topMargin=1.5 * cm, bottomMargin=1.5 * cm,
+    )
+    estilos = getSampleStyleSheet()
+    estilo_celda = estilos['BodyText']
+    estilo_celda.fontSize = 9
+
+    datos = [COLUMNAS_PDF]
+    for f in filas:
+        s = f['semaforo']
+        datos.append([
+            Paragraph(f"{f['nombre']}<br/><font size=7 color='#5E6B73'>{f['codigo_modular']}</font>", estilo_celda),
+            f['region'],
+            f['alumnos'],
+            _texto(f['promedios']['lectura']),
+            _texto(f['promedios']['escritura']),
+            _texto(f['promedios']['oralidad']),
+            _texto(f['promedio_general']),
+            f"{s['verde']} / {s['amarillo']} / {s['rojo']} / {s['sin_evaluar']}",
+        ])
+
+    tabla = Table(datos, repeatRows=1, colWidths=[7 * cm, 3 * cm, 2 * cm, 2 * cm, 2 * cm, 2 * cm, 2 * cm, 6 * cm])
+    tabla.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#' + VERDE_YALLIQ)),   # títulos en verde Yalliq
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('ALIGN', (2, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#EEF6F4')]),   # filas alternadas
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#C9DFDA')),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+    ]))
+
+    contenido = [
+        Paragraph('Reporte de rendimiento por colegio', estilos['Title']),
+        Spacer(1, 0.3 * cm),
+        tabla if filas else Paragraph('No hay colegios activos.', estilos['BodyText']),
+    ]
+    documento.build(contenido)
+    return salida.getvalue()
