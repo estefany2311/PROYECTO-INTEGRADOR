@@ -3,7 +3,7 @@
 // Recibe (props): zonas (filas con sus promedios), competencias, seleccion ({zona, competencia})
 // Avisa al padre con: onElegir(zona, competencia) al hacer clic en una celda
 // Hijos: —
-import { colorDe } from "../utils/semaforo";
+import { nivelCalor } from "../utils/semaforo";
 const NOMBRES = { lectura: "Lectura", escritura: "Escritura", oralidad: "Oralidad", general: "Promedio" };
 
 
@@ -31,16 +31,19 @@ export default function MatrizCalor({ zonas, competencias, seleccion, onElegir }
               </th>
               {columnas.map((c) => {
                 const valor = c === "general" ? z.promedio_general : z.promedios[c];
+                const nivel = nivelCalor(valor);
                 const elegida = seleccion?.zona === z.zona && seleccion?.competencia === c;
                 return (
                   <td key={c}>
                     <button
                       type="button"
-                      className={`celda-calor ${colorDe(valor)}${elegida ? " elegida" : ""}`}
-                      title={`${z.zona} · ${NOMBRES[c]}: ${valor ?? "sin datos"}`}
+                      className={`celda-calor ${nivel.clase}${elegida ? " elegida" : ""}`}
+                      aria-label={`${z.zona}, ${NOMBRES[c]}: ${valor ?? "sin datos"}, ${nivel.texto}`}
+                      aria-pressed={elegida}
                       onClick={() => onElegir(z.zona, c)}
                     >
                       {valor ?? "—"}
+                      <small>{nivel.texto}</small>
                     </button>
                   </td>
                 );

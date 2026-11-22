@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { obtenerMapaCalor } from "../api";
 import MatrizCalor from "../components/MatrizCalor";
-import { colorDe } from "../utils/semaforo";
+import LeyendaCalor from "../components/LeyendaCalor";
+import { nivelCalor } from "../utils/semaforo";
 import { GRADOS } from "../utils/catalogo";
 
 // Componente: MapaCalor (padre de la pestaña, US-48)
 // Padre: App
-// Guarda el estado: filtros (agrupar, grado), datos del endpoint y la celda elegida
+// Hijos: MatrizCalor, LeyendaCalor
 // Hijos: MatrizCalor
 
 const NOMBRES = { lectura: "Lectura", escritura: "Escritura", oralidad: "Oralidad", general: "Promedio general" };
-const TEXTO_COLOR = { verde: "Logrado", amarillo: "En proceso", rojo: "Necesita apoyo", sin_evaluar: "Sin datos" };
 export default function MapaCalor({ onNoAutorizado }) {
   const [agrupar, setAgrupar] = useState("region");
   const [grado, setGrado] = useState("");
@@ -85,6 +85,7 @@ export default function MapaCalor({ onNoAutorizado }) {
               seleccion={seleccion}
               onElegir={(zona, competencia) => setSeleccion({ zona, competencia })}
             />
+            <LeyendaCalor />
             <p className="note mt-2 mb-0">Haz clic en una celda para ver su detalle.</p>
           </div>
         )}
@@ -95,8 +96,8 @@ export default function MapaCalor({ onNoAutorizado }) {
           <div className="card-body">
             <h2 className="h6 fw-bold mb-3">
               {zonaElegida.zona} · {NOMBRES[seleccion.competencia]}{" "}
-              <span className={`etiqueta-calor ${colorDe(valorElegido)}`}>
-                {valorElegido ?? "—"} · {TEXTO_COLOR[colorDe(valorElegido)]}
+              <span className={`etiqueta-calor ${nivelCalor(valorElegido).clase}`}>
+                {valorElegido ?? "—"} · {nivelCalor(valorElegido).texto}
               </span>
             </h2>
             <div className="row g-3">
