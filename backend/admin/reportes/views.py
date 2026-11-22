@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.http import HttpResponse
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -7,7 +8,7 @@ from rest_framework.views import APIView
 from instituciones.models import Colegio
 from usuarios.permissions import EsAdmin, TienePermiso
 from . import consultas
-
+from . import exportar
 
 def _entero(valor, nombre):
     """Convierte un filtro de la URL a número; si viene mal, responde 400."""
@@ -135,3 +136,24 @@ class ReporteMapaCalorView(APIView):
             'competencias': consultas.COMPETENCIAS,
             'zonas': consultas.desempeno_por_zona(agrupar=agrupar, **filtros),
         })
+
+
+
+
+class ReporteExcelView(APIView):
+    """US-50 · T-358: descarga el reporte por colegio en Excel (solo administrador).
+
+    GET /api/reportes/colegios/excel/
+    """
+    permission_classes = [TienePermiso, EsAdmin]
+    modulo = 'reportes'
+
+    def get(self, request):
+        filas = consultas.rendimiento_por_colegio()
+        respuesta = HttpResponse(
+            exportar.excel_colegios(filas),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        # "attachment" hace que el navegador lo descargue con ese nombre
+        respuesta['Content-Disposition'] = f'attachment; filename="reporte-colegios-{date.today():%Y-%m-%d}.xlsx"'
+        return respuesta
