@@ -1,5 +1,5 @@
 from unittest import mock
-
+from datetime import date, timedelta
 from django.db import connection
 from io import StringIO
 
@@ -477,3 +477,139 @@ class ReporteMapaCalorAPITests(APITestCase):
     def test_docente_no_puede_ver_el_mapa(self):
         self.client.force_authenticate(Usuario.objects.get(username='doc_a'))
         self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_403_FORBIDDEN)
+
+
+
+
+# =====================================================================
+# US-49 · Filtros de reportes: periodo, colegio y grado (T-357)
+# =====================================================================
+FECHAS = [
+    # (alumno, competencia, fecha de la evaluación)
+    (1, 'lectura', '2026-09-15 10:00'),     # Ana     80
+    (3, 'lectura', '2026-09-20 12:00'),     # Rosa    30
+    (5, 'lectura', '2026-10-01 08:00'),     # Inés   100 (inactiva)
+    (1, 'escritura', '2026-10-20 09:00'),   # Ana     70
+    (2, 'lectura', '2026-10-31 23:59'),     # Luis    60 → último minuto de octubre
+    (2, 'oralidad', '2026-11-02 08:00'),    # Luis    40
+]
+
+
+def poner_fechas():
+    """Cada evaluación de los datos de T-264 recibe una fecha fija."""
+    with connection.cursor() as c:
+        for estudiante_id, competencia, fecha in FECHAS:
+            c.execute('UPDATE evaluacion SET evaluado_en = %s WHERE estudiante_id = %s AND competencia = %s',
+                      [fecha, estudiante_id, competencia])
+
+
+class FiltrosConsultasTests(TestCase):
+    """T-354: las consultas respetan el periodo y el grado."""
+    OCTUBRE = {'desde': date(2026, 10, 1), 'hasta': date(2026, 10, 31)}
+
+    def setUp(self):
+        ConsultasAgregacionTests.setUp(self)   # mismos datos de T-264
+        poner_fechas()
+
+    def por_competencia(self, **filtros):
+        return {r['competencia']: r['promedio'] for r in consultas.promedio_por_competencia(**filtros)}
+
+    def test_periodo_de_octubre(self):
+        self.assertEqual(self.por_competencia(**self.OCTUBRE),
+                         {'lectura': 60.0, 'escritura': 70.0, 'oralidad': None})
+
+    def test_hasta_incluye_todo_el_ultimo_dia(self):
+        self.assertEqual(self.por_competencia(hasta=date(2026, 10, 31))['lectura'], 56.7)   # (80 + 30 + 60) / 3
+        self.assertEqual(self.por_competencia(hasta=date(2026, 10, 30))['lectura'], 55.0)   # sin el 60 de Luis
+
+    def test_solo_desde(self):
+        self.assertEqual(self.por_competencia(desde=date(2026, 11, 1)),
+                         {'lectura': None, 'escritura': None, 'oralidad': 40.0})
+
+    def test_sin_filtros_da_lo_mismo_que_antes(self):
+        self.assertEqual(self.por_competencia(), {'lectura': 56.7, 'escritura': 70.0, 'oralidad': 40.0})
+
+    def test_semaforo_del_periodo_cuenta_a_los_que_no_tienen_notas(self):
+        self.assertEqual(consultas.alumnos_por_semaforo(**self.OCTUBRE),
+                         {'verde': 0, 'amarillo': 2, 'rojo': 0, 'sin_evaluar': 2})   # Ana 70, Luis 60
+
+    def test_rendimiento_por_colegio_con_grado(self):
+        filas = {f['nombre']: f for f in consultas.rendimiento_por_colegio(grado=4)}
+        self.assertEqual(filas['IE Ccollpa']['alumnos'], 0)                  # sus alumnos son de 2.°
+        self.assertEqual((filas['IE Huaccana']['alumnos'], filas['IE Huaccana']['promedios']['lectura']), (2, 30.0))
+
+    def test_rendimiento_por_aula_con_periodo(self):
+        aula = consultas.rendimiento_por_aula(self.colegio_a.id, desde=date(2026, 9, 1), hasta=date(2026, 9, 30))[0]
+        self.assertEqual((aula['evaluaciones'], aula['promedios']['lectura']), (1, 80.0))   # solo Ana
+        self.assertEqual(aula['semaforo'], {'verde': 1, 'amarillo': 0, 'rojo': 0, 'sin_evaluar': 1})
+
+    def test_mapa_de_calor_con_periodo(self):
+        zonas = {z['zona']: z for z in consultas.desempeno_por_zona(desde=date(2026, 9, 1), hasta=date(2026, 9, 30))}
+        self.assertEqual(zonas['Cusco']['promedios']['lectura'], 80.0)
+        self.assertEqual(zonas['Apurímac']['promedios']['lectura'], 30.0)
+
+
+class FiltrosReportesAPITests(APITestCase):
+    """T-354 y T-355: parámetros ?grado=&desde=&hasta= y validación del rango de fechas."""
+    URL = '/api/reportes/colegios/'
+
+    def setUp(self):
+        ConsultasAgregacionTests.setUp(self)
+        poner_fechas()
+        rol_admin, _ = Rol.objects.get_or_create(nombre='ADMIN')
+        self.admin = Usuario.objects.create_user(
+            username='admin', email='admin@test.pe', password='clave-segura-1', rol=rol_admin)
+        self.client.force_authenticate(self.admin)
+
+    # --- T-354: los filtros llegan a las consultas ---
+    def test_reporte_de_colegios_con_grado_y_periodo(self):
+        resp = self.client.get(self.URL, {'grado': 2, 'desde': '2026-10-01', 'hasta': '2026-10-31'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        datos = resp.json()
+        self.assertEqual(datos['filtros'], {'colegio': None, 'grado': 2, 'desde': '2026-10-01', 'hasta': '2026-10-31'})
+        self.assertEqual(datos['resumen']['promedios'], {'lectura': 60.0, 'escritura': 70.0, 'oralidad': None})
+        self.assertEqual(datos['resumen']['alumnos'], 2)                     # solo Ana y Luis (2.°)
+
+    def test_reporte_de_aulas_con_periodo(self):
+        resp = self.client.get(f'/api/reportes/colegios/{self.colegio_a.id}/aulas/',
+                               {'desde': '2026-09-01', 'hasta': '2026-09-30'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()['aulas'][0]['promedios']['lectura'], 80.0)
+
+    def test_mapa_de_calor_con_periodo(self):
+        resp = self.client.get('/api/reportes/mapa-calor/', {'desde': '2026-09-01', 'hasta': '2026-09-30'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual((resp.json()['desde'], resp.json()['hasta']), ('2026-09-01', '2026-09-30'))
+
+    def test_un_solo_dia_es_valido(self):
+        resp = self.client.get(self.URL, {'desde': '2026-10-31', 'hasta': '2026-10-31'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()['resumen']['promedios']['lectura'], 60.0)   # la de las 23:59
+
+    # --- T-355: validación del rango ---
+    def test_formato_de_fecha_invalido_devuelve_400(self):
+        resp = self.client.get(self.URL, {'desde': '31/10/2026'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['desde']), 'La fecha desde debe tener el formato AAAA-MM-DD.')
+
+    def test_desde_despues_de_hasta_devuelve_400(self):
+        resp = self.client.get(self.URL, {'desde': '2026-11-30', 'hasta': '2026-09-01'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['hasta']), 'La fecha hasta no puede ser anterior a la fecha desde.')
+
+    def test_fecha_futura_devuelve_400(self):
+        manana = (date.today() + timedelta(days=1)).isoformat()
+        resp = self.client.get(self.URL, {'desde': manana})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['desde']), 'La fecha desde no puede ser posterior a hoy.')
+
+    def test_las_dos_fechas_futuras_muestran_los_dos_errores(self):
+        manana = (date.today() + timedelta(days=1)).isoformat()
+        resp = self.client.get(self.URL, {'desde': manana, 'hasta': manana})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(set(resp.data), {'desde', 'hasta'})
+
+    def test_grado_invalido_en_el_reporte_de_colegios(self):
+        resp = self.client.get(self.URL, {'grado': 7})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['grado']), 'El grado debe estar entre 1 y 6.')
