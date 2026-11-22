@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { obtenerReporteAulas, obtenerReporteColegios } from "../api";
 import BarraSemaforo from "../components/BarraSemaforo";
 import BarraFiltros from "../components/BarraFiltros";
+import BotonesDescarga from "../components/BotonesDescarga";
 import { GraficoCompetencias, GraficoSemaforo } from "../components/GraficosReporte";
 import Promedio from "../components/Promedio";
 
@@ -107,11 +108,12 @@ export default function Reportes({ onNoAutorizado }) {
 
   return (
     <section>
-      <div className="page-title d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
+            <div className="page-title d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
         <div>
           <h1>Reportes consolidados</h1>
           <div className="breadcrumb text-secondary">Análisis / Reportes</div>
         </div>
+        <BotonesDescarga colegio={colegioId} filtros={filtros} onNoAutorizado={onNoAutorizado} />
       </div>
 
       <BarraFiltros

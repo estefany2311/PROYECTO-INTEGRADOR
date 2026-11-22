@@ -155,6 +155,22 @@ const parametrosReporte = (valores) => {
 export const obtenerReporteColegios = (colegio = "", filtros = {}) =>
   pedir(`/reportes/colegios/${parametrosReporte({ colegio, ...filtros })}`);
 
+
+// US-50 · T-362: el Excel o el PDF del reporte, con los mismos filtros de la pantalla.
+// Un enlace <a> no puede mandar el token, por eso se pide con fetch y se devuelve como archivo (blob)
+export async function descargarReporte(formato, colegio = "", filtros = {}) {
+  let resp;
+  try {
+    resp = await fetch(`${API}/reportes/colegios/${formato}/${parametrosReporte({ colegio, ...filtros })}`, {
+      headers: sesion.token ? { Authorization: `Bearer ${sesion.token}` } : {},
+    });
+  } catch {
+    throw { estado: 0, mensaje: "No se pudo conectar con el servidor." };
+  }
+  if (!resp.ok) throw { estado: resp.status, datos: await resp.json().catch(() => null) };
+  return resp.blob();
+}
+
 export const obtenerReporteAulas = (colegioId, filtros = {}) =>
   pedir(`/reportes/colegios/${colegioId}/aulas/${parametrosReporte(filtros)}`);
 
