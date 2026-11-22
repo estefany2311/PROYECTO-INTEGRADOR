@@ -27,17 +27,29 @@ def _fecha(valor, nombre):
     except ValueError:
         raise ValidationError({nombre: f'La fecha {nombre} debe tener el formato AAAA-MM-DD.'})
 
-
 def filtros_reporte(request):
     """US-49 · T-354: filtros comunes de los reportes (?grado=&desde=&hasta=)."""
     grado = _entero(request.query_params.get('grado'), 'grado')
     if grado is not None and not 1 <= grado <= 6:
         raise ValidationError({'grado': 'El grado debe estar entre 1 y 6.'})
-    return {
-        'grado': grado,
-        'desde': _fecha(request.query_params.get('desde'), 'desde'),
-        'hasta': _fecha(request.query_params.get('hasta'), 'hasta'),
-    }
+    desde = _fecha(request.query_params.get('desde'), 'desde')
+    hasta = _fecha(request.query_params.get('hasta'), 'hasta')
+    validar_periodo(desde, hasta)
+    return {'grado': grado, 'desde': desde, 'hasta': hasta}
+
+
+def validar_periodo(desde, hasta):
+    """US-49 · T-355: el periodo debe tener sentido (sin fechas futuras y desde ≤ hasta)."""
+    hoy = date.today()
+    errores = {}
+    if desde is not None and desde > hoy:
+        errores['desde'] = 'La fecha desde no puede ser posterior a hoy.'
+    if hasta is not None and hasta > hoy:
+        errores['hasta'] = 'La fecha hasta no puede ser posterior a hoy.'
+    if desde is not None and hasta is not None and desde > hasta and 'hasta' not in errores:
+        errores['hasta'] = 'La fecha hasta no puede ser anterior a la fecha desde.'
+    if errores:
+        raise ValidationError(errores)
 
 
 class ReporteColegiosView(APIView):
