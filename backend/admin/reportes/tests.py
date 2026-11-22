@@ -2,6 +2,10 @@ from unittest import mock
 from datetime import date, timedelta
 from django.db import connection
 from io import StringIO
+from io import BytesIO
+
+import openpyxl
+from pypdf import PdfReader
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -13,6 +17,7 @@ from rest_framework.test import APITestCase
 from instituciones.models import AsignacionDocente, Colegio
 from usuarios.models import Rol, Usuario
 from . import consultas
+from . import exportar
 
 TABLAS = [
     'CREATE TABLE IF NOT EXISTS aula (id BIGINT PRIMARY KEY, nombre VARCHAR(100), docente_id BIGINT)',
@@ -613,3 +618,112 @@ class FiltrosReportesAPITests(APITestCase):
         resp = self.client.get(self.URL, {'grado': 7})
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(str(resp.data['grado']), 'El grado debe estar entre 1 y 6.')
+
+
+
+
+# =====================================================================
+# US-50 · Exportar el reporte a Excel y PDF (T-363)
+# =====================================================================
+
+class DescribirFiltrosTests(TestCase):
+    """T-360: texto de los filtros del encabezado."""
+
+    def test_sin_filtros(self):
+        self.assertEqual(exportar.describir_filtros(), 'Todos los colegios · Todos los grados · Todo el periodo')
+
+    def test_con_todos_los_filtros(self):
+        texto = exportar.describir_filtros(
+            {'colegio': 'IE Ccollpa', 'grado': 2, 'desde': date(2026, 9, 1), 'hasta': date(2026, 11, 21)})
+        self.assertEqual(texto, 'IE Ccollpa · 2.° grado · del 01/09/2026 al 21/11/2026')
+
+    def test_solo_una_fecha(self):
+        self.assertTrue(exportar.describir_filtros({'desde': date(2026, 9, 1)}).endswith('desde el 01/09/2026'))
+        self.assertTrue(exportar.describir_filtros({'hasta': date(2026, 10, 31)}).endswith('hasta el 31/10/2026'))
+
+
+class ExportarReporteAPITests(APITestCase):
+    """T-358 a T-361: los archivos se descargan, tienen el encabezado y respetan los filtros."""
+    EXCEL = '/api/reportes/colegios/excel/'
+    PDF = '/api/reportes/colegios/pdf/'
+
+    def setUp(self):
+        ConsultasAgregacionTests.setUp(self)   # mismos datos de T-264 (IE Ccollpa y IE Huaccana)
+        rol_admin, _ = Rol.objects.get_or_create(nombre='ADMIN')
+        self.admin = Usuario.objects.create_user(
+            username='admin', email='admin@test.pe', password='clave-segura-1', rol=rol_admin)
+        self.client.force_authenticate(self.admin)
+
+    def hoja(self, resp):
+        """Abre el Excel de la respuesta y devuelve sus filas como listas."""
+        libro = openpyxl.load_workbook(BytesIO(resp.content))
+        return [list(fila) for fila in libro.active.iter_rows(values_only=True)]
+
+    def texto_pdf(self, resp):
+        return '\n'.join(pagina.extract_text() for pagina in PdfReader(BytesIO(resp.content)).pages)
+
+    # --- T-358: Excel ---
+    def test_descarga_el_excel_con_su_nombre(self):
+        resp = self.client.get(self.EXCEL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp['Content-Type'],
+                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        self.assertIn(f'reporte-colegios-{date.today():%Y-%m-%d}.xlsx', resp['Content-Disposition'])
+
+    def test_el_excel_tiene_encabezado_titulos_y_una_fila_por_colegio(self):
+        filas = self.hoja(self.client.get(self.EXCEL))
+        self.assertEqual(filas[0][0], 'Reporte de rendimiento por colegio · Yalliq')
+        self.assertTrue(filas[1][0].startswith('Generado el '))
+        self.assertEqual(filas[2][0], 'Filtros: Todos los colegios · Todos los grados · Todo el periodo')
+        self.assertEqual(filas[4][:3], ['Código modular', 'Colegio', 'Región'])
+        self.assertEqual(filas[5], ['1111111', 'IE Ccollpa', 'Cusco', 2, 4, 70, 70, 40, 62.5, 1, 1, 0, 0])
+        self.assertEqual(len(filas), 7)                       # 4 de encabezado + títulos + 2 colegios
+
+    def test_promedio_sin_datos_queda_vacio_en_el_excel(self):
+        huaccana = self.hoja(self.client.get(self.EXCEL))[6]
+        self.assertEqual(huaccana[1], 'IE Huaccana')
+        self.assertEqual((huaccana[6], huaccana[7]), (None, None))   # escritura y oralidad sin notas
+
+    # --- T-359: PDF ---
+    def test_descarga_el_pdf(self):
+        resp = self.client.get(self.PDF)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp['Content-Type'], 'application/pdf')
+        self.assertTrue(resp.content.startswith(b'%PDF'))
+        self.assertIn(f'reporte-colegios-{date.today():%Y-%m-%d}.pdf', resp['Content-Disposition'])
+
+    def test_el_pdf_tiene_el_encabezado_y_los_colegios(self):
+        texto = self.texto_pdf(self.client.get(self.PDF))
+        self.assertIn('Reporte de rendimiento por colegio', texto)
+        self.assertIn('Generado el', texto)
+        self.assertIn('Todos los colegios', texto)
+        self.assertIn('IE Ccollpa', texto)
+        self.assertIn('IE Huaccana', texto)
+
+    # --- T-361: respeta los filtros ---
+    def test_el_excel_respeta_colegio_y_grado(self):
+        filas = self.hoja(self.client.get(self.EXCEL, {'colegio': self.colegio_a.id, 'grado': 2}))
+        self.assertEqual(filas[2][0], 'Filtros: IE Ccollpa · 2.° grado · Todo el periodo')
+        self.assertEqual([f[1] for f in filas[5:]], ['IE Ccollpa'])   # solo el colegio elegido
+
+    def test_el_pdf_respeta_el_colegio(self):
+        texto = self.texto_pdf(self.client.get(self.PDF, {'colegio': self.colegio_b.id}))
+        self.assertIn('IE Huaccana', texto)
+        self.assertNotIn('IE Ccollpa', texto)
+
+    def test_el_periodo_aparece_en_el_encabezado(self):
+        filas = self.hoja(self.client.get(self.EXCEL, {'desde': '2026-09-01', 'hasta': '2026-10-31'}))
+        self.assertTrue(filas[2][0].endswith('del 01/09/2026 al 31/10/2026'))
+
+    def test_fechas_al_reves_devuelven_400(self):
+        resp = self.client.get(self.PDF, {'desde': '2026-11-30', 'hasta': '2026-09-01'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_colegio_que_no_existe_devuelve_404(self):
+        self.assertEqual(self.client.get(self.EXCEL, {'colegio': 9999}).status_code, status.HTTP_404_NOT_FOUND)
+
+    # --- Permisos ---
+    def test_docente_no_puede_exportar(self):
+        self.client.force_authenticate(Usuario.objects.get(username='doc_a'))
+        self.assertEqual(self.client.get(self.EXCEL).status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(self.client.get(self.PDF).status_code, status.HTTP_403_FORBIDDEN)
