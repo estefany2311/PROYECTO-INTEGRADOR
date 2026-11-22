@@ -1,0 +1,575 @@
+{
+  "info": {
+    "name": "Docente - Sprint 3",
+    "description": "Colección del módulo Docente para el Sprint 3. Cubre aulas, alumnos, catálogo, asignaciones, grupos, dashboard, detalle del alumno, evidencias y el mapa de la tablet. Ajusta las variables (aulaId, estudianteId, lecturaId, grupoId, avatarId, tokenEstudiante) con datos reales antes de ejecutarla. Las rutas /api/docente usan el header X-Docente-Id; el mapa usa Authorization: Bearer <token>.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081" },
+    { "key": "docenteId", "value": "1" },
+    { "key": "otroDocenteId", "value": "2" },
+    { "key": "aulaId", "value": "5" },
+    { "key": "estudianteId", "value": "1" },
+    { "key": "lecturaId", "value": "5" },
+    { "key": "grupoId", "value": "1" },
+    { "key": "avatarId", "value": "1" },
+    { "key": "tokenEstudiante", "value": "<token de la tablet>" }
+  ],
+  "item": [
+    {
+      "name": "Aulas y grados",
+      "item": [
+        {
+          "name": "Listar grados",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('6 grados', () => pm.expect(pm.response.json().length).to.eql(6));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/docente/grados" }
+          }
+        },
+        {
+          "name": "Listar aulas del docente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('es una lista', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Docente-Id", "value": "{{docenteId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas" }
+          }
+        },
+        {
+          "name": "Registrar aula",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.test('devuelve el aula creada', () => pm.expect(pm.response.json()).to.have.property('id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Docente-Id", "value": "{{docenteId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Aula T-307\", \"gradoIds\": [1, 2]}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Alumnos",
+      "item": [
+        {
+          "name": "Listar alumnos del aula",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('es una lista', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Docente-Id", "value": "{{docenteId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes" }
+          }
+        },
+        {
+          "name": "Listar solo activos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('todos activos', () => pm.expect(pm.response.json().every(e => e.activo)).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Docente-Id", "value": "{{docenteId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes?soloActivos=true" }
+          }
+        },
+        {
+          "name": "Registrar alumno",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.test('devuelve el alumno', () => pm.expect(pm.response.json()).to.have.property('id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Docente-Id", "value": "{{docenteId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombres\": \"Alumno\", \"apellidos\": \"T-307\", \"gradoId\": 1}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes" }
+          }
+        },
+        {
+          "name": "Actualizar alumno",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "X-Docente-Id", "value": "{{docenteId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombres\": \"Alumno\", \"apellidos\": \"T-307 actualizado\", \"gradoId\": 1}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes/{{estudianteId}}" }
+          }
+        },
+        {
+          "name": "Desactivar alumno",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('queda inactivo', () => pm.expect(pm.response.json().activo).to.be.false);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "X-Docente-Id", "value": "{{docenteId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"activo\": false}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes/{{estudianteId}}/estado" }
+          }
+        },
+        {
+          "name": "Asignar avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "X-Docente-Id", "value": "{{docenteId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"avatarId\": {{avatarId}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes/{{estudianteId}}/avatar" }
+          }
+        },
+        {
+          "name": "Generar PIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('devuelve el PIN', () => pm.expect(pm.response.json()).to.have.property('pin'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-Docente-Id", "value": "{{docenteId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes/{{estudianteId}}/pin" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catálogo",
+      "item": [
+        {
+          "name": "Listar lecturas del aula",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('cada lectura trae fuente y urlRecurso', () => {",
+                  "  const lecturas = pm.response.json();",
+                  "  pm.expect(lecturas).to.be.an('array');",
+                  "  lecturas.forEach(l => {",
+                  "    pm.expect(l).to.have.property('fuente');",
+                  "    pm.expect(l).to.have.property('urlRecurso');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Docente-Id", "value": "{{docenteId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/lecturas" }
+          }
+        },
+        {
+          "name": "Filtrar lecturas por grado y dificultad",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Docente-Id", "value": "{{docenteId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/lecturas?gradoId=1&dificultad=basica" }
+          }
+        },
+        {
+          "name": "Lecturas oficiales del Minedu",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('las oficiales traen enlace', () => {",
+                  "  const oficiales = pm.response.json().filter(l => (l.fuente || '').toLowerCase() === 'oficial');",
+                  "  oficiales.forEach(l => pm.expect((l.urlRecurso || '').trim()).to.not.eql(''));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Docente-Id", "value": "{{docenteId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/lecturas?tipoReto=lectura" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Asignaciones y grupos",
+      "item": [
+        {
+          "name": "Asignar lectura a un alumno",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.test('devuelve la asignación', () => pm.expect(pm.response.json()).to.have.property('id'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Docente-Id", "value": "{{docenteId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"lecturaId\": {{lecturaId}}, \"estudianteId\": {{estudianteId}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/asignaciones" }
+          }
+        },
+        {
+          "name": "Listar grupos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Docente-Id", "value": "{{docenteId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/grupos" }
+          }
+        },
+        {
+          "name": "Crear grupo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('201', () => pm.response.to.have.status(201));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Docente-Id", "value": "{{docenteId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Grupo T-307\", \"estudianteIds\": [{{estudianteId}}]}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/grupos" }
+          }
+        },
+        {
+          "name": "Asignar lectura al grupo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('201', () => pm.response.to.have.status(201));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Docente-Id", "value": "{{docenteId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"lecturaId\": {{lecturaId}}}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/grupos/{{grupoId}}/asignaciones" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard, detalle y evidencias",
+      "item": [
+        {
+          "name": "Dashboard del aula",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('trae resumen y estudiantes', () => {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.have.property('resumen');",
+                  "  pm.expect(d).to.have.property('estudiantes');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Docente-Id", "value": "{{docenteId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/dashboard" }
+          }
+        },
+        {
+          "name": "Dashboard con filtros",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Docente-Id", "value": "{{docenteId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/dashboard?gradoId=1&competencia=lectura" }
+          }
+        },
+        {
+          "name": "Detalle del alumno",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('trae niveles y competencias', () => {",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(d).to.have.property('niveles');",
+                  "  pm.expect(d).to.have.property('puntajesPorCompetencia');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Docente-Id", "value": "{{docenteId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/estudiantes/{{estudianteId}}/detalle" }
+          }
+        },
+        {
+          "name": "Evidencias pendientes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('es una lista', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Docente-Id", "value": "{{docenteId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/evidencias" }
+          }
+        },
+        {
+          "name": "Evidencias de audio",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('solo audio', () => pm.expect(pm.response.json().every(e => e.tipo === 'audio')).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Docente-Id", "value": "{{docenteId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/docente/aulas/{{aulaId}}/evidencias?tipo=audio" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mapa del alumno (tablet)",
+      "item": [
+        {
+          "name": "Mapa con puntos y estrellas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('cabecera con puntos y estrellas', () => {",
+                  "  const mapa = pm.response.json();",
+                  "  pm.expect(mapa).to.have.property('puntos');",
+                  "  pm.expect(mapa).to.have.property('estrellas');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenEstudiante}}" }],
+            "url": { "raw": "{{baseUrl}}/api/estudiante/mapa" }
+          }
+        }
+      ]
+    }
+  ]
+}

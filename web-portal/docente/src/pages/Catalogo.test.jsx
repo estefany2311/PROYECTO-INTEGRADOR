@@ -22,6 +22,8 @@ const ZORRO = {
   gradoId: 1,
   gradoNombre: "1.º",
   activo: true,
+  fuente: "manual",
+  urlRecurso: "",
 };
 
 const CONDOR = {
@@ -33,6 +35,22 @@ const CONDOR = {
   gradoId: 2,
   gradoNombre: "2.º",
   activo: true,
+  fuente: "manual",
+  urlRecurso: "",
+};
+
+// Catálogo: lectura importada del Ministerio de Educación
+const OFICIAL = {
+  id: 7,
+  titulo: "Cuento oficial del Minedu",
+  texto: "Había una vez un río que cantaba.",
+  tipoReto: "lectura",
+  dificultad: "basica",
+  gradoId: 1,
+  gradoNombre: "1.º",
+  activo: true,
+  fuente: "oficial",
+  urlRecurso: "https://repositorio.minedu.gob.pe/cuento.pdf",
 };
 
 const mostrar = () =>
@@ -161,5 +179,54 @@ describe("Pantalla de catálogo (T-190)", () => {
     expect(
       await screen.findByText(/destino: El zorro y el cuervo en 10/)
     ).toBeInTheDocument();
+  });
+
+  // Catálogo: las lecturas oficiales llevan etiqueta y enlace al libro del Minedu
+  it("muestra la etiqueta Oficial y el enlace al recurso en la tarjeta", async () => {
+    api.listarLecturas.mockResolvedValue([OFICIAL]);
+    mostrar();
+    await screen.findByText("Cuento oficial del Minedu");
+
+    const tarjeta = screen.getByText("Cuento oficial del Minedu").closest("article");
+    expect(within(tarjeta).getByText("Oficial")).toBeInTheDocument();
+    expect(
+      within(tarjeta).getByRole("link", { name: /ver recurso oficial de cuento oficial/i })
+    ).toHaveAttribute("href", OFICIAL.urlRecurso);
+  });
+
+  it("no muestra la etiqueta ni el enlace en una lectura manual", async () => {
+    api.listarLecturas.mockResolvedValue([ZORRO]);
+    mostrar();
+    await screen.findByText("El zorro y el cuervo");
+
+    const tarjeta = screen.getByText("El zorro y el cuervo").closest("article");
+    expect(within(tarjeta).queryByText("Oficial")).not.toBeInTheDocument();
+    expect(within(tarjeta).queryByRole("link", { name: /ver recurso/i })).not.toBeInTheDocument();
+  });
+
+  it("muestra la etiqueta y el enlace también en el modal", async () => {
+    api.listarLecturas.mockResolvedValue([OFICIAL]);
+    mostrar();
+    await screen.findByText("Cuento oficial del Minedu");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /ver lectura cuento oficial del minedu/i })
+    );
+
+    const dialogo = screen.getByRole("dialog");
+    expect(within(dialogo).getByText("Oficial")).toBeInTheDocument();
+    expect(
+      within(dialogo).getByRole("link", { name: /ver recurso oficial de cuento oficial/i })
+    ).toHaveAttribute("href", OFICIAL.urlRecurso);
+  });
+
+  it("una lectura oficial sin enlace muestra la etiqueta pero no el botón", async () => {
+    api.listarLecturas.mockResolvedValue([{ ...OFICIAL, urlRecurso: "" }]);
+    mostrar();
+    await screen.findByText("Cuento oficial del Minedu");
+
+    const tarjeta = screen.getByText("Cuento oficial del Minedu").closest("article");
+    expect(within(tarjeta).getByText("Oficial")).toBeInTheDocument();
+    expect(within(tarjeta).queryByRole("link", { name: /ver recurso/i })).not.toBeInTheDocument();
   });
 });

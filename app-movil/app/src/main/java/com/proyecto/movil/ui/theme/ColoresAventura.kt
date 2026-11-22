@@ -14,5 +14,5 @@ object ColoresAventura {
     val Rojo = Color(0xFFE63946)         // errores
     val TextoOscuro = Color(0xFF1D3557)
 
-    val pasto = Color(0xFFDDF5DC)
+    val pasto = Color(0xFF87EA82)
 }

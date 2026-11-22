@@ -11,7 +11,7 @@ class MapaJsonTest {
     private val json = """
         {
           "estudianteId": 1, "nombres": "Ana", "apellidos": "Quispe",
-          "totalNiveles": 3, "completados": 1, "puntos": 10,
+          "totalNiveles": 3, "completados": 1, "puntos": 10, "estrellas": 6,
           "niveles": [
             {"id": 1, "orden": 1, "nombre": "Primeros pasos", "tipoReto": "lectura",
              "descripcion": "Lee palabras y oraciones cortas", "estado": "completado", "puntos": 10},
@@ -32,6 +32,16 @@ class MapaJsonTest {
         assertEquals(3, mapa.totalNiveles)
         assertEquals(1, mapa.completados)
         assertEquals(10, mapa.puntos)
+        assertEquals(6, mapa.estrellas)
+    }
+
+    // T-304: si el backend todavía no manda "estrellas", la app no falla y muestra 0
+    @Test
+    fun `sin el campo estrellas queda en cero`() {
+        val sinEstrellas = Gson().fromJson(json.replace(""""estrellas": 6,""", ""), MapaRespuesta::class.java)
+
+        assertEquals(0, sinEstrellas.estrellas)
+        assertEquals(10, sinEstrellas.puntos)
     }
 
     @Test

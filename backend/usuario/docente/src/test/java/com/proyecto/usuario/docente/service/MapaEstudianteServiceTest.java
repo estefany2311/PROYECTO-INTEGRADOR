@@ -6,10 +6,12 @@ import com.proyecto.usuario.docente.exception.ReglaNegocioException;
 import com.proyecto.usuario.docente.model.Estudiante;
 import com.proyecto.usuario.docente.model.Grado;
 import com.proyecto.usuario.docente.model.Nivel;
+import com.proyecto.usuario.docente.model.PuntajeEstudiante;
 import com.proyecto.usuario.docente.model.Progreso;
 import com.proyecto.usuario.docente.repository.EstudianteRepository;
 import com.proyecto.usuario.docente.repository.NivelRepository;
 import com.proyecto.usuario.docente.repository.ProgresoRepository;
+import com.proyecto.usuario.docente.repository.PuntajeEstudianteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +25,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
 // T-197: el mapa arma los niveles en orden y decide el estado de cada uno
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +34,7 @@ class MapaEstudianteServiceTest {
     @Mock EstudianteRepository estudianteRepository;
     @Mock NivelRepository nivelRepository;
     @Mock ProgresoRepository progresoRepository;
+    @Mock PuntajeEstudianteRepository puntajeEstudianteRepository;
 
     private MapaEstudianteService service;
     private Estudiante alumno;
@@ -40,7 +44,8 @@ class MapaEstudianteServiceTest {
 
     @BeforeEach
     void preparar() {
-        service = new MapaEstudianteService(estudianteRepository, nivelRepository, progresoRepository);
+        service = new MapaEstudianteService(estudianteRepository, nivelRepository,
+                progresoRepository, puntajeEstudianteRepository);
 
         alumno = new Estudiante();
         alumno.setNombres("Ana");
@@ -73,6 +78,7 @@ class MapaEstudianteServiceTest {
         assertEquals(Progreso.BLOQUEADO, nivelDelMapa(mapa, 2).estado());
         assertEquals(0, mapa.completados());
         assertEquals(0, mapa.puntos());
+        assertEquals(0, mapa.estrellas());
     }
 
     @Test
@@ -109,8 +115,42 @@ class MapaEstudianteServiceTest {
 
         assertEquals(2, mapa.completados());
         assertEquals(25, mapa.puntos());
+        assertEquals(0, mapa.estrellas());
         assertEquals(Progreso.DESBLOQUEADO, nivelDelMapa(mapa, 2).estado());
         assertEquals(10, nivelDelMapa(mapa, 0).puntos());
+    }
+
+    @Test
+    void usaElAcumuladoDePuntosYEstrellasCuandoExiste() {
+        lenient().when(progresoRepository.findByEstudianteId(1L)).thenReturn(List.of(
+                new Progreso(alumno, nivel1, Progreso.COMPLETADO, 10),
+                new Progreso(alumno, nivel2, Progreso.COMPLETADO, 15)));
+
+        PuntajeEstudiante acumulado = PuntajeEstudiante.inicial(alumno);
+        acumulado.setPuntos(350);
+        acumulado.setEstrellas(6);
+        when(puntajeEstudianteRepository.findByEstudianteId(1L))
+                .thenReturn(Optional.of(acumulado));
+
+        MapaResponse mapa = service.obtenerMapa(1L);
+
+        // el acumulado de la US-09 manda sobre la suma del progreso
+        assertEquals(350, mapa.puntos());
+        assertEquals(6, mapa.estrellas());
+        assertEquals(2, mapa.completados());
+    }
+
+    @Test
+    void sinAcumulado_devuelveLosPuntosDelProgresoYCeroEstrellas() {
+        lenient().when(progresoRepository.findByEstudianteId(1L)).thenReturn(List.of(
+                new Progreso(alumno, nivel1, Progreso.COMPLETADO, 10)));
+        when(puntajeEstudianteRepository.findByEstudianteId(1L))
+                .thenReturn(Optional.empty());
+
+        MapaResponse mapa = service.obtenerMapa(1L);
+
+        assertEquals(10, mapa.puntos());
+        assertEquals(0, mapa.estrellas());
     }
 
     @Test

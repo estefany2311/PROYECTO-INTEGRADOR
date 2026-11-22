@@ -1,9 +1,11 @@
 package com.proyecto.usuario.estudiante.service;
 
+import com.proyecto.usuario.estudiante.config.ReglasReto;
 import com.proyecto.usuario.estudiante.dto.NivelDetalleResponse;
 import com.proyecto.usuario.estudiante.exception.NivelBloqueadoException;
 import com.proyecto.usuario.estudiante.exception.NivelNoEncontradoException;
 import com.proyecto.usuario.estudiante.model.Nivel;
+import com.proyecto.usuario.estudiante.repository.IntentoRetoRepository;
 import com.proyecto.usuario.estudiante.repository.NivelRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,15 +13,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/**
- * T-243 (US-07): detalle del nivel y la regla "un nivel bloqueado no se abre".
- * Niveles de prueba como la semilla V7: 1 "Primeros pasos" (lectura), 2 "Palabras nuevas" (escritura).
- */
 @ExtendWith(MockitoExtension.class)
 class NivelServiceTest {
 
@@ -30,11 +31,15 @@ class NivelServiceTest {
     @Mock
     NivelRepository niveles;
 
+    @Mock
+    IntentoRetoRepository intentos;
+
     NivelService service;
 
     @BeforeEach
     void setUp() {
-        service = new NivelService(niveles);
+        // T-198: el servicio ahora recibe un reloj (para la fecha del progreso)
+        service = new NivelService(niveles, intentos, new ReglasReto(1), Clock.fixed(Instant.parse("2026-11-02T15:00:00Z"), ZoneId.of("America/Lima")));
     }
 
     @Test

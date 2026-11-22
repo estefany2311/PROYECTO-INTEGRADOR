@@ -12,13 +12,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/*
- * Todas las respuestas de error tienen la forma {"mensaje": "..."}.
- * T-233 · Errores del PIN que lee la tablet (SesionRepository de la app):
- *   401 {"mensaje": "El PIN no es correcto", "intentosRestantes": 3}
- *   423 {"mensaje": "Demasiados intentos. Espera un momento", "segundosRestantes": 120}
- *       + cabecera Retry-After con los mismos segundos (estándar HTTP)
- */
 @RestControllerAdvice
 public class ManejadorErrores {
 
@@ -73,6 +66,18 @@ public class ManejadorErrores {
         return respuesta(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
+    // T-218 · 404: el nivel está abierto pero todavía no hay lectura para el grado del alumno
+    @ExceptionHandler(LecturaNoDisponibleException.class)
+    public ResponseEntity<Map<String, Object>> lecturaNoDisponible(LecturaNoDisponibleException e) {
+        return respuesta(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    // T-320 · 404: el nivel está abierto pero no es de escritura o todavía no tiene consigna
+    @ExceptionHandler(ConsignaNoDisponibleException.class)
+    public ResponseEntity<Map<String, Object>> consignaNoDisponible(ConsignaNoDisponibleException e) {
+        return respuesta(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> validacion(MethodArgumentNotValidException e) {
         String mensaje = e.getBindingResult().getFieldErrors().stream()
@@ -102,4 +107,4 @@ public class ManejadorErrores {
     static ResponseEntity<Map<String, Object>> respuesta(HttpStatus estado, String mensaje) {
         return ResponseEntity.status(estado).body(cuerpo(mensaje));
     }
-}
+}
