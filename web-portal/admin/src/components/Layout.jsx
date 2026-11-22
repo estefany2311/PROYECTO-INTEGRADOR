@@ -34,10 +34,13 @@ const SECCIONES = [
       { id: "desbloqueo", modulo: "configuracion", icono: "bi-unlock", texto: "Desbloqueo de niveles", disponible: true },
     ],
   },
-  {
+{
     titulo: "Análisis",
-    enlaces: [{ id: "reportes", icono: "bi-bar-chart", texto: "Reportes", disponible: true }],
-  },
+      enlaces: [
+      { id: "reportes", icono: "bi-bar-chart", texto: "Reportes", disponible: true },
+      { id: "mapacalor", modulo: "reportes", icono: "bi-grid-3x3-gap", texto: "Mapa de calor", disponible: true },
+    ],
+   }  
 ];
 
 const iniciales = (texto) =>

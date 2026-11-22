@@ -16,6 +16,7 @@ import ConfiguracionOrtografia from "./pages/ConfiguracionOrtografia";
 import ReglasPuntuacion from "./pages/ReglasPuntuacion";
 import ReglasDesbloqueo from "./pages/ReglasDesbloqueo";
 import Reportes from "./pages/Reportes";
+import MapaCalor from "./pages/MapaCalor";
 
 export default function App() {
   const [autenticado, setAutenticado] = useState(Boolean(sesion.token));
@@ -81,7 +82,7 @@ export default function App() {
 
   // Inicio siempre está disponible; las demás páginas requieren el permiso "<modulo>.ver"
     // Pestañas que usan el permiso de otro módulo
-  const MODULO_DE_PAGINA = { ortografia: "configuracion", puntuacion: "configuracion", desbloqueo: "configuracion" };
+  const MODULO_DE_PAGINA = { ortografia: "configuracion", puntuacion: "configuracion", desbloqueo: "configuracion", mapacalor: "reportes" };
   const paginaActual =
     pagina === "dashboard" || puede(`${MODULO_DE_PAGINA[pagina] ?? pagina}.ver`) ? pagina : "dashboard";
  
@@ -129,6 +130,8 @@ export default function App() {
       {paginaActual === "desbloqueo" && <ReglasDesbloqueo onNoAutorizado={sesionExpirada} puede={puede} />}
 
       {paginaActual === "reportes" && <Reportes onNoAutorizado={sesionExpirada} />}
+
+      {paginaActual === "mapacalor" && <MapaCalor onNoAutorizado={sesionExpirada} />}
 
       {paginaActual === "usuarios" && (
         <Usuarios onNoAutorizado={sesionExpirada} puede={puede} usuarioActualId={perfil.id} />

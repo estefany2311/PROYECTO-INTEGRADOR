@@ -1,0 +1,56 @@
+/* =====================================================================
+   PESTAÑA: ANÁLISIS · MAPA DE CALOR (US-48)
+   Todo lo que cambies aquí afecta SOLO a esta pestaña.
+   ===================================================================== */
+
+/* 1) PANEL DE COLORES: cambia el valor y guarda (Ctrl + S) */
+.main.pagina-mapacalor {
+  --fondo: #DCECE8;                    /* fondo de la pestaña */
+  --titulo: #22303C;                   /* color del título grande */
+  --titulo-tamano: 22px;               /* tamaño del título grande */
+  --subtitulo: #5E6B73;                /* texto debajo del título (ruta) */
+  --tarjeta-fondo: #F6FBFA;            /* fondo de las tarjetas */
+  --tarjeta-borde: #C9DFDA;            /* borde de las tarjetas */
+  --tarjeta-radio: 12px;               /* qué tan redondas son las esquinas */
+  --boton: #0A8378;                    /* botones principales */
+  --boton-hover: #08665E;              /* botones al pasar el mouse */
+  --nota: #5E6B73;                     /* textos pequeños grises */
+  /* Colores de las celdas (semáforo) */
+  --calor-verde: #BFE5CF;   --calor-verde-texto: #155B33;
+  --calor-amarillo: #F9DDB4; --calor-amarillo-texto: #7A4B00;
+  --calor-rojo: #F4C7C3;    --calor-rojo-texto: #7A1C14;
+  --calor-sin-datos: #E6ECEB; --calor-sin-datos-texto: #5E6B73;
+}
+
+/* 2) REGLAS SOLO DE ESTA PESTAÑA (empieza siempre con .pagina-mapacalor) */
+.pagina-mapacalor .filtros-calor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--tarjeta-borde);
+}
+.pagina-mapacalor .filtros-calor .form-select { min-width: 170px; }
+
+.pagina-mapacalor .matriz-calor { width: 100%; border-collapse: separate; border-spacing: 6px; }
+.pagina-mapacalor .matriz-calor thead th {
+  font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--nota); text-align: center; padding: 4px 0;
+}
+.pagina-mapacalor .matriz-calor .col-zona { text-align: left; min-width: 190px; font-weight: normal; }
+
+.pagina-mapacalor .celda-calor {
+  width: 100%; height: 60px; border: 0; border-radius: 10px;
+  font-size: 19px; font-weight: 900; cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+}
+.pagina-mapacalor .celda-calor:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0, 0, 0, .12); }
+.pagina-mapacalor .celda-calor.elegida { outline: 3px solid var(--titulo); outline-offset: 2px; }
+
+.pagina-mapacalor .verde { background: var(--calor-verde); color: var(--calor-verde-texto); }
+.pagina-mapacalor .amarillo { background: var(--calor-amarillo); color: var(--calor-amarillo-texto); }
+.pagina-mapacalor .rojo { background: var(--calor-rojo); color: var(--calor-rojo-texto); }
+.pagina-mapacalor .sin_evaluar { background: var(--calor-sin-datos); color: var(--calor-sin-datos-texto); }
+.pagina-mapacalor .etiqueta-calor {
+  display: inline-block; font-size: 12px; font-weight: 800; border-radius: 6px; padding: 3px 8px; margin-left: 6px;
+}

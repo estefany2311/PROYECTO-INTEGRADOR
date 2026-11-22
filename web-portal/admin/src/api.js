@@ -150,6 +150,12 @@ export const obtenerReporteColegios = (colegio = "") =>
 
 export const obtenerReporteAulas = (colegioId) => pedir(`/reportes/colegios/${colegioId}/aulas/`);
 
+// US-48 · Mapa de calor (T-350)
+export const obtenerMapaCalor = ({ agrupar = "region", grado = "" } = {}) => {
+  const params = new URLSearchParams({ agrupar });
+  if (grado) params.set("grado", grado);
+  return pedir(`/reportes/mapa-calor/?${params}`);
+};
 
 // US-39 · Libros oficiales de la Biblioteca Escolar Digital (T-443)
 export const listarRecursosOficiales = () => pedir("/recursos-oficiales/");
