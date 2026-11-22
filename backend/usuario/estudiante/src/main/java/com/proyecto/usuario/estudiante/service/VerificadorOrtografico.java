@@ -28,7 +28,8 @@ public class VerificadorOrtografico {
     private static final String VOCALES = "aeiou";
     private static final String CON_TILDE = "áéíóú";
 
-    // US-20 (T-364): sugerencias para corregir una palabra
+    // US-20 (T-364/T-365): sugerencias para corregir una palabra
+    static final int MAX_SUGERENCIAS = 3;
     private static final String LETRAS = "abcdefghijklmnñopqrstuvwxyz";
     private static final int LARGO_MAXIMO_DISTANCIA_2 = 12;   // con palabras más largas solo se busca a distancia 1
     // Letras que los niños confunden porque suenan igual
@@ -81,7 +82,7 @@ public class VerificadorOrtografico {
         return errores;
     }
 
-    // US-20 · T-364: palabras parecidas que existen, para sugerirlas.
+    // US-20 · T-364: hasta 3 palabras parecidas que existen, de la más parecida a la menos parecida (T-365).
     // Busca a distancia de edición 1 y 2 (letra cambiada, de más, de menos o dos letras cambiadas
     // de lugar). Las tildes no cuentan al buscar: "aci" encuentra "así".
     List<String> sugerencias(String palabra, Set<String> permitidas) {
@@ -94,7 +95,7 @@ public class VerificadorOrtografico {
         if (conEnie != null) encontradas.put(conEnie, -1.0);
 
         Set<String> distancia1 = ediciones(base);
-        for (String opcion : distancia1) agregarSiExiste(opcion, 1, minuscula, permitidas, encontradas);
+        for (String opcion : distancia1) agregarSiExiste(opcion, base, minuscula, permitidas, encontradas);
 
         // A distancia 2, cuando uno de los dos cambios es de letras que suenan igual:
         // "aser" → "hacer", "boi" → "voy", "llendo" → "yendo" (lo que el niño quiso escribir)
@@ -103,32 +104,37 @@ public class VerificadorOrtografico {
             Set<String> parecidas = edicionesQueSuenanIgual(base);
             for (String opcion : distancia1) {
                 for (String opcion2 : edicionesQueSuenanIgual(opcion)) {
-                    if (revisadas.add(opcion2)) agregarSiExiste(opcion2, 2, minuscula, permitidas, encontradas);
+                    if (revisadas.add(opcion2)) agregarSiExiste(opcion2, base, minuscula, permitidas, encontradas);
                 }
             }
             for (String opcion : parecidas) {
                 for (String opcion2 : ediciones(opcion)) {
-                    if (revisadas.add(opcion2)) agregarSiExiste(opcion2, 2, minuscula, permitidas, encontradas);
+                    if (revisadas.add(opcion2)) agregarSiExiste(opcion2, base, minuscula, permitidas, encontradas);
                 }
             }
         }
 
-        // Primero las de menos cambios; a igual cambios, primero las palabras del grado
-        // (diccionario_grado y las permitidas del admin)
+        // T-365: de la más parecida a la menos parecida; a igual parecido, primero las palabras del grado
+        // (diccionario_grado y las permitidas del admin), luego las que empiezan con la misma letra
+        char primera = base.isEmpty() ? ' ' : base.charAt(0);
         return encontradas.entrySet().stream()
                 .sorted(Comparator.<Map.Entry<String, Double>>comparingDouble(Map.Entry::getValue)
                         .thenComparing(e -> permitidas.contains(e.getKey()) ? 0 : 1)
+                        .thenComparing(e -> sinTildes(e.getKey()).charAt(0) == primera ? 0 : 1)
                         .thenComparing(Map.Entry::getKey))
+                .limit(MAX_SUGERENCIAS)
                 .map(e -> comoLaOriginal(e.getKey(), palabra))
                 .toList();
     }
 
-    // Si la opción (sin tildes) existe tal cual o con una tilde o diéresis, se guarda con sus cambios
-    private void agregarSiExiste(String opcion, int cambios, String original, Set<String> permitidas,
+    // Si la opción (sin tildes) existe tal cual o con una tilde o diéresis, se guarda con su puntaje
+    private void agregarSiExiste(String opcion, String base, String original, Set<String> permitidas,
                                  Map<String, Double> encontradas) {
         for (String real : conTildesPosibles(opcion)) {
             if (!real.equals(original) && !encontradas.containsKey(real) && existe(real, permitidas)) {
-                encontradas.put(real, cambios + (real.equals(opcion) ? 0 : 0.1));
+                // Si suenan igual ("aser" y "hacer") es casi seguro la que quiso escribir
+                double puntaje = fonetica(base).equals(fonetica(opcion)) ? 0.3 : parecido(base, opcion);
+                encontradas.put(real, puntaje + (real.equals(opcion) ? 0 : 0.1));
             }
         }
     }
@@ -182,6 +188,62 @@ public class VerificadorOrtografico {
         }
         resultado.remove(palabra);
         return resultado;
+    }
+
+    // Cómo suena la palabra (sin tildes): "hacer" y "aser" → "aser"; "voy" y "boi" → "boi"; "yendo" y "llendo" → "yendo"
+    static String fonetica(String palabra) {
+        String s = palabra
+                .replace("ch", "1")                     // la "ch" no se toca
+                .replace("ll", "y")
+                .replace("qu", "k")
+                .replaceAll("gu([ei])", "2$1")          // "gue", "gui": g fuerte
+                .replaceAll("g([ei])", "j$1")           // "ge", "gi" suenan como "je", "ji"
+                .replace("2", "g")
+                .replaceAll("c([ei])", "s$1")           // "ce", "ci" suenan como "se", "si"
+                .replace('c', 'k')
+                .replace('z', 's')
+                .replace('v', 'b')
+                .replace("h", "")                       // la "h" no suena
+                .replaceAll("y(?![aeiou])", "i")        // "voy" → "boi"
+                .replace("1", "ch");
+        return s;
+    }
+
+    // T-365: qué tan parecidas son (distancia de edición con pesos): cambiar letras que suenan igual
+    // (b/v, s/c/z, y/ll...) o poner o quitar una "h" cuesta la mitad. Menos es más parecido.
+    static double parecido(String a, String b) {
+        double[][] d = new double[a.length() + 1][b.length() + 1];
+        for (int i = 0; i <= a.length(); i++) d[i][0] = costoAgregarOQuitar(a, i);
+        for (int j = 0; j <= b.length(); j++) d[0][j] = costoAgregarOQuitar(b, j);
+        for (int i = 1; i <= a.length(); i++) {
+            for (int j = 1; j <= b.length(); j++) {
+                char x = a.charAt(i - 1), y = b.charAt(j - 1);
+                d[i][j] = Math.min(Math.min(
+                                d[i - 1][j] + (x == 'h' ? 0.5 : 1),
+                                d[i][j - 1] + (y == 'h' ? 0.5 : 1)),
+                        d[i - 1][j - 1] + costoCambio(x, y));
+                if (i > 1 && j > 1 && x == b.charAt(j - 2) && a.charAt(i - 2) == y) {
+                    d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);                      // dos letras de lugar
+                }
+            }
+        }
+        return d[a.length()][b.length()];
+    }
+
+    private static double costoAgregarOQuitar(String palabra, int hasta) {
+        double costo = 0;
+        for (int i = 0; i < hasta; i++) costo += palabra.charAt(i) == 'h' ? 0.5 : 1;
+        return costo;
+    }
+
+    private static double costoCambio(char x, char y) {
+        if (x == y) return 0;
+        for (String[] par : PARECIDAS) {
+            if ((par[0].charAt(0) == x && par[1].charAt(0) == y) || (par[0].charAt(0) == y && par[1].charAt(0) == x)) {
+                return 0.5;
+            }
+        }
+        return 1;
     }
 
     // "Toby" sí, "JUGETON" no: una palabra toda en mayúsculas se revisa igual
