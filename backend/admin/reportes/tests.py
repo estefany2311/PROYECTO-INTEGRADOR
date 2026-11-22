@@ -357,3 +357,123 @@ class CalculosAgregacionTests(TestCase):
         vacia = next(a for a in consultas.rendimiento_por_aula(self.colegio_a.id) if a['nombre'] == 'Aula vacía')
         self.assertEqual((vacia['alumnos'], vacia['evaluaciones'], vacia['promedio_general']), (0, 0, None))
         self.assertEqual(vacia['semaforo'], {'verde': 0, 'amarillo': 0, 'rojo': 0, 'sin_evaluar': 0})
+
+
+
+
+
+# =====================================================================
+# US-48 · Mapa de calor: desempeño por zona y competencia (T-353)
+# =====================================================================
+
+class DesempenoPorZonaTests(TestCase):
+    """T-349: consulta de desempeño por zona (región o provincia) y competencia."""
+
+    def setUp(self):
+        ConsultasAgregacionTests.setUp(self)   # mismos datos de T-264
+        self.colegio_a.provincia = 'Quispicanchi'
+        self.colegio_a.save()
+
+    def por_zona(self, **filtros):
+        return {z['zona']: z for z in consultas.desempeno_por_zona(**filtros)}
+
+    def test_por_region_calcula_los_promedios_de_cada_competencia(self):
+        cusco = self.por_zona()['Cusco']
+        self.assertEqual((cusco['colegios'], cusco['alumnos'], cusco['evaluaciones']), (1, 2, 4))
+        self.assertEqual(cusco['promedios'], {'lectura': 70.0, 'escritura': 70.0, 'oralidad': 40.0})
+        self.assertEqual(cusco['promedio_general'], 62.5)     # (80 + 70 + 60 + 40) / 4
+
+    def test_competencia_sin_notas_queda_en_none(self):
+        apurimac = self.por_zona()['Apurímac']
+        self.assertEqual(apurimac['promedios'], {'lectura': 30.0, 'escritura': None, 'oralidad': None})
+        self.assertEqual(apurimac['alumnos'], 2)               # Rosa y Juan (Juan sin notas)
+
+    def test_las_zonas_salen_ordenadas_por_nombre(self):
+        self.assertEqual([z['zona'] for z in consultas.desempeno_por_zona()], ['Apurímac', 'Cusco'])
+
+    def test_por_provincia_y_sin_provincia(self):
+        zonas = self.por_zona(agrupar='provincia')
+        self.assertEqual(set(zonas), {'Cusco / Quispicanchi', 'Apurímac / Sin provincia'})
+        self.assertEqual(zonas['Cusco / Quispicanchi']['promedios']['lectura'], 70.0)
+
+    def test_dos_colegios_de_la_misma_zona_se_juntan(self):
+        Colegio.objects.create(codigo_modular='5555555', nombre='IE Ccatca', region='Cusco')
+        cusco = self.por_zona()['Cusco']
+        self.assertEqual(cusco['colegios'], 2)
+        self.assertEqual(cusco['promedios']['lectura'], 70.0)  # el colegio nuevo no tiene alumnos
+
+    def test_zona_con_colegios_pero_sin_evaluaciones_sale_vacia(self):
+        Colegio.objects.create(codigo_modular='6666666', nombre='IE Puno', region='Puno')
+        puno = self.por_zona()['Puno']
+        self.assertEqual((puno['colegios'], puno['alumnos'], puno['promedio_general']), (1, 0, None))
+
+    def test_colegio_inactivo_no_cuenta(self):
+        Colegio.objects.create(codigo_modular='7777777', nombre='IE Cerrada', region='Tacna', activo=False)
+        self.assertNotIn('Tacna', self.por_zona())
+
+    def test_filtro_por_grado(self):
+        zonas = self.por_zona(grado=4)          # solo Rosa y Juan (Apurímac)
+        self.assertEqual(zonas['Apurímac']['promedios']['lectura'], 30.0)
+        self.assertEqual(zonas['Cusco']['alumnos'], 0)
+        self.assertIsNone(zonas['Cusco']['promedio_general'])
+
+    def test_agrupar_invalido_lanza_error(self):
+        with self.assertRaises(ValueError):
+            consultas.desempeno_por_zona(agrupar='distrito')
+
+    @mock.patch('reportes.consultas.tablas_disponibles', return_value=False)
+    def test_sin_tablas_de_spring_devuelve_las_zonas_vacias(self, _tablas):
+        zonas = self.por_zona()
+        self.assertEqual(set(zonas), {'Cusco', 'Apurímac'})
+        self.assertTrue(all(z['promedio_general'] is None for z in zonas.values()))
+
+
+class ReporteMapaCalorAPITests(APITestCase):
+    """T-350: endpoint de datos del mapa de calor (solo administrador)."""
+    URL = '/api/reportes/mapa-calor/'
+
+    def setUp(self):
+        ConsultasAgregacionTests.setUp(self)   # mismos datos de T-264
+        rol_admin, _ = Rol.objects.get_or_create(nombre='ADMIN')
+        self.admin = Usuario.objects.create_user(
+            username='admin', email='admin@test.pe', password='clave-segura-1', rol=rol_admin)
+        self.client.force_authenticate(self.admin)
+
+    def test_por_defecto_agrupa_por_region(self):
+        resp = self.client.get(self.URL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual((resp.data['agrupar'], resp.data['grado']), ('region', None))
+        self.assertEqual(resp.data['competencias'], ['lectura', 'escritura', 'oralidad'])
+        self.assertEqual([z['zona'] for z in resp.data['zonas']], ['Apurímac', 'Cusco'])
+
+    def test_agrupar_por_provincia(self):
+        resp = self.client.get(self.URL, {'agrupar': 'provincia'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn('Cusco / Sin provincia', [z['zona'] for z in resp.data['zonas']])
+
+    def test_filtro_por_grado(self):
+        resp = self.client.get(self.URL, {'grado': 2})
+        cusco = next(z for z in resp.data['zonas'] if z['zona'] == 'Cusco')
+        self.assertEqual((resp.data['grado'], cusco['promedios']['lectura']), (2, 70.0))
+
+    def test_agrupar_invalido_devuelve_400(self):
+        resp = self.client.get(self.URL, {'agrupar': 'distrito'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['agrupar']), 'agrupar debe ser region o provincia.')
+
+    def test_grado_fuera_de_rango_devuelve_400(self):
+        resp = self.client.get(self.URL, {'grado': 9})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['grado']), 'El grado debe estar entre 1 y 6.')
+
+    def test_grado_que_no_es_numero_devuelve_400(self):
+        resp = self.client.get(self.URL, {'grado': 'tres'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_sin_sesion_devuelve_401(self):
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_docente_no_puede_ver_el_mapa(self):
+        self.client.force_authenticate(Usuario.objects.get(username='doc_a'))
+        self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_403_FORBIDDEN)
