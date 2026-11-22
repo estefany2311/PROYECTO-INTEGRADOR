@@ -112,20 +112,8 @@ export default function Reportes({ onNoAutorizado }) {
           <h1>Reportes consolidados</h1>
           <div className="breadcrumb text-secondary">Análisis / Reportes</div>
         </div>
-        <select
-          className="form-select selector-colegio"
-          value={colegioId}
-          onChange={(e) => elegirColegio(e.target.value)}
-          aria-label="Elegir colegio"
-        >
-          <option value="">Todos los colegios</option>
-          {colegios.map((c) => (
-            <option key={c.colegio_id} value={c.colegio_id}>{c.nombre}</option>
-          ))}
-        </select>
       </div>
 
-      
       <BarraFiltros
         key={`${colegioId}|${filtros.grado}|${filtros.desde}|${filtros.hasta}`}
         colegios={colegios}
