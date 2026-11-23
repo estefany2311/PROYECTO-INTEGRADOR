@@ -25,6 +25,11 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -35,13 +40,15 @@ class FluidezServiceTest {
     @Mock EvidenciaRepository evidenciaRepository;
     @Mock PalabraLeidaRepository palabraRepository;
     @Mock ConfiguracionFluidezRepository configuracionRepository;
+    @Mock PuntajeService puntajeService;
 
     private FluidezService service;
     private Evidencia audio;
 
     @BeforeEach
     void preparar() {
-        service = new FluidezService(evidenciaRepository, palabraRepository, configuracionRepository);
+        service = new FluidezService(evidenciaRepository, palabraRepository, configuracionRepository,
+                puntajeService);
 
         Estudiante ana = new Estudiante();
         ana.setGrado(new Grado((short) 3, "3.º", (short) 3));
@@ -110,6 +117,43 @@ class FluidezServiceTest {
         service.calcular(5L, 30L);
 
         assertEquals((short) 100, audio.getPuntajeFluidez());
+    }
+
+    @Test
+    void laPrimeraVezSumaLosPuntosYLasEstrellasDeLaLectura() {
+        dadoQueExisteLaEvidencia();
+        when(palabraRepository.porEvidencia(30L))
+                .thenReturn(FormulaFluidezTest.lectura(FormulaFluidezTest.pausasIguales(10, 0.6)));
+        when(configuracionRepository.porGrado(3)).thenReturn(new ConfiguracionFluidez(3, 60, 2.0));
+        when(puntajeService.estrellasPara("lectura", 100)).thenReturn(3);
+
+        FluidezResponse resp = service.calcular(5L, 30L);
+
+        assertEquals(3, resp.estrellas());
+        verify(puntajeService).sumarAlCompletarReto(5L, "lectura", 100);
+    }
+
+    @Test
+    void calcularOtraVezNoVuelveASumar() {
+        dadoQueExisteLaEvidencia();
+        when(palabraRepository.porEvidencia(30L))
+                .thenReturn(FormulaFluidezTest.lectura(FormulaFluidezTest.pausasIguales(10, 0.6)));
+        when(configuracionRepository.porGrado(3)).thenReturn(new ConfiguracionFluidez(3, 60, 2.0));
+
+        service.calcular(5L, 30L);
+        service.calcular(5L, 30L);
+
+        verify(puntajeService, times(1)).sumarAlCompletarReto(5L, "lectura", 100);
+    }
+
+    @Test
+    void sinPalabrasNoSumaNada() {
+        dadoQueExisteLaEvidencia();
+        when(palabraRepository.porEvidencia(30L)).thenReturn(List.of());
+
+        assertThrows(ReglaNegocioException.class, () -> service.calcular(5L, 30L));
+
+        verify(puntajeService, never()).sumarAlCompletarReto(any(), any(), anyInt());
     }
 
     @Test

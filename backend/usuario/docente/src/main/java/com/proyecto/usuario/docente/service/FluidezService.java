@@ -22,23 +22,31 @@ import java.util.List;
  * puntaje queda guardado en la evidencia; se recalcula cada vez que se pide, de
  * modo que si el administrador cambia la configuración el resultado se
  * actualiza.</p>
+ *
+ * <p>La primera vez que se calcula, también se suman los puntos y las estrellas
+ * del reto al acumulado del alumno (US-09), como en la escritura. Los cálculos
+ * siguientes no vuelven a sumar.</p>
  */
 @Service
 public class FluidezService {
 
     // grado que se usa si el alumno no lo tiene registrado
     private static final int GRADO_POR_DEFECTO = 3;
+    private static final String TIPO_RETO_LECTURA = "lectura";
 
     private final EvidenciaRepository evidenciaRepository;
     private final PalabraLeidaRepository palabraRepository;
     private final ConfiguracionFluidezRepository configuracionRepository;
+    private final PuntajeService puntajeService;
 
     public FluidezService(EvidenciaRepository evidenciaRepository,
                           PalabraLeidaRepository palabraRepository,
-                          ConfiguracionFluidezRepository configuracionRepository) {
+                          ConfiguracionFluidezRepository configuracionRepository,
+                          PuntajeService puntajeService) {
         this.evidenciaRepository = evidenciaRepository;
         this.palabraRepository = palabraRepository;
         this.configuracionRepository = configuracionRepository;
+        this.puntajeService = puntajeService;
     }
 
     @Transactional
@@ -71,11 +79,15 @@ public class FluidezService {
         int puntajePausas = FormulaFluidez.puntajePausas(pausas.pausasLargas(), pausas.vacilaciones());
         int puntaje = FormulaFluidez.puntajeFluidez(puntajeRitmo, puntajePausas);
 
+        boolean primeraVez = evidencia.getPuntajeFluidez() == null;
         evidencia.setPuntajeFluidez((short) puntaje);
+        if (primeraVez) {
+            puntajeService.sumarAlCompletarReto(estudianteId, TIPO_RETO_LECTURA, puntaje);
+        }
 
         return new FluidezResponse(evidencia.getId(), puntaje, (int) Math.round(ppm),
                 config.palabrasPorMinuto(), pausas.pausasLargas(), pausas.vacilaciones(),
-                mensajePara(puntaje));
+                puntajeService.estrellasPara(TIPO_RETO_LECTURA, puntaje), mensajePara(puntaje));
     }
 
     // retroalimentación simple para el alumno según su puntaje

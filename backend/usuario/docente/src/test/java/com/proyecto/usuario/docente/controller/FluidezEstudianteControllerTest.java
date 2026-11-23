@@ -33,7 +33,7 @@ class FluidezEstudianteControllerTest {
     @Test
     void devuelveElPuntajeYElDetalleDeLaFluidez() throws Exception {
         when(service.calcular(5L, 30L)).thenReturn(new FluidezResponse(
-                30L, 73, 42, 60, 2, 1, "¡Vas muy bien! Intenta leer sin detenerte tanto entre palabras."));
+                30L, 73, 42, 60, 2, 1, 1, "¡Vas muy bien! Intenta leer sin detenerte tanto entre palabras."));
 
         mvc.perform(get("/api/estudiante/evidencias/30/fluidez").requestAttr("estudianteId", 5L))
                 .andExpect(status().isOk())
@@ -43,6 +43,7 @@ class FluidezEstudianteControllerTest {
                 .andExpect(jsonPath("$.palabrasEsperadas").value(60))
                 .andExpect(jsonPath("$.pausasLargas").value(2))
                 .andExpect(jsonPath("$.vacilaciones").value(1))
+                .andExpect(jsonPath("$.estrellas").value(1))
                 .andExpect(jsonPath("$.mensaje").exists());
     }
 

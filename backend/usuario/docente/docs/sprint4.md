@@ -22,7 +22,7 @@ El id del alumno sale del token. Solo ve y entrega lo suyo.
 | Método y ruta | Historia | Qué hace |
 |---|---|---|
 | `GET /api/estudiante/evidencias/{id}/comentario` | US-34 (T-386) | Comentario del docente en una evidencia (`comentario` es `null` si no hay). |
-| `GET /api/estudiante/evidencias/{id}/fluidez` | US-15 (T-397) | Puntaje de fluidez 0 a 100, palabras por minuto, pausas largas y vacilaciones. `409` si la lectura todavía se procesa. |
+| `GET /api/estudiante/evidencias/{id}/fluidez` | US-15 (T-397) | Puntaje de fluidez 0 a 100, palabras por minuto, pausas largas y vacilaciones y estrellas. La primera vez suma puntos y estrellas al acumulado del alumno. `409` si la lectura todavía se procesa. |
 | `POST /api/estudiante/evidencias/{id}/escritura` | US-22 (T-403) | Puntaje de escritura, desglose, estrellas y mensaje. Guarda el puntaje y suma estrellas la primera vez. |
 | `POST /api/estudiante/asignaciones/{id}/entregar` | US-38 (T-389) | Marca la tarea como entregada (idempotente). |
 
@@ -70,11 +70,15 @@ no hay que actualizar filas cuando pasa el tiempo.
 - **Fluidez:** la app llama a `GET .../fluidez` cuando la evidencia pasa a
   `listo` (T-416).
 - **Escritura:** el texto enviado (T-434) debe guardar en `evidencia.palabras_marcadas`
-  las palabras con error del corrector (US-19), separadas por comas; de ahí sale
+  las palabras con error del corrector (US-19), en minúsculas, separadas por comas
+  sin espacios y repetidas cada vez que aparecen (por ejemplo `aser,boi,aser`); de ahí sale
   el conteo de errores.
-- **Estrellas:** `POST .../escritura` suma puntos y estrellas en
-  `puntaje_estudiante` (US-09). Si la app también suma por su lado al completar el
-  nivel, habría que elegir una sola.
+- **Estrellas:** acordado con Karla: el total de `puntaje_estudiante` (US-09) lo
+  suma solo este backend, la primera vez que se calcula la fluidez (lectura) o el
+  puntaje de escritura. La app de Karla no lo toca.
+- **Pendiente entre las tres:** una sola fórmula de puntos y estrellas que lea
+  `reglas_puntuacion` de Daniela (US-53). Hoy `PuntajeService` usa 100 puntos
+  fijos y umbrales 60 / 80 / 95 en el código.
 
 ## Pruebas
 

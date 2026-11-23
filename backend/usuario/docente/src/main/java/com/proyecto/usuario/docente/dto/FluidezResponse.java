@@ -9,6 +9,7 @@ package com.proyecto.usuario.docente.dto;
  * @param palabrasEsperadas  ritmo esperado para el grado (configuración US-51)
  * @param pausasLargas       pausas mayores a la tolerancia del grado
  * @param vacilaciones       pausas cortas que indican duda
+ * @param estrellas          estrellas ganadas (0 a 3) según las reglas de puntuación
  * @param mensaje            retroalimentación según el puntaje
  */
 public record FluidezResponse(
@@ -18,6 +19,7 @@ public record FluidezResponse(
         int palabrasEsperadas,
         int pausasLargas,
         int vacilaciones,
+        int estrellas,
         String mensaje
 ) {
 }
