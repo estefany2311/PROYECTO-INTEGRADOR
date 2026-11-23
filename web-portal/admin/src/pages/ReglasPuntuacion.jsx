@@ -4,7 +4,7 @@ import { actualizarReglaPuntuacion, listarReglasPuntuacion } from "../api";
 const ICONOS = { lectura: "bi-book", escritura: "bi-pencil-square", oralidad: "bi-mic" };
 
 const CAMPOS = [
-  { campo: "puntos", titulo: "Puntos", min: 1, max: 100, ayuda: "Debe estar entre 1 y 100 puntos." },
+  { campo: "puntos", titulo: "Puntos máximos", min: 1, max: 100, ayuda: "Debe estar entre 1 y 100 puntos." },
   { campo: "umbral_1_estrella", titulo: "★ desde (%)", min: 0, max: 100, ayuda: "Debe estar entre 0 y 100 %." },
   { campo: "umbral_2_estrellas", titulo: "★★ desde (%)", min: 0, max: 100, ayuda: "Debe estar entre 0 y 100 %." },
   { campo: "umbral_3_estrellas", titulo: "★★★ desde (%)", min: 0, max: 100, ayuda: "Debe estar entre 0 y 100 %." },
@@ -115,6 +115,8 @@ export default function ReglasPuntuacion({ onNoAutorizado, puede = () => true })
 
   const reglaSim = reglas.find((r) => r.tipo_reto === simTipo);
   const simEstrellas = reglaSim && !Object.keys(erroresDe(reglaSim)).length ? estrellasPara(reglaSim, simPuntaje) : 0;
+    // Regla del equipo: puntos = puntos máximos × nota / 100 (redondeado), igual que en la app
+  const simPuntos = reglaSim ? Math.round((Number(reglaSim.puntos) * simPuntaje) / 100) : 0;
 
   return (
     <section>
@@ -208,10 +210,13 @@ export default function ReglasPuntuacion({ onNoAutorizado, puede = () => true })
                   <div className="estrellas" aria-label={`${simEstrellas} estrellas`}>
                     {[1, 2, 3].map((n) => <span key={n} className={n <= simEstrellas ? "" : "apagada"}>★</span>)}
                   </div>
-                  <div className="fw-semibold">
+                    <div className="fw-semibold">
                     {reglaSim && (simEstrellas
-                      ? `¡Gana ${reglaSim.puntos} puntos y ${simEstrellas} estrella${simEstrellas > 1 ? "s" : ""}!`
-                      : `¡Sigue intentando! Gana ${reglaSim.puntos} puntos por participar.`)}
+                      ? `¡Gana ${simPuntos} de ${reglaSim.puntos} puntos y ${simEstrellas} estrella${simEstrellas > 1 ? "s" : ""}!`
+                      : `¡Sigue intentando! Gana ${simPuntos} de ${reglaSim.puntos} puntos.`)}
+                  </div>
+                  <div className="note mt-1">
+                    Puntos = puntos máximos × puntaje ÷ 100
                   </div>
                 </div>
               </div>
