@@ -40,8 +40,13 @@ de puntaje de escritura que consume la app del alumno.
   `POST /api/estudiante/asignaciones/{id}/entregar` para la app.
 - **US-15:** `FormulaFluidez` (ritmo y pausas con la configuración de la US-51) y
   `GET /api/estudiante/evidencias/{id}/fluidez`.
-- **US-22:** `FormulaEscritura`, mensajes de retroalimentación, suma de puntos y
-  estrellas y `POST /api/estudiante/evidencias/{id}/escritura`.
+- **US-22:** `FormulaEscritura`, mensajes de retroalimentación y
+  `POST /api/estudiante/evidencias/{id}/escritura`.
+- **Puntos y estrellas (US-09 / US-53), regla acordada con Karla y Daniela:** puntos
+  proporcionales a la nota con las reglas de `reglas_puntuacion`, mejor intento por
+  alumno y nivel, recálculo cuando el docente corrige la nota y
+  `POST /api/estudiante/evidencias/{id}/lectura` para lectura y oralidad. Detalle en
+  `docs/sprint4.md`.
 - Detalle completo en `docs/sprint4.md`; colección Postman en
   `docs/postman-docente-sprint4.json`.
 
@@ -51,14 +56,16 @@ de puntaje de escritura que consume la app del alumno.
 |---|---|
 | V19 | `asignacion`: fecha límite, estado y fecha de entrega |
 | V20 | `evidencia.puntaje_fluidez` |
+| V21 | `puntaje_nivel_estudiante` (mejor intento por alumno y nivel) |
 
 ### Pendiente de coordinar con Karla
 
-- Llamar a `.../entregar` cuando el alumno termine una tarea asignada.
-- Pedir `.../fluidez` y `.../escritura` desde las pantallas de resultado.
-- Guardar las palabras con error del corrector en `evidencia.palabras_marcadas`.
-- Decidir quién suma las estrellas al completar el nivel (hoy lo hace
-  `POST .../escritura` para los textos).
+- Llamar a `.../entregar` cuando el alumno termine una tarea asignada (agregará
+  `asignacionId` a su respuesta de lectura).
+- Pedir `.../lectura` cuando la evidencia pase a `listo`, y `.../fluidez` y
+  `.../escritura` desde las pantallas de resultado.
+- Su rama debe llegar a `main` para que existan `evidencia_palabra` y
+  `consigna_nivel` (si no, la fluidez responde 409).
 
 ### Cómo probar
 

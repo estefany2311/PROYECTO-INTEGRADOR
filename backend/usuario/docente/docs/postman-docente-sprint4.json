@@ -619,6 +619,44 @@
           ]
         },
         {
+          "name": "Contar una lectura u oralidad en los puntos (idempotente)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 o 409 si se procesa', () => pm.expect([200, 409]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) { pm.test('totales', () => { const r = pm.response.json(); pm.expect(r.puntosTotales).to.be.at.least(0); pm.expect(r.estrellas).to.be.within(0, 3); }); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEstudiante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/estudiante/evidencias/{{evidenciaAudioId}}/lectura",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estudiante",
+                "evidencias",
+                "{{evidenciaAudioId}}",
+                "lectura"
+              ]
+            },
+            "description": "Lectura = precisión de la IA; oralidad = fluidez. Llamarlo varias veces no suma de más."
+          }
+        },
+        {
           "name": "Entregar una tarea (US-38)",
           "request": {
             "method": "POST",
