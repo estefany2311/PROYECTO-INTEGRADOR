@@ -120,7 +120,7 @@ class EscrituraServiceTest {
         service.calcular(5L, 31L);
 
         assertNull(evidencia.getPuntajeIa());
-        verify(puntajeService, never()).sumarAlCompletarReto(any(), any(), anyInt());
+        verify(puntajeService, never()).recalcularNivel(any(), any());
     }
 
     @Test
@@ -134,11 +134,11 @@ class EscrituraServiceTest {
         assertEquals(100, r.puntajeEscritura());
         assertEquals((short) 100, evidencia.getPuntajeIa());
         assertEquals("¡Excelente! Escribiste muy bien.", evidencia.getResultadoIa());
-        verify(puntajeService).sumarAlCompletarReto(5L, "escritura", 100);
+        verify(puntajeService).recalcularNivel(5L, nivelEscritura);
     }
 
     @Test
-    void evaluarDosVecesNoSumaDosVeces() {
+    void evaluarDosVecesDevuelveElMismoResultado() {
         texto(TEXTO_BUENO, null);
         when(consignaRepository.palabrasMinimas((short) 2)).thenReturn(15);
         when(puntajeService.estrellasPara("escritura", 100)).thenReturn(3);
@@ -147,7 +147,8 @@ class EscrituraServiceTest {
         ResultadoEscrituraResponse segunda = service.evaluar(5L, 31L);
 
         assertEquals(primera, segunda);
-        verify(puntajeService, times(1)).sumarAlCompletarReto(5L, "escritura", 100);
+        // PuntajeService cuenta solo el mejor intento del nivel, así que repetir no duplica
+        verify(puntajeService, times(2)).recalcularNivel(5L, nivelEscritura);
     }
 
     @Test

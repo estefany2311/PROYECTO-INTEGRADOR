@@ -517,7 +517,7 @@ class EvidenciaServiceTest {
     // T-379 (US-33): el acumulado del alumno se ajusta si cambia la nota
 
     @Test
-    void corregirRecalculaLasEstrellasEntreLasDosNotas() {
+    void corregirRecalculaElNivelConLaNotaDelDocente() {
         Evidencia audio = Evidencia.audio(estudiante, nivelAudio,
                 "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
         ReflectionTestUtils.setField(audio, "id", 30L);
@@ -530,8 +530,9 @@ class EvidenciaServiceTest {
         service.corregir(1L, 10L, 30L,
                 new CorregirEvidenciaRequest((short) 70, "El audio tiene ruido."));
 
-        // la nota vigente era la de la IA (85) y baja a 70
-        verify(puntajeService).recalcularPorCambioDeNota(7L, "lectura", 85, 70);
+        // la nota final queda en 70 y el nivel se recalcula con el mejor intento
+        assertEquals((short) 70, audio.getCalificacionFinal());
+        verify(puntajeService).recalcularNivel(7L, nivelAudio);
     }
 
     @Test
@@ -549,8 +550,9 @@ class EvidenciaServiceTest {
 
         service.aprobar(1L, 10L, 30L);
 
-        // vuelve a la nota de la IA: el ajuste parte de la corrección anterior
-        verify(puntajeService).recalcularPorCambioDeNota(7L, "lectura", 70, 85);
+        // vuelve a la nota de la IA y el nivel se recalcula
+        assertEquals((short) 85, audio.getCalificacionFinal());
+        verify(puntajeService).recalcularNivel(7L, nivelAudio);
     }
 
     @Test
@@ -566,8 +568,7 @@ class EvidenciaServiceTest {
         assertThrows(ReglaNegocioException.class,
                 () -> service.aprobar(1L, 10L, 30L));
 
-        verify(puntajeService, never())
-                .recalcularPorCambioDeNota(any(), anyString(), anyInt(), anyInt());
+        verify(puntajeService, never()).recalcularNivel(any(), any());
     }
 
     // T-380 (US-33): historial de calificaciones (nota IA vs. nota docente)

@@ -43,11 +43,12 @@ public class EscrituraService {
     }
 
     /**
-     * T-402 (US-22): calcula el puntaje, lo guarda en la evidencia y suma las
-     * estrellas y los puntos del reto al acumulado del alumno (US-09).
+     * T-402 (US-22): calcula el puntaje, lo guarda en la evidencia y actualiza los
+     * puntos y estrellas del alumno (US-09) con su mejor intento del nivel.
      *
-     * <p>Solo la primera vez: una evidencia que ya tiene puntaje no vuelve a
-     * sumar, así que pedir el resultado otra vez no duplica estrellas.</p>
+     * <p>Una evidencia que ya tiene puntaje no se recalcula, y como el total cuenta
+     * solo el mejor intento por nivel, pedir el resultado otra vez no duplica
+     * puntos ni estrellas.</p>
      */
     @Transactional
     public ResultadoEscrituraResponse evaluar(Long estudianteId, Long evidenciaId) {
@@ -57,9 +58,9 @@ public class EscrituraService {
         if (evidencia.getPuntajeIa() == null) {
             evidencia.setPuntajeIa((short) resultado.puntajeEscritura());
             evidencia.setResultadoIa(resultado.mensaje());
-            puntajeService.sumarAlCompletarReto(
-                    estudianteId, TIPO_RETO_ESCRITURA, resultado.puntajeEscritura());
         }
+        // el nivel aporta al total su mejor intento; repetir la llamada no suma otra vez
+        puntajeService.recalcularNivel(estudianteId, evidencia.getNivel());
         return resultado;
     }
 

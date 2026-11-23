@@ -29,4 +29,11 @@ public interface EvidenciaRepository extends JpaRepository<Evidencia, Long> {
 
     // T-386 (US-34): el alumno solo puede leer sus propias evidencias
     Optional<Evidencia> findByIdAndEstudianteId(Long id, Long estudianteId);
+
+    // puntos y estrellas: los intentos de un alumno en un nivel
+    List<Evidencia> findByEstudianteIdAndNivelId(Long estudianteId, Short nivelId);
+
+    // puntos y estrellas: todos los intentos de un alumno, con el nivel cargado
+    @EntityGraph(attributePaths = {"nivel"})
+    List<Evidencia> findByEstudianteId(Long estudianteId);
 }

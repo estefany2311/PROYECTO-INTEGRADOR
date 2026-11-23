@@ -36,8 +36,8 @@ import java.util.Locale;
  * <p>T-378 (US-33): {@link #aprobar} acepta la nota de la IA tal como llegó y
  * {@link #corregir} guarda la nota final del docente con su motivo.</p>
  *
- * <p>T-379 (US-33): al aprobar o corregir se ajustan las estrellas acumuladas
- * del alumno si la nota final cambia.</p>
+ * <p>T-379 (US-33): al aprobar o corregir se recalculan los puntos y las
+ * estrellas del alumno con la nota final.</p>
  *
  * <p>T-384 (US-34): {@link #guardarComentario} guarda la retroalimentación que
  * el docente deja en la evidencia.</p>
@@ -98,12 +98,11 @@ public class EvidenciaService {
             throw new ReglaNegocioException(
                     "La evidencia no tiene evaluación de la IA", HttpStatus.BAD_REQUEST);
         }
-        Short notaAnterior = notaVigente(evidencia);
         evidencia.setCalificacionFinal(evidencia.getPuntajeIa());
         evidencia.setMotivoCorreccion(null);
         evidencia.setEstadoRevision(Evidencia.APROBADA);
         evidencia.setRevisadoEn(LocalDateTime.now());
-        recalcularPuntaje(evidencia, notaAnterior, evidencia.getCalificacionFinal());
+        recalcularPuntaje(evidencia);
         registrarHistorial(docenteId, evidencia);
         return detalleRespuesta(evidencia);
     }
@@ -113,12 +112,11 @@ public class EvidenciaService {
     public EvidenciaDetalleResponse corregir(Long docenteId, Long aulaId, Long evidenciaId,
                                              CorregirEvidenciaRequest req) {
         Evidencia evidencia = evidenciaDelAula(docenteId, aulaId, evidenciaId);
-        Short notaAnterior = notaVigente(evidencia);
         evidencia.setCalificacionFinal(req.calificacionFinal());
         evidencia.setMotivoCorreccion(req.motivo().trim());
         evidencia.setEstadoRevision(Evidencia.CORREGIDA);
         evidencia.setRevisadoEn(LocalDateTime.now());
-        recalcularPuntaje(evidencia, notaAnterior, req.calificacionFinal());
+        recalcularPuntaje(evidencia);
         registrarHistorial(docenteId, evidencia);
         return detalleRespuesta(evidencia);
     }
@@ -132,24 +130,10 @@ public class EvidenciaService {
         return detalleRespuesta(evidencia);
     }
 
-    // T-379 (US-33): la nota que está reflejada hoy en el acumulado del alumno
-    private Short notaVigente(Evidencia evidencia) {
-        return evidencia.getCalificacionFinal() != null
-                ? evidencia.getCalificacionFinal()
-                : evidencia.getPuntajeIa();
-    }
-
-    // T-379 (US-33): si la nota cambió, se ajustan las estrellas del acumulado.
-    // Sin nota de la IA no se puede saber cuántas estrellas había, así que no se toca.
-    private void recalcularPuntaje(Evidencia evidencia, Short anterior, Short nueva) {
-        if (anterior == null || nueva == null) {
-            return;
-        }
-        puntajeService.recalcularPorCambioDeNota(
-                evidencia.getEstudiante().getId(),
-                evidencia.getNivel().getTipoReto(),
-                anterior,
-                nueva);
+    // T-379 (US-33): la nota del docente cambia lo que el nivel aporta al total del
+    // alumno: se recalculan sus puntos y estrellas con el mejor intento del nivel.
+    private void recalcularPuntaje(Evidencia evidencia) {
+        puntajeService.recalcularNivel(evidencia.getEstudiante().getId(), evidencia.getNivel());
     }
 
     // T-380 (US-33): deja constancia de la revisión con la nota de la IA y la
