@@ -2,6 +2,8 @@ from datetime import date
 
 from django.http import HttpResponse
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,6 +12,16 @@ from instituciones.models import Colegio
 from usuarios.permissions import EsAdmin, TienePermiso
 from . import consultas
 from . import exportar
+
+# T-370: parámetros de los reportes para Swagger (/api/docs/)
+P_COLEGIO = OpenApiParameter('colegio', OpenApiTypes.INT, description='Id de un colegio activo. Sin él: todos.')
+P_GRADO = OpenApiParameter('grado', OpenApiTypes.INT, description='Grado de 1 a 6. Sin él: todos.')
+P_DESDE = OpenApiParameter('desde', OpenApiTypes.DATE, description='Evaluaciones desde este día (AAAA-MM-DD).')
+P_HASTA = OpenApiParameter('hasta', OpenApiTypes.DATE, description='Evaluaciones hasta este día, incluido (AAAA-MM-DD).')
+P_AGRUPAR = OpenApiParameter('agrupar', OpenApiTypes.STR, enum=['region', 'provincia'],
+                             description='Zona del mapa de calor. Por defecto: region.')
+FILTROS = [P_GRADO, P_DESDE, P_HASTA]
+EXCEL = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 def _entero(valor, nombre):
     """Convierte un filtro de la URL a número; si viene mal, responde 400."""
@@ -65,6 +77,9 @@ class ReporteColegiosView(APIView):
     permission_classes = [TienePermiso, EsAdmin]
     modulo = 'reportes'
 
+    @extend_schema(tags=['Reportes'], summary='Reporte consolidado por colegio',
+                   parameters=[P_COLEGIO, *FILTROS], responses=OpenApiTypes.OBJECT)
+
     def get(self, request):
         colegio_id = _entero(request.query_params.get('colegio'), 'colegio')
         if colegio_id is not None and not Colegio.objects.filter(id=colegio_id, activo=True).exists():
@@ -97,6 +112,9 @@ class ReporteAulasView(APIView):
     permission_classes = [TienePermiso, EsAdmin]
     modulo = 'reportes'
 
+    @extend_schema(tags=['Reportes'], summary='Aulas de un colegio con su rendimiento',
+                   parameters=FILTROS, responses=OpenApiTypes.OBJECT)
+
     def get(self, request, colegio_id):
         colegio = Colegio.objects.filter(id=colegio_id, activo=True).first()
         if colegio is None:
@@ -122,6 +140,9 @@ class ReporteMapaCalorView(APIView):
     """
     permission_classes = [TienePermiso, EsAdmin]
     modulo = 'reportes'
+
+    @extend_schema(tags=['Reportes'], summary='Mapa de calor: desempeño por zona y competencia',
+                   parameters=[P_AGRUPAR, *FILTROS], responses=OpenApiTypes.OBJECT)
 
     def get(self, request):
         agrupar = request.query_params.get('agrupar') or 'region'
@@ -162,6 +183,9 @@ class ReporteExcelView(APIView):
     permission_classes = [TienePermiso, EsAdmin]
     modulo = 'reportes'
 
+    @extend_schema(tags=['Reportes'], summary='Descargar el reporte por colegio en Excel',
+                   parameters=[P_COLEGIO, *FILTROS], responses={(200, EXCEL): OpenApiTypes.BINARY})
+
     def get(self, request):
         filas, filtros = datos_para_exportar(request)
         respuesta = HttpResponse(
@@ -180,6 +204,9 @@ class ReportePdfView(APIView):
     """
     permission_classes = [TienePermiso, EsAdmin]
     modulo = 'reportes'
+
+    @extend_schema(tags=['Reportes'], summary='Descargar el reporte por colegio en PDF',
+                   parameters=[P_COLEGIO, *FILTROS], responses={(200, 'application/pdf'): OpenApiTypes.BINARY})
 
     def get(self, request):
         filas, filtros = datos_para_exportar(request)

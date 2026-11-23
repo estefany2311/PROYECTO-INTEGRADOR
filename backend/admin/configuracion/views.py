@@ -1,3 +1,5 @@
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -100,7 +102,22 @@ class ReglaPuntuacionViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(actualizado_por=self.request.user)
 
+# T-370: este ViewSet no tiene serializer de respuesta, así que se describe a mano para Swagger
+P_NIVEL = OpenApiParameter('nivel_id', OpenApiTypes.INT, OpenApiParameter.PATH, description='Id del nivel (tabla nivel).')
 
+
+@extend_schema_view(
+    list=extend_schema(tags=['Desbloqueo de niveles'], summary='Niveles del mapa con su regla',
+                       operation_id='configuracion_desbloqueo_list', responses=OpenApiTypes.OBJECT),
+                       
+    retrieve=extend_schema(tags=['Desbloqueo de niveles'], summary='Regla de un nivel',
+                           parameters=[P_NIVEL], responses=OpenApiTypes.OBJECT),
+    update=extend_schema(tags=['Desbloqueo de niveles'], summary='Guardar la regla de un nivel',
+                         parameters=[P_NIVEL], request=ReglaDesbloqueoSerializer, responses=OpenApiTypes.OBJECT),
+    partial_update=extend_schema(tags=['Desbloqueo de niveles'], summary='Cambiar parte de la regla de un nivel',
+                                 parameters=[P_NIVEL], request=ReglaDesbloqueoSerializer,
+                                 responses=OpenApiTypes.OBJECT),
+)
 
 class ReglaDesbloqueoViewSet(viewsets.ViewSet):
     """US-54: regla para desbloquear el siguiente nivel del mapa. Solo se consulta y se actualiza.

@@ -3,6 +3,8 @@ import io
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.db import transaction
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -68,6 +70,12 @@ class LecturaViewSet(viewsets.ModelViewSet):
         lectura.activo = False
         lectura.save(update_fields=['activo'])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # T-370: para Swagger, esta acción usa el serializer de recursos (no el de lecturas)
+    @extend_schema(methods=['GET'], tags=['Recursos de una lectura'], summary='Imágenes y audios de una lectura',
+                   responses=RecursoLecturaSerializer(many=True))
+    @extend_schema(methods=['POST'], tags=['Recursos de una lectura'], summary='Subir una imagen (JPG, PNG) o un audio (MP3)',
+                   request={'multipart/form-data': RecursoLecturaSerializer}, responses={201: RecursoLecturaSerializer})
     
     @action(detail=True, methods=['get', 'post'], parser_classes=[MultiPartParser, FormParser])
     
@@ -82,6 +90,10 @@ class LecturaViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save(lectura=lectura, subido_por=request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    @extend_schema(tags=['Recursos de una lectura'], summary='Quitar un recurso de la lectura y borrar su archivo',
+                   parameters=[OpenApiParameter('recurso_id', OpenApiTypes.INT, OpenApiParameter.PATH)],
+                   request=None, responses={204: None, 404: OpenApiTypes.OBJECT})
     
     @action(detail=True, methods=['delete'], url_path=r'recursos/(?P<recurso_id>\d+)')
     
