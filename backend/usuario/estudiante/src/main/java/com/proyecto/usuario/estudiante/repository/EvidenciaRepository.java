@@ -1,6 +1,7 @@
 package com.proyecto.usuario.estudiante.repository;
 
 import com.proyecto.usuario.estudiante.dto.EstadoEvidenciaResponse;
+import com.proyecto.usuario.estudiante.dto.ResultadoLecturaResponse;
 import com.proyecto.usuario.estudiante.model.DatosLectura;
 import com.proyecto.usuario.estudiante.model.PalabraAlineada;
 import com.proyecto.usuario.estudiante.model.PendienteVoz;
@@ -115,6 +116,48 @@ public class EvidenciaRepository {
         } catch (DataAccessException e) {
             log.warn("No se pudo copiar el resultado a evidencia {}: {}", evidenciaId, e.getMessage());
         }
+    }
+
+    // T-425: estrellas y puntos del intento, y el nivel que se abrió (null si no se abrió ninguno nuevo)
+    public void guardarEstrellas(long evidenciaId, int estrellas, int puntos, Integer nivelDesbloqueado) {
+        jdbc.sql("""
+                        UPDATE evidencia_lectura
+                        SET estrellas = :estrellas, puntos = :puntos, nivel_desbloqueado = :nivel
+                        WHERE evidencia_id = :id
+                        """)
+                .param("estrellas", estrellas)
+                .param("puntos", puntos)
+                .param("nivel", nivelDesbloqueado)
+                .param("id", evidenciaId)
+                .update();
+    }
+
+    // T-425: resultado para la app; solo si la evidencia es del alumno que pregunta
+    public Optional<ResultadoLecturaResponse> resultado(long evidenciaId, long estudianteId) {
+        return jdbc.sql("""
+                        SELECT el.evidencia_id, e.nivel_id, el.estado_ia, el.transcripcion,
+                               el.precision_pct, el.correctas, el.evaluadas, el.cobertura_pct, el.umbral_pct,
+                               el.aprobado, el.estrellas, el.puntos, el.nivel_desbloqueado, n.nombre AS nivel_nombre,
+                               (SELECT a.id FROM asignacion a
+                                WHERE a.estudiante_id = e.estudiante_id AND a.lectura_id = el.lectura_id
+                                ORDER BY a.fecha_asignacion DESC, a.id DESC LIMIT 1) AS asignacion_id
+                        FROM evidencia_lectura el
+                        JOIN evidencia e ON e.id = el.evidencia_id
+                        LEFT JOIN nivel n ON n.id = el.nivel_desbloqueado
+                        WHERE el.evidencia_id = :id AND e.estudiante_id = :estudiante
+                        """)
+                .param("id", evidenciaId)
+                .param("estudiante", estudianteId)
+                .query((rs, n) -> new ResultadoLecturaResponse(
+                        rs.getLong("evidencia_id"), rs.getInt("nivel_id"), rs.getString("estado_ia"),
+                        rs.getString("transcripcion"),
+                        rs.getObject("precision_pct", Integer.class), rs.getObject("correctas", Integer.class),
+                        rs.getObject("evaluadas", Integer.class), rs.getObject("cobertura_pct", Integer.class),
+                        rs.getObject("umbral_pct", Integer.class), rs.getObject("aprobado", Boolean.class),
+                        rs.getObject("estrellas", Integer.class), rs.getObject("puntos", Integer.class),
+                        rs.getObject("nivel_desbloqueado", Integer.class), rs.getString("nivel_nombre"),
+                        rs.getObject("asignacion_id", Long.class)))
+                .optional();
     }
 
     // T-416: cada palabra que escuchó Whisper con sus tiempos (la fluidez de Noemí las lee)

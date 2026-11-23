@@ -10,6 +10,8 @@ import com.proyecto.usuario.estudiante.model.Lectura;
 import com.proyecto.usuario.estudiante.model.Transcripcion;
 import com.proyecto.usuario.estudiante.repository.ConfiguracionEvaluacionRepository;
 import com.proyecto.usuario.estudiante.repository.EvidenciaRepository;
+import com.proyecto.usuario.estudiante.repository.ReglasPuntuacionRepository;
+import com.proyecto.usuario.estudiante.model.ReglaPuntuacion;
 import com.proyecto.usuario.estudiante.repository.LecturaRepository;
 import com.proyecto.usuario.estudiante.service.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +53,7 @@ class AudioIntegracionTest {
     @TempDir Path carpeta;
 
     private EvidenciaRepository evidencias;
+    private NivelService niveles;
     private ClienteVoz voz;
     private MockMvc mvc;
 
@@ -58,7 +61,7 @@ class AudioIntegracionTest {
     void preparar() {
         AutenticadorTablet autenticador = mock(AutenticadorTablet.class);
         when(autenticador.estudianteDe(TOKEN)).thenReturn(7L);
-        NivelService niveles = mock(NivelService.class);
+        niveles = mock(NivelService.class);
         when(niveles.detalle(7L, 1)).thenReturn(new NivelDetalleResponse(1, 1, "Primeros pasos", "lectura", "Lee en voz alta", "desbloqueado", 0));
         LecturaRepository lecturas = mock(LecturaRepository.class);
         when(lecturas.porId(5L)).thenReturn(Optional.of(new Lectura(5, "El cóndor", "Había una vez un cóndor.", "lectura", 2, "basica")));
@@ -72,7 +75,7 @@ class AudioIntegracionTest {
         when(configuracion.umbralPrecision(7L)).thenReturn(Optional.of(70));
         EvaluadorLectura evaluador = new EvaluadorLectura(new NormalizadorTexto(), new AlineadorPalabras(), new CalculadorPrecision(), configuracion);
         ProcesadorLecturas procesador = new ProcesadorLecturas(almacen, voz, evidencias,
-                new CalificadorLectura(evidencias, evaluador), new SyncTaskExecutor(), RELOJ);
+                new CalificadorLectura(evidencias, evaluador, reglasDeLectura(), niveles), new SyncTaskExecutor(), RELOJ);
         // En la app real el evento llega después del commit; aquí se atiende en el momento
         AudioService servicio = new AudioService(niveles, lecturas, new ValidadorWav(), almacen, evidencias,
                 evento -> procesador.alRecibir((AudioRecibido) evento), RELOJ);
@@ -80,6 +83,12 @@ class AudioIntegracionTest {
         mvc = MockMvcBuilders.standaloneSetup(new AudioController(autenticador, servicio))
                 .setControllerAdvice(new ManejadorErrores())
                 .build();
+    }
+
+    private static ReglasPuntuacionRepository reglasDeLectura() {
+        ReglasPuntuacionRepository reglas = mock(ReglasPuntuacionRepository.class);
+        when(reglas.de("lectura")).thenReturn(new ReglaPuntuacion(10, 50, 70, 90));
+        return reglas;
     }
 
     private ResultActions subir(String audioDeEjemplo) throws Exception {
@@ -115,6 +124,7 @@ class AudioIntegracionTest {
         // T-424: Whisper escuchó todo el texto, así que la precisión es 100 y no hay palabras a mejorar
         verify(evidencias).guardarResultado(eq(50L), eq(ESCUCHADO), argThat(p -> p.precision() == 100 && p.aprobado()), any(), any());
         verify(evidencias).copiarAEvidencia(50L, "Había una vez un cóndor", 100, "");
+        verify(niveles).completar(7L, 1, 10, 3);   // T-425: 100 % → 3 estrellas y los 10 puntos de lectura
     }
 
     @Test

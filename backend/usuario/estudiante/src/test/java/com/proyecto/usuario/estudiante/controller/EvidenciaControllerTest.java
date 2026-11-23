@@ -1,6 +1,7 @@
 package com.proyecto.usuario.estudiante.controller;
 
 import com.proyecto.usuario.estudiante.dto.EstadoEvidenciaResponse;
+import com.proyecto.usuario.estudiante.dto.ResultadoLecturaResponse;
 import com.proyecto.usuario.estudiante.exception.ManejadorErrores;
 import com.proyecto.usuario.estudiante.exception.TokenFaltanteException;
 import com.proyecto.usuario.estudiante.repository.EvidenciaRepository;
@@ -16,7 +17,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// T-416 (US-13): GET /api/estudiante/evidencias/{id}/estado
+// T-416 (US-13): GET .../estado · T-425 (US-14): GET .../resultado
 class EvidenciaControllerTest {
 
     private static final String TOKEN = "Bearer token-de-ana";
@@ -71,5 +72,28 @@ class EvidenciaControllerTest {
         mvc.perform(get("/api/estudiante/evidencias/50/estado"))
                 .andExpect(status().isUnauthorized());
         verifyNoInteractions(evidencias);
+    }
+
+    // T-425
+    @Test
+    void elResultadoTraeEstrellasPuntosYNivelDesbloqueado() throws Exception {
+        when(evidencias.resultado(50L, 7L)).thenReturn(Optional.of(new ResultadoLecturaResponse(
+                50L, 1, "listo", "Había una vez", 94, 15, 16, 100, 70, true, 3, 9, 2, "Palabras nuevas", 33L)));
+
+        mvc.perform(get("/api/estudiante/evidencias/50/resultado").header("Authorization", TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.precision").value(94))
+                .andExpect(jsonPath("$.estrellas").value(3))
+                .andExpect(jsonPath("$.puntos").value(9))
+                .andExpect(jsonPath("$.nivelDesbloqueadoNombre").value("Palabras nuevas"))
+                .andExpect(jsonPath("$.asignacionId").value(33));
+    }
+
+    @Test
+    void elResultadoDeOtroAlumnoResponde404() throws Exception {
+        when(evidencias.resultado(51L, 7L)).thenReturn(Optional.empty());
+
+        mvc.perform(get("/api/estudiante/evidencias/51/resultado").header("Authorization", TOKEN))
+                .andExpect(status().isNotFound());
     }
 }
