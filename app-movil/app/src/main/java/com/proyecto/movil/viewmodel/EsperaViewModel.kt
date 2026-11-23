@@ -3,6 +3,7 @@ package com.proyecto.movil.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.proyecto.movil.model.ResultadoEstado
+import com.proyecto.movil.model.ResultadoEvaluacion
 import com.proyecto.movil.model.repository.EvidenciaRepository
 import com.proyecto.movil.model.repository.IEvidenciaRepository
 import kotlinx.coroutines.Job
@@ -14,7 +15,8 @@ import kotlinx.coroutines.launch
 // T-418: lo que muestra la pantalla mientras la IA escucha la lectura
 sealed class EsperaUiState {
     object Escuchando : EsperaUiState()
-    data class Lista(val transcripcion: String) : EsperaUiState()
+    data class Lista(val transcripcion: String) : EsperaUiState()      // listo, pero sin poder leer el resultado
+    data class Resultado(val resultado: ResultadoEvaluacion) : EsperaUiState()   // T-426
     data class Error(val mensaje: String) : EsperaUiState()
     object TardaMucho : EsperaUiState()   // pasó el tiempo máximo; el profesor igual la recibe
 }
@@ -37,7 +39,7 @@ class EsperaViewModel(
                 val resultado = evidencias.estado(evidenciaId)
                 val siguiente = when (resultado) {
                     is ResultadoEstado.Exito -> when (resultado.estado.estado) {
-                        LISTO -> EsperaUiState.Lista(resultado.estado.transcripcion.orEmpty())
+                        LISTO -> conResultado(evidenciaId, resultado.estado.transcripcion.orEmpty())
                         ERROR -> EsperaUiState.Error(MENSAJE_ERROR_IA)
                         else -> null   // sigue procesando
                     }
@@ -57,6 +59,14 @@ class EsperaViewModel(
                 esperado += INTERVALO_MS
             }
         }
+    }
+
+    // T-426: pide las estrellas y avisa al backend docente; si no se puede, muestra solo lo que escuchó
+    private suspend fun conResultado(evidenciaId: Long, transcripcion: String): EsperaUiState {
+        val resultado = evidencias.resultado(evidenciaId)
+        if (resultado == null || resultado.estado != LISTO) return EsperaUiState.Lista(transcripcion)
+        viewModelScope.launch { evidencias.avisarDocente(evidenciaId, resultado.asignacionId) }
+        return EsperaUiState.Resultado(resultado)
     }
 
     companion object {

@@ -3,6 +3,7 @@ package com.proyecto.movil.model.remote
 import com.proyecto.movil.model.AudioRecibido
 import com.proyecto.movil.model.CompletarNivelRequest
 import com.proyecto.movil.model.EstadoEvidencia
+import com.proyecto.movil.model.ResultadoEvaluacion
 import com.proyecto.movil.model.ConsignaNivel
 import com.proyecto.movil.model.InicioSesionRequest
 import com.proyecto.movil.model.LecturaNivel
@@ -71,4 +72,8 @@ interface ApiService {
     // T-418: cómo va la transcripción de la lectura (T-416). Response<> para leer el 401 y el 404
     @GET("api/estudiante/evidencias/{evidenciaId}/estado")
     suspend fun estadoEvidencia(@Path("evidenciaId") evidenciaId: Long): Response<EstadoEvidencia>
+
+    // T-426: precisión, estrellas, puntos y nivel desbloqueado (T-425)
+    @GET("api/estudiante/evidencias/{evidenciaId}/resultado")
+    suspend fun resultadoLectura(@Path("evidenciaId") evidenciaId: Long): Response<ResultadoEvaluacion>
 }

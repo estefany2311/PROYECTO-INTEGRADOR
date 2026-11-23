@@ -2,6 +2,7 @@ package com.proyecto.movil.viewmodel
 
 import com.proyecto.movil.model.EstadoEvidencia
 import com.proyecto.movil.model.ResultadoEstado
+import com.proyecto.movil.model.ResultadoEvaluacion
 import com.proyecto.movil.model.repository.IEvidenciaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -14,6 +15,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -26,6 +28,17 @@ private class EvidenciasFalsas(vararg respuestas: ResultadoEstado) : IEvidenciaR
         return if (cola.size > 1) cola.removeAt(0) else cola.first()
     }
 }
+
+// T-426: además devuelve el resultado con estrellas y anota los avisos al backend docente
+private class EvidenciasConResultado(private val resultado: ResultadoEvaluacion?) : IEvidenciaRepository {
+    val avisos = mutableListOf<Pair<Long, Long?>>()
+    override suspend fun estado(evidenciaId: Long) =
+        ResultadoEstado.Exito(EstadoEvidencia(evidenciaId, "listo", "Había una vez", null))
+    override suspend fun resultado(evidenciaId: Long) = resultado
+    override suspend fun avisarDocente(evidenciaId: Long, asignacionId: Long?) { avisos += evidenciaId to asignacionId }
+}
+
+private val RESULTADO = ResultadoEvaluacion(50L, 1, "listo", "Había una vez", 94, 15, 16, 3, 9, 2, "Palabras nuevas", 33L)
 
 private fun estado(estado: String, transcripcion: String? = null) =
     ResultadoEstado.Exito(EstadoEvidencia(50L, estado, transcripcion, null))
@@ -118,5 +131,30 @@ class EsperaViewModelTest {
         advanceUntilIdle()
 
         assertEquals(1, falsas.consultas)
+    }
+
+    // T-426
+    @Test
+    fun `cuando termina muestra las estrellas y avisa al backend docente`() = runTest(dispatcher) {
+        val falsas = EvidenciasConResultado(RESULTADO)
+        val vm = EsperaViewModel(falsas)
+
+        vm.seguir(50L)
+        advanceUntilIdle()
+
+        assertEquals(EsperaUiState.Resultado(RESULTADO), vm.uiState.value)
+        assertEquals(listOf(50L to 33L), falsas.avisos)   // cuenta la lectura y entrega la tarea
+    }
+
+    @Test
+    fun `si no se puede leer el resultado igual muestra lo que escucho`() = runTest(dispatcher) {
+        val falsas = EvidenciasConResultado(null)
+        val vm = EsperaViewModel(falsas)
+
+        vm.seguir(50L)
+        advanceUntilIdle()
+
+        assertEquals(EsperaUiState.Lista("Había una vez"), vm.uiState.value)
+        assertTrue(falsas.avisos.isEmpty())
     }
 }

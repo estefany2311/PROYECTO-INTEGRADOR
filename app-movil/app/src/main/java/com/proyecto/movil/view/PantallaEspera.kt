@@ -8,6 +8,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,6 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.proyecto.movil.R
+import com.proyecto.movil.model.ResultadoEvaluacion
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.view.componentes.Koala
@@ -85,6 +91,7 @@ fun ContenidoEspera(estado: EsperaUiState, onVolverAlMapa: () -> Unit) {
                         .testTag("transcripcion")
                 )
             }
+            is EsperaUiState.Resultado -> ResultadoConEstrellas(estado.resultado)
             is EsperaUiState.Error -> Aviso(estado.mensaje)
             EsperaUiState.TardaMucho -> Aviso("Está tardando más de lo normal. Tu profesor igual recibirá tu lectura.")
         }
@@ -98,6 +105,64 @@ fun ContenidoEspera(estado: EsperaUiState, onVolverAlMapa: () -> Unit) {
             ) { Text("Volver al mapa", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
         }
     }
+}
+
+// T-426 (US-14): estrellas, cuántas palabras leyó bien, puntos y si abrió un nivel nuevo
+@Composable
+private fun ResultadoConEstrellas(resultado: ResultadoEvaluacion) {
+    val estrellas = (resultado.estrellas ?: 0).coerceIn(0, 3)
+    Titulo(tituloPara(estrellas), "titulo_resultado")
+    Spacer(Modifier.height(16.dp))
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.semantics { contentDescription = "$estrellas de 3 estrellas" }.testTag("estrellas_resultado")
+    ) {
+        repeat(3) { i ->
+            Icon(
+                painterResource(R.drawable.ic_estrella),
+                contentDescription = null,
+                tint = if (i < estrellas) ColoresAventura.Naranja else ColoresAventura.Gris,
+                modifier = Modifier.size(if (i == 1) 96.dp else 80.dp)
+            )
+        }
+    }
+    Spacer(Modifier.height(16.dp))
+    if (resultado.correctas != null && resultado.evaluadas != null) {
+        Text(
+            "Leíste bien ${resultado.correctas} de ${resultado.evaluadas} palabras",
+            fontSize = 24.sp,
+            color = ColoresAventura.TextoOscuro,
+            modifier = Modifier.testTag("palabras_bien")
+        )
+    }
+    resultado.puntos?.let {
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "+$it puntos",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = ColoresAventura.Turquesa,
+            modifier = Modifier.testTag("puntos_resultado")
+        )
+    }
+    resultado.nivelDesbloqueadoNombre?.let {
+        Spacer(Modifier.height(12.dp))
+        Text(
+            "¡Desbloqueaste un nivel nuevo: $it!",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            color = ColoresAventura.Naranja,
+            modifier = Modifier.testTag("nivel_desbloqueado")
+        )
+    }
+}
+
+private fun tituloPara(estrellas: Int) = when (estrellas) {
+    3 -> "¡Excelente lectura!"
+    2 -> "¡Muy bien!"
+    1 -> "¡Bien hecho!"
+    else -> "¡Sigue practicando!"
 }
 
 @Composable
@@ -128,6 +193,14 @@ private fun Aviso(mensaje: String) {
 @Composable
 fun EsperaEscuchandoPreview() = AppMovilTheme(dynamicColor = false) {
     ContenidoEspera(EsperaUiState.Escuchando) {}
+}
+
+@Preview(name = "Resultado · 2 estrellas", widthDp = 800, heightDp = 1280, showBackground = true)
+@Composable
+fun ResultadoPreview() = AppMovilTheme(dynamicColor = false) {
+    ContenidoEspera(
+        EsperaUiState.Resultado(ResultadoEvaluacion(50L, 1, "listo", "Había una vez", 81, 13, 16, 2, 8, 2, "Palabras nuevas", null))
+    ) {}
 }
 
 @Preview(name = "Espera · lista", widthDp = 800, heightDp = 1280, showBackground = true)
