@@ -2,6 +2,9 @@
 import io
 import os
 import threading
+import wave
+
+import numpy as np
 
 
 class Transcriptor:
@@ -27,7 +30,7 @@ class Transcriptor:
 
     def transcribir(self, audio: bytes) -> dict:
         segmentos, info = self._cargar().transcribe(
-            io.BytesIO(audio),
+            _preparar(audio),
             language="es",
             beam_size=5,
             temperature=0.0,
@@ -53,3 +56,16 @@ class Transcriptor:
             "palabras": palabras,
             "modelo": self.nombre_modelo,
         }
+
+
+def _preparar(audio: bytes):
+    """El WAV que manda el backend (mono, 16 kHz, 16 bits) se lee aquí mismo, sin PyAV.
+    Otros formatos (.m4a, .mp3) los decodifica faster-whisper con PyAV."""
+    try:
+        with wave.open(io.BytesIO(audio)) as w:
+            if w.getnchannels() == 1 and w.getframerate() == 16000 and w.getsampwidth() == 2:
+                muestras = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16)
+                return muestras.astype(np.float32) / 32768.0
+    except (wave.Error, EOFError):
+        pass
+    return io.BytesIO(audio)

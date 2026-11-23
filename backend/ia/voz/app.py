@@ -6,10 +6,13 @@ Cómo levantarlo (en backend/ia/voz):
     pip install -r requirements.txt
     uvicorn app:app --port 8090
 """
+import logging
+
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 
 from transcriptor import Transcriptor
 
+log = logging.getLogger("uvicorn.error")
 TAMANO_MAXIMO = 6 * 1024 * 1024          # igual que el límite del backend estudiante
 
 app = FastAPI(title="Servicio de voz a texto", version="1.0")
@@ -35,5 +38,6 @@ def transcribir(audio: UploadFile = File(...), t: Transcriptor = Depends(transcr
         raise HTTPException(status_code=413, detail="El audio es demasiado grande")
     try:
         return t.transcribir(contenido)
-    except Exception as e:  # audio dañado o formato que no se puede leer
+    except Exception as e:  # audio dañado, formato que no se puede leer o modelo que no cargó
+        log.exception("No se pudo transcribir el audio")   # el detalle queda en la terminal de uvicorn
         raise HTTPException(status_code=422, detail=f"No se pudo leer el audio: {e}")
