@@ -1,8 +1,14 @@
 package com.proyecto.usuario.estudiante.repository;
 
 import com.proyecto.usuario.estudiante.dto.EstadoEvidenciaResponse;
+import com.proyecto.usuario.estudiante.model.DatosLectura;
+import com.proyecto.usuario.estudiante.model.PalabraAlineada;
 import com.proyecto.usuario.estudiante.model.PendienteVoz;
+import com.proyecto.usuario.estudiante.model.ResultadoPrecision;
 import com.proyecto.usuario.estudiante.model.Transcripcion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +20,8 @@ import java.util.Optional;
 // T-414: la tabla evidencia es del módulo docente (V10 de Noemí); aquí solo se insertan las del alumno
 @Repository
 public class EvidenciaRepository {
+
+    private static final Logger log = LoggerFactory.getLogger(EvidenciaRepository.class);
 
     private final JdbcClient jdbc;
 
@@ -51,18 +59,66 @@ public class EvidenciaRepository {
                 .update();
     }
 
-    // T-416: guarda el texto que escuchó Whisper y sus palabras, y pasa a "listo"
+    // T-424: datos de la lectura que se grabó, para calificarla
+    public Optional<DatosLectura> datosLectura(long evidenciaId) {
+        return jdbc.sql("""
+                        SELECT e.estudiante_id, e.nivel_id, el.lectura_id, el.texto_lectura, el.duracion_ms
+                        FROM evidencia_lectura el
+                        JOIN evidencia e ON e.id = el.evidencia_id
+                        WHERE el.evidencia_id = :id
+                        """)
+                .param("id", evidenciaId)
+                .query((rs, n) -> new DatosLectura(rs.getLong("estudiante_id"), rs.getInt("nivel_id"),
+                        rs.getLong("lectura_id"), rs.getString("texto_lectura"), rs.getLong("duracion_ms")))
+                .optional();
+    }
+
+    // T-416/T-424: guarda lo que escuchó Whisper y la calificación juntos; recién ahí pasa a "listo"
     @Transactional
-    public void guardarTranscripcion(long evidenciaId, Transcripcion transcripcion, LocalDateTime ahora) {
+    public void guardarResultado(long evidenciaId, Transcripcion transcripcion, ResultadoPrecision precision,
+                                 List<PalabraAlineada> alineacion, LocalDateTime ahora) {
         jdbc.sql("""
                         UPDATE evidencia_lectura
-                        SET estado_ia = 'listo', transcripcion = :texto, error_ia = NULL, procesado_en = :ahora
+                        SET estado_ia = 'listo', transcripcion = :texto, error_ia = NULL, procesado_en = :ahora,
+                            precision_pct = :precision, correctas = :correctas, evaluadas = :evaluadas,
+                            cobertura_pct = :cobertura, umbral_pct = :umbral, aprobado = :aprobado
                         WHERE evidencia_id = :id
                         """)
                 .param("texto", transcripcion.texto())
                 .param("ahora", ahora)
+                .param("precision", precision.precision())
+                .param("correctas", precision.correctas())
+                .param("evaluadas", precision.evaluadas())
+                .param("cobertura", precision.cobertura())
+                .param("umbral", precision.umbral())
+                .param("aprobado", precision.aprobado())
                 .param("id", evidenciaId)
                 .update();
+        guardarPalabrasEscuchadas(evidenciaId, transcripcion);
+        guardarPalabrasCalificadas(evidenciaId, alineacion);
+    }
+
+    // T-424: también en la tabla evidencia de Noemí (V13/V14), que su panel y su puntaje leen.
+    // Va aparte: si su migración todavía no corrió en esta base, la calificación ya quedó guardada.
+    public void copiarAEvidencia(long evidenciaId, String transcripcion, int puntajeIa, String palabrasMarcadas) {
+        try {
+            jdbc.sql("""
+                            UPDATE evidencia
+                            SET transcripcion = :texto, puntaje_ia = :puntaje, palabras_marcadas = :marcadas
+                            WHERE id = :id
+                            """)
+                    .param("texto", transcripcion)
+                    .param("puntaje", puntajeIa)
+                    .param("marcadas", palabrasMarcadas)
+                    .param("id", evidenciaId)
+                    .update();
+        } catch (DataAccessException e) {
+            log.warn("No se pudo copiar el resultado a evidencia {}: {}", evidenciaId, e.getMessage());
+        }
+    }
+
+    // T-416: cada palabra que escuchó Whisper con sus tiempos (la fluidez de Noemí las lee)
+    private void guardarPalabrasEscuchadas(long evidenciaId, Transcripcion transcripcion) {
         jdbc.sql("DELETE FROM evidencia_palabra WHERE evidencia_id = :id").param("id", evidenciaId).update();
         List<Transcripcion.Palabra> palabras = transcripcion.palabras() == null ? List.of() : transcripcion.palabras();
         for (int orden = 0; orden < palabras.size(); orden++) {
@@ -77,6 +133,24 @@ public class EvidenciaRepository {
                     .param("inicio", p.inicio())
                     .param("fin", p.fin())
                     .param("prob", p.probabilidad())
+                    .update();
+        }
+    }
+
+    // T-424: cada palabra del texto con lo que leyó el niño (correcta, cambiada, omitida o agregada)
+    private void guardarPalabrasCalificadas(long evidenciaId, List<PalabraAlineada> alineacion) {
+        jdbc.sql("DELETE FROM evidencia_resultado_palabra WHERE evidencia_id = :id").param("id", evidenciaId).update();
+        for (int orden = 0; orden < alineacion.size(); orden++) {
+            PalabraAlineada p = alineacion.get(orden);
+            jdbc.sql("""
+                            INSERT INTO evidencia_resultado_palabra (evidencia_id, orden, esperada, leida, tipo)
+                            VALUES (:id, :orden, :esperada, :leida, :tipo)
+                            """)
+                    .param("id", evidenciaId)
+                    .param("orden", orden)
+                    .param("esperada", p.esperada() == null ? null : recortar(p.esperada(), 60))
+                    .param("leida", p.leida() == null ? null : recortar(p.leida(), 60))
+                    .param("tipo", p.tipo().name().toLowerCase())
                     .update();
         }
     }

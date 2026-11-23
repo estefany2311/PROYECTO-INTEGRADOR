@@ -5,8 +5,10 @@ import com.proyecto.usuario.estudiante.dto.NivelDetalleResponse;
 import com.proyecto.usuario.estudiante.event.AudioRecibido;
 import com.proyecto.usuario.estudiante.exception.ManejadorErrores;
 import com.proyecto.usuario.estudiante.exception.ServicioVozNoDisponibleException;
+import com.proyecto.usuario.estudiante.model.DatosLectura;
 import com.proyecto.usuario.estudiante.model.Lectura;
 import com.proyecto.usuario.estudiante.model.Transcripcion;
+import com.proyecto.usuario.estudiante.repository.ConfiguracionEvaluacionRepository;
 import com.proyecto.usuario.estudiante.repository.EvidenciaRepository;
 import com.proyecto.usuario.estudiante.repository.LecturaRepository;
 import com.proyecto.usuario.estudiante.service.*;
@@ -36,7 +38,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// T-420 (US-13): de punta a punta con los audios de ejemplo de src/test/resources/audios.
+// T-420 (US-13) y T-424 (US-14): de punta a punta con los audios de ejemplo de src/test/resources/audios.
 // Validador, almacén, servicio y procesador son los reales; solo la base y Whisper son simulados.
 class AudioIntegracionTest {
 
@@ -62,10 +64,15 @@ class AudioIntegracionTest {
         when(lecturas.porId(5L)).thenReturn(Optional.of(new Lectura(5, "El cóndor", "Había una vez un cóndor.", "lectura", 2, "basica")));
         evidencias = mock(EvidenciaRepository.class);
         when(evidencias.crearAudio(eq(7L), eq(1), any(), any())).thenReturn(50L);
+        when(evidencias.datosLectura(50L)).thenReturn(Optional.of(new DatosLectura(7L, 1, 5L, "Había una vez un cóndor.", 3_000)));
         voz = mock(ClienteVoz.class);
 
         AlmacenAudios almacen = new AlmacenAudios(carpeta.toString(), RELOJ);
-        ProcesadorLecturas procesador = new ProcesadorLecturas(almacen, voz, evidencias, new SyncTaskExecutor(), RELOJ);
+        ConfiguracionEvaluacionRepository configuracion = mock(ConfiguracionEvaluacionRepository.class);
+        when(configuracion.umbralPrecision(7L)).thenReturn(Optional.of(70));
+        EvaluadorLectura evaluador = new EvaluadorLectura(new NormalizadorTexto(), new AlineadorPalabras(), new CalculadorPrecision(), configuracion);
+        ProcesadorLecturas procesador = new ProcesadorLecturas(almacen, voz, evidencias,
+                new CalificadorLectura(evidencias, evaluador), new SyncTaskExecutor(), RELOJ);
         // En la app real el evento llega después del commit; aquí se atiende en el momento
         AudioService servicio = new AudioService(niveles, lecturas, new ValidadorWav(), almacen, evidencias,
                 evento -> procesador.alRecibir((AudioRecibido) evento), RELOJ);
@@ -105,7 +112,9 @@ class AudioIntegracionTest {
 
         assertEquals(1, audiosGuardados());
         verify(evidencias).registrarLectura(eq(50L), eq(5L), eq("Había una vez un cóndor."), eq(3000L), anyInt(), any());
-        verify(evidencias).guardarTranscripcion(eq(50L), eq(ESCUCHADO), any());
+        // T-424: Whisper escuchó todo el texto, así que la precisión es 100 y no hay palabras a mejorar
+        verify(evidencias).guardarResultado(eq(50L), eq(ESCUCHADO), argThat(p -> p.precision() == 100 && p.aprobado()), any(), any());
+        verify(evidencias).copiarAEvidencia(50L, "Había una vez un cóndor", 100, "");
     }
 
     @Test

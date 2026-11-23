@@ -22,7 +22,7 @@ import static com.proyecto.usuario.estudiante.service.AudiosDePrueba.wav;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-// T-416 (US-13): la lectura se transcribe en segundo plano y queda en listo o error
+// T-416/T-424: la lectura se transcribe y se califica en segundo plano; queda en listo o error
 class ProcesadorLecturasTest {
 
     private static final Clock RELOJ = Clock.fixed(Instant.parse("2026-11-20T15:00:00Z"), ZoneId.of("America/Lima"));
@@ -36,6 +36,7 @@ class ProcesadorLecturasTest {
     private AlmacenAudios almacen;
     private ClienteVoz voz;
     private EvidenciaRepository evidencias;
+    private CalificadorLectura calificador;
     private ProcesadorLecturas procesador;
 
     @BeforeEach
@@ -43,7 +44,8 @@ class ProcesadorLecturasTest {
         almacen = new AlmacenAudios(carpeta.toString(), RELOJ);
         voz = mock(ClienteVoz.class);
         evidencias = mock(EvidenciaRepository.class);
-        procesador = new ProcesadorLecturas(almacen, voz, evidencias, new SyncTaskExecutor(), RELOJ);
+        calificador = mock(CalificadorLectura.class);
+        procesador = new ProcesadorLecturas(almacen, voz, evidencias, calificador, new SyncTaskExecutor(), RELOJ);
     }
 
     @Test
@@ -54,7 +56,7 @@ class ProcesadorLecturasTest {
 
         procesador.alRecibir(new AudioRecibido(50L, clave));
 
-        verify(evidencias).guardarTranscripcion(50L, TRANSCRIPCION, AHORA);
+        verify(calificador).calificar(50L, TRANSCRIPCION, AHORA);   // T-424
         verify(evidencias, never()).marcarError(anyLong(), any(), any());
     }
 
@@ -66,7 +68,7 @@ class ProcesadorLecturasTest {
         procesador.procesar(50L, clave);
 
         verify(evidencias).marcarError(50L, "El servicio de voz no respondió", AHORA);
-        verify(evidencias, never()).guardarTranscripcion(anyLong(), any(), any());
+        verify(calificador, never()).calificar(anyLong(), any(), any());
     }
 
     @Test
@@ -81,7 +83,7 @@ class ProcesadorLecturasTest {
     void unErrorInesperadoTambienQuedaEnError() {
         String clave = almacen.guardar(7L, 1, wav(2_000));
         when(voz.transcribir(any())).thenReturn(TRANSCRIPCION);
-        doThrow(new IllegalStateException("base caída")).when(evidencias).guardarTranscripcion(anyLong(), any(), any());
+        doThrow(new IllegalStateException("base caída")).when(calificador).calificar(anyLong(), any(), any());
 
         procesador.procesar(50L, clave);
 
@@ -96,7 +98,7 @@ class ProcesadorLecturasTest {
 
         procesador.retomarPendientes();
 
-        verify(evidencias).guardarTranscripcion(50L, TRANSCRIPCION, AHORA);
+        verify(calificador).calificar(50L, TRANSCRIPCION, AHORA);   // T-424
     }
 
     // En el CI la base está vacía y no existe la tabla evidencia: no debe impedir que arranque

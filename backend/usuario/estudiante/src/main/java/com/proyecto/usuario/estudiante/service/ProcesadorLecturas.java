@@ -30,14 +30,17 @@ public class ProcesadorLecturas {
     private static final Logger log = LoggerFactory.getLogger(ProcesadorLecturas.class);
 
     private final AlmacenAudios almacen;
+    private final CalificadorLectura calificador;
     private final ClienteVoz voz;
     private final EvidenciaRepository evidencias;
     private final TaskExecutor ejecutor;
     private final Clock reloj;
 
     public ProcesadorLecturas(AlmacenAudios almacen, ClienteVoz voz, EvidenciaRepository evidencias,
+                              CalificadorLectura calificador,
                               @Qualifier(ConfiguracionAsync.PROCESADOR_VOZ) TaskExecutor ejecutor, Clock reloj) {
         this.almacen = almacen;
+        this.calificador = calificador;
         this.voz = voz;
         this.evidencias = evidencias;
         this.ejecutor = ejecutor;
@@ -55,7 +58,7 @@ public class ProcesadorLecturas {
         try {
             byte[] audio = Files.readAllBytes(almacen.ruta(clave));
             Transcripcion transcripcion = voz.transcribir(audio);
-            evidencias.guardarTranscripcion(evidenciaId, transcripcion, LocalDateTime.now(reloj));
+            calificador.calificar(evidenciaId, transcripcion, LocalDateTime.now(reloj));   // T-424
         } catch (IOException e) {
             marcarError(evidenciaId, "No se encontró el audio guardado");
         } catch (ServicioVozNoDisponibleException e) {
