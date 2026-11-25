@@ -35,6 +35,7 @@ sealed class EnvioTextoUiState {
     data class Enviado(val escritura: ResultadoEscritura?, val reto: ResultadoReto?) : EnvioTextoUiState()
     data class Error(val mensaje: String) : EnvioTextoUiState()
     data class YaEnviado(val texto: String) : EnvioTextoUiState()   // T-436: lo envió antes; solo se puede ver
+    object EnCola : EnvioTextoUiState()          // T-437: sin internet; se envía solo al volver la conexión
 }
 
 class EditorViewModel(
@@ -70,6 +71,8 @@ class EditorViewModel(
         viewModelScope.launch {
             red.conectado.collect { conectado ->
                 if (conectado && _sinRevisar.value) programarVerificacion(espera = 0L)
+                // T-437: volvió el internet y había un texto esperando
+                if (conectado && _envio.value is EnvioTextoUiState.EnCola) enviar()
             }
         }
     }
@@ -89,6 +92,12 @@ class EditorViewModel(
         almacen.leer(estudianteId(), nivelId)?.let {
             _texto.value = it
             _guardado.value = EstadoGuardado.GUARDADO
+            // T-437: lo había confirmado sin internet; si ya hay conexión se envía ahora
+            if (almacen.pendiente(estudianteId(), nivelId)) {
+                _envio.value = EnvioTextoUiState.EnCola
+                if (red.conectado.value) enviar()
+                return
+            }
             programarVerificacion()
         }
     }
@@ -180,29 +189,67 @@ class EditorViewModel(
     }
 
     fun confirmarEnvio() {
-        val nivel = nivelId ?: return
         if (_envio.value !is EnvioTextoUiState.Confirmando) return
-        _envio.value = EnvioTextoUiState.Enviando
+        enviar()
+    }
+
+    // T-437: el botón "Intentar ahora" mientras espera que vuelva el internet
+    fun reintentarEnvio() {
+        if (_envio.value is EnvioTextoUiState.EnCola) enviar()
+    }
+
+    private fun enviar() {
+        val nivel = nivelId ?: return
         val enviado = _texto.value
+        val estudiante = estudianteId()
+        // T-437: sin internet ni se intenta; queda en cola con el borrador guardado en la tablet
+        if (!red.conectado.value) {
+            ponerEnCola(nivel, estudiante, enviado)
+            return
+        }
+        _envio.value = EnvioTextoUiState.Enviando
         viewModelScope.launch {
             _envio.value = when (val r = textos.enviar(nivel, enviado)) {
                 is ResultadoEnvioTexto.Exito -> {
                     // Ya está en el servidor: se guarda como enviado (T-436) y se borra el borrador
                     guardadoPendiente?.cancel()
                     sinGuardar = false
-                    withContext(io) { almacen.marcarEnviado(estudianteId(), nivel, enviado) }
+                    withContext(io) { almacen.marcarEnviado(estudiante, nivel, enviado) }
                     EnvioTextoUiState.Enviado(r.escritura, r.reto)
                 }
-                is ResultadoEnvioTexto.Rechazado -> EnvioTextoUiState.Error(r.mensaje)
-                ResultadoEnvioTexto.SinConexion -> EnvioTextoUiState.Error(MENSAJE_SIN_CONEXION)
+                is ResultadoEnvioTexto.Rechazado -> {
+                    withContext(io) { almacen.marcarPendiente(estudiante, nivel, false) }
+                    EnvioTextoUiState.Error(r.mensaje)
+                }
+                // El servidor no respondió: se reintenta cuando la red vuelva a conectarse o con "Intentar ahora"
+                ResultadoEnvioTexto.SinConexion -> {
+                    guardarEnCola(nivel, estudiante, enviado)
+                    EnvioTextoUiState.EnCola
+                }
                 ResultadoEnvioTexto.SesionVencida -> EnvioTextoUiState.Error(MENSAJE_SESION_VENCIDA)
             }
         }
     }
 
+    private fun ponerEnCola(nivel: Int, estudiante: Long, texto: String) {
+        _envio.value = EnvioTextoUiState.EnCola
+        viewModelScope.launch { guardarEnCola(nivel, estudiante, texto) }
+    }
+
+    // El borrador queda guardado tal cual se confirmó, así no se pierde si cierra la app
+    private suspend fun guardarEnCola(nivel: Int, estudiante: Long, texto: String) {
+        guardadoPendiente?.cancel()
+        sinGuardar = false
+        withContext(io) {
+            almacen.guardar(estudiante, nivel, texto)
+            almacen.marcarPendiente(estudiante, nivel, true)
+        }
+    }
+
     // T-436: mientras se envía y después de enviar, el texto no se puede cambiar
     private fun bloqueado(): Boolean = when (_envio.value) {
-        is EnvioTextoUiState.Enviando, is EnvioTextoUiState.Enviado, is EnvioTextoUiState.YaEnviado -> true
+        is EnvioTextoUiState.Enviando, is EnvioTextoUiState.Enviado, is EnvioTextoUiState.YaEnviado,
+        is EnvioTextoUiState.EnCola -> true
         else -> false
     }
 
@@ -217,7 +264,7 @@ class EditorViewModel(
         const val MAX_CARACTERES = 3_000
         const val ESPERA_GUARDADO_MS = 1_000L
         const val ESPERA_VERIFICAR_MS = 800L
-        const val MENSAJE_SIN_CONEXION = "No hay internet. Tu texto sigue guardado en la tablet; intenta enviarlo otra vez."
+        const val MENSAJE_EN_COLA = "Sin internet: tu texto se enviará solo cuando vuelva la conexión."
         const val MENSAJE_SESION_VENCIDA = "Tu sesión terminó. Tu texto sigue guardado en la tablet."
     }
 }

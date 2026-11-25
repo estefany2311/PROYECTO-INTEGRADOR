@@ -98,8 +98,9 @@ class EnvioTextoViewModelTest {
         assertNull(almacen.leer(7L, 2))
     }
 
+    // T-437
     @Test
-    fun sinInternetAvisaYElBorradorSigueEnLaTablet() = runTest(dispatcher) {
+    fun siElServidorNoRespondeQuedaEnColaYElBorradorSigueEnLaTablet() = runTest(dispatcher) {
         textos.respuesta = ResultadoEnvioTexto.SinConexion
         viewModel.escribir("Mi perro se llama Toby.")
         advanceUntilIdle()
@@ -108,8 +109,43 @@ class EnvioTextoViewModelTest {
         viewModel.confirmarEnvio()
         advanceUntilIdle()
 
-        assertEquals(EnvioTextoUiState.Error(EditorViewModel.MENSAJE_SIN_CONEXION), viewModel.envio.value)
+        assertEquals(EnvioTextoUiState.EnCola, viewModel.envio.value)
         assertEquals("Mi perro se llama Toby.", almacen.leer(7L, 2))
+        assertTrue(almacen.pendiente(7L, 2))
+    }
+
+    @Test
+    fun sinRedNiSeIntentaYAlVolverElInternetSeEnviaSolo() = runTest(dispatcher) {
+        red.conectado.value = false
+        viewModel.escribir("Mi perro se llama Toby.")
+        viewModel.pedirEnviar()
+        viewModel.confirmarEnvio()
+        advanceUntilIdle()
+        assertEquals(EnvioTextoUiState.EnCola, viewModel.envio.value)
+        assertTrue(textos.enviados.isEmpty())
+
+        textos.respuesta = ResultadoEnvioTexto.Exito(TextoRecibido(80L, 2, 5, emptyList()), null, null)
+        red.conectado.value = true
+        advanceUntilIdle()
+
+        assertEquals(1, textos.enviados.size)
+        assertEquals(EnvioTextoUiState.Enviado(null, null), viewModel.envio.value)
+    }
+
+    @Test
+    fun enColaPuedeIntentarAhora() = runTest(dispatcher) {
+        textos.respuesta = ResultadoEnvioTexto.SinConexion
+        viewModel.escribir("Mi perro se llama Toby.")
+        viewModel.pedirEnviar()
+        viewModel.confirmarEnvio()
+        advanceUntilIdle()
+
+        textos.respuesta = ResultadoEnvioTexto.Exito(TextoRecibido(80L, 2, 5, emptyList()), null, null)
+        viewModel.reintentarEnvio()
+        advanceUntilIdle()
+
+        assertEquals(2, textos.enviados.size)
+        assertEquals(EnvioTextoUiState.Enviado(null, null), viewModel.envio.value)
     }
 
     @Test

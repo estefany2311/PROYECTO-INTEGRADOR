@@ -104,7 +104,8 @@ fun PantallaEditor(
         onConfirmarEnvio = editorViewModel::confirmarEnvio,
         onCancelarEnvio = editorViewModel::cancelarEnvio,
         onVolverAlMapa = onVolverAlMapa,
-        onElegirSugerencia = editorViewModel::elegirSugerencia
+        onElegirSugerencia = editorViewModel::elegirSugerencia,
+        onReintentarEnvio = editorViewModel::reintentarEnvio
     )
 }
 
@@ -124,7 +125,8 @@ fun ContenidoEditor(
     onConfirmarEnvio: () -> Unit = {},
     onCancelarEnvio: () -> Unit = {},
     onVolverAlMapa: () -> Unit = {},
-    onElegirSugerencia: (ErrorOrtografico, String) -> Unit = { _, _ -> }   // T-366/T-367
+    onElegirSugerencia: (ErrorOrtografico, String) -> Unit = { _, _ -> },  // T-366/T-367
+    onReintentarEnvio: () -> Unit = {}                                      // T-437
 ) {
     // T-435: antes de enviar se confirma, porque después ya no podrá cambiar su texto
     if (envio is EnvioTextoUiState.Confirmando) DialogoConfirmarEnvio(onConfirmarEnvio, onCancelarEnvio)
@@ -147,7 +149,10 @@ fun ContenidoEditor(
             is ConsignaUiState.Exito -> when (envio) {
                 is EnvioTextoUiState.Enviado -> TextoEnviado(envio, onVolverAlMapa)
                 is EnvioTextoUiState.YaEnviado -> TextoYaEnviado(envio.texto, onVolverAlMapa)   // T-436
-                else -> Hoja(consigna.consigna, texto, guardado, errores, sinRevisar, envio, onEscribir, onEnviar, onElegirSugerencia)
+                else -> Hoja(
+                    consigna.consigna, texto, guardado, errores, sinRevisar, envio,
+                    onEscribir, onEnviar, onElegirSugerencia, onReintentarEnvio
+                )
             }
         }
     }
@@ -163,7 +168,8 @@ private fun ColumnScope.Hoja(
     envio: EnvioTextoUiState,
     onEscribir: (String) -> Unit,
     onEnviar: () -> Unit,
-    onElegirSugerencia: (ErrorOrtografico, String) -> Unit
+    onElegirSugerencia: (ErrorOrtografico, String) -> Unit,
+    onReintentarEnvio: () -> Unit
 ) {
     // T-366: se guarda dónde está el cursor para saber qué palabra tocó el niño
     var campo by remember { mutableStateOf(TextFieldValue(texto, TextRange(texto.length))) }
@@ -201,7 +207,8 @@ private fun ColumnScope.Hoja(
         // La hoja: letra grande, interlineado amplio y borde naranja como en el mockup
         BasicTextField(
             value = valor,
-            readOnly = envio is EnvioTextoUiState.Enviando,     // T-436: mientras se envía no se cambia
+            // T-436/T-437: mientras se envía o espera el internet no se cambia
+            readOnly = envio is EnvioTextoUiState.Enviando || envio is EnvioTextoUiState.EnCola,
             onValueChange = { nuevo ->
                 // Solo un toque (mismo texto, otro lugar del cursor) abre el menú; al escribir se cierra
                 if (nuevo.text != valor.text) tocoUnaPalabra = false
@@ -310,6 +317,25 @@ private fun ColumnScope.Hoja(
             Spacer(Modifier.height(8.dp))
         }
         val enviando = envio is EnvioTextoUiState.Enviando
+        // T-437: sin internet el texto espera; se envía solo al volver la conexión o con "Intentar ahora"
+        if (envio is EnvioTextoUiState.EnCola) {
+            Text(
+                EditorViewModel.MENSAJE_EN_COLA,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = ColoresAventura.TextoOscuro,
+                modifier = Modifier
+                    .semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("aviso_en_cola_texto")
+            )
+            Spacer(Modifier.height(8.dp))
+            Button(
+                onClick = onReintentarEnvio,
+                colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Azul),
+                shape = RoundedCornerShape(36.dp),
+                modifier = Modifier.fillMaxWidth().height(72.dp).testTag("boton_reintentar_texto")
+            ) { Text("Intentar ahora", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+        } else {
         // T-324: se activa recién al llegar al mínimo de palabras de la consigna
         Button(
             onClick = onEnviar,
@@ -328,6 +354,7 @@ private fun ColumnScope.Hoja(
             } else {
                 Text("Enviar mi texto", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
             }
+        }
         }
     }
     }

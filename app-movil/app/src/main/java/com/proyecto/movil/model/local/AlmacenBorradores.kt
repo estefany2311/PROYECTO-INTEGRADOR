@@ -49,6 +49,23 @@ class AlmacenBorradores(
         destino.parentFile?.mkdirs()
         destino.writeText(texto, Charsets.UTF_8)
         borrar(estudianteId, nivelId)
+        marcarPendiente(estudianteId, nivelId, false)
+    }
+
+    // T-437 (US-21): el niño confirmó el envío sin internet; el texto es el borrador y se envía al volver la red
+    private fun archivoPendiente(estudianteId: Long, nivelId: Int) =
+        File(File(raiz, "est_$estudianteId"), "nivel_${nivelId}_pendiente")
+
+    fun pendiente(estudianteId: Long, nivelId: Int): Boolean = archivoPendiente(estudianteId, nivelId).isFile
+
+    fun marcarPendiente(estudianteId: Long, nivelId: Int, pendiente: Boolean) {
+        val archivo = archivoPendiente(estudianteId, nivelId)
+        if (pendiente) {
+            archivo.parentFile?.mkdirs()
+            archivo.writeText("", Charsets.UTF_8)
+        } else {
+            archivo.delete()
+        }
     }
 
     // Lo usará el envío del texto: una vez enviado ya no hace falta el borrador
