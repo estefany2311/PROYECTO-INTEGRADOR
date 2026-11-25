@@ -29,10 +29,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.proyecto.movil.R
+import com.proyecto.movil.model.PalabraLeida
 import com.proyecto.movil.model.ResultadoEvaluacion
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.view.componentes.Koala
+import com.proyecto.movil.view.componentes.ListaPalabrasPorMejorar
+import com.proyecto.movil.view.componentes.TextoConPalabrasPorMejorar
 import com.proyecto.movil.viewmodel.EsperaUiState
 import com.proyecto.movil.viewmodel.EsperaViewModel
 
@@ -44,15 +47,26 @@ fun PantallaEspera(
     esperaViewModel: EsperaViewModel = viewModel()
 ) {
     val estado by esperaViewModel.uiState.collectAsStateWithLifecycle()
+    val palabraElegida by esperaViewModel.palabraElegida.collectAsStateWithLifecycle()
     LaunchedEffect(evidenciaId) { esperaViewModel.seguir(evidenciaId) }
-    ContenidoEspera(estado, onVolverAlMapa)
+    ContenidoEspera(estado, palabraElegida, esperaViewModel::escuchar, onVolverAlMapa)
 }
 
 // Sin ViewModel: para @Preview y para las pruebas
 @Composable
-fun ContenidoEspera(estado: EsperaUiState, onVolverAlMapa: () -> Unit) {
+fun ContenidoEspera(estado: EsperaUiState, onVolverAlMapa: () -> Unit) =
+    ContenidoEspera(estado, palabraElegida = null, onEscuchar = {}, onVolverAlMapa = onVolverAlMapa)
+
+// T-428/T-430: con la palabra elegida y qué hacer al tocar una palabra por mejorar
+@Composable
+fun ContenidoEspera(
+    estado: EsperaUiState,
+    palabraElegida: String?,
+    onEscuchar: (String) -> Unit,
+    onVolverAlMapa: () -> Unit
+) {
     Column(
-        Modifier.fillMaxSize().background(ColoresAventura.Cielo).padding(24.dp),
+        Modifier.fillMaxSize().background(ColoresAventura.Cielo).verticalScroll(rememberScrollState()).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -91,7 +105,7 @@ fun ContenidoEspera(estado: EsperaUiState, onVolverAlMapa: () -> Unit) {
                         .testTag("transcripcion")
                 )
             }
-            is EsperaUiState.Resultado -> ResultadoConEstrellas(estado.resultado)
+            is EsperaUiState.Resultado -> ResultadoConEstrellas(estado.resultado, palabraElegida, onEscuchar)
             is EsperaUiState.Error -> Aviso(estado.mensaje)
             EsperaUiState.TardaMucho -> Aviso("Está tardando más de lo normal. Tu profesor igual recibirá tu lectura.")
         }
@@ -109,7 +123,7 @@ fun ContenidoEspera(estado: EsperaUiState, onVolverAlMapa: () -> Unit) {
 
 // T-426 (US-14): estrellas, cuántas palabras leyó bien, puntos y si abrió un nivel nuevo
 @Composable
-private fun ResultadoConEstrellas(resultado: ResultadoEvaluacion) {
+private fun ResultadoConEstrellas(resultado: ResultadoEvaluacion, palabraElegida: String?, onEscuchar: (String) -> Unit) {
     val estrellas = (resultado.estrellas ?: 0).coerceIn(0, 3)
     Titulo(tituloPara(estrellas), "titulo_resultado")
     Spacer(Modifier.height(16.dp))
@@ -156,6 +170,29 @@ private fun ResultadoConEstrellas(resultado: ResultadoEvaluacion) {
             modifier = Modifier.testTag("nivel_desbloqueado")
         )
     }
+    PalabrasDelResultado(resultado, palabraElegida, onEscuchar)
+}
+
+// T-428/T-429/T-430: el texto con las palabras por mejorar resaltadas y la lista para escucharlas
+@Composable
+private fun PalabrasDelResultado(resultado: ResultadoEvaluacion, palabraElegida: String?, onEscuchar: (String) -> Unit) {
+    val palabras = resultado.palabras.orEmpty()
+    if (palabras.isEmpty()) return   // backend anterior o lectura sin texto
+    val porMejorar = resultado.palabrasPorMejorar()
+    Spacer(Modifier.height(20.dp))
+    TextoConPalabrasPorMejorar(palabras, palabraElegida, onEscuchar)
+    Spacer(Modifier.height(20.dp))
+    if (porMejorar.isEmpty()) {
+        Text(
+            "¡Leíste todas las palabras bien!",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = ColoresAventura.Turquesa,
+            modifier = Modifier.testTag("todas_bien")
+        )
+    } else {
+        ListaPalabrasPorMejorar(porMejorar, palabraElegida, onEscuchar)
+    }
 }
 
 private fun tituloPara(estrellas: Int) = when (estrellas) {
@@ -201,6 +238,19 @@ fun ResultadoPreview() = AppMovilTheme(dynamicColor = false) {
     ContenidoEspera(
         EsperaUiState.Resultado(ResultadoEvaluacion(50L, 1, "listo", "Había una vez", 81, 13, 16, 2, 8, 2, "Palabras nuevas", null))
     ) {}
+}
+
+@Preview(name = "Resultado · palabras por mejorar", widthDp = 800, heightDp = 1280, showBackground = true)
+@Composable
+fun ResultadoPalabrasPreview() = AppMovilTheme(dynamicColor = false) {
+    val palabras = "Había una vez un cóndor que vivía en los Andes.".split(" ")
+        .map { PalabraLeida(it, it == "cóndor" || it == "Andes.") }
+    ContenidoEspera(
+        EsperaUiState.Resultado(ResultadoEvaluacion(50L, 1, "listo", "Había una vez", 80, 8, 10, 2, 8, null, null, null, palabras)),
+        palabraElegida = "cóndor",
+        onEscuchar = {},
+        onVolverAlMapa = {}
+    )
 }
 
 @Preview(name = "Espera · lista", widthDp = 800, heightDp = 1280, showBackground = true)
