@@ -1,9 +1,7 @@
 package com.proyecto.movil.navegacion
 
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -135,12 +133,11 @@ fun NavegacionApp(almacen: IAlmacenSesion = Dependencias.almacenSesion) {
             )
         }
         composable(Rutas.ESCRIBIR, arguments = ARGUMENTO_NIVEL) { entrada ->
-            val contexto = LocalContext.current
             PantallaEditor(
                 nivelId = entrada.nivelId(),
                 onVolver = { nav.popBackStack() },
-                // Enviar el texto para evaluarlo llega en una próxima historia
-                onEnviar = { Toast.makeText(contexto, "Enviar tu texto llega en la próxima versión", Toast.LENGTH_SHORT).show() }
+                // T-435: después de enviar el texto vuelve al mapa (se refresca con el nivel desbloqueado)
+                onVolverAlMapa = { nav.popBackStack(Rutas.MAPA, inclusive = false) }
             )
         }
     }

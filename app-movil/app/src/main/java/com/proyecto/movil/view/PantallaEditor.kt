@@ -9,12 +9,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,10 +53,12 @@ import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.viewmodel.ConsignaUiState
 import com.proyecto.movil.viewmodel.ConsignaViewModel
 import com.proyecto.movil.viewmodel.EditorViewModel
+import com.proyecto.movil.viewmodel.EnvioTextoUiState
 import com.proyecto.movil.viewmodel.EstadoGuardado
 import com.proyecto.movil.view.componentes.SubrayarErrores
 import com.proyecto.movil.view.componentes.CabeceraEscritura
 import com.proyecto.movil.view.componentes.ErrorConsigna
+import com.proyecto.movil.view.componentes.Koala
 
 //T-323 (US-18): el niño escribe su texto con letra grande. Se abre con "Empezar a escribir" (T-321)
  //Teclado en español y SIN autocorrector: lo que se evalúa es cómo escribe el niño, así que la tablet
@@ -64,7 +68,7 @@ import com.proyecto.movil.view.componentes.ErrorConsigna
 fun PantallaEditor(
     nivelId: Int,
     onVolver: () -> Unit,
-    onEnviar: (String) -> Unit,
+    onVolverAlMapa: () -> Unit,
     consignaViewModel: ConsignaViewModel = viewModel(),
     editorViewModel: EditorViewModel = viewModel()
 ) {
@@ -73,6 +77,7 @@ fun PantallaEditor(
     val guardado by editorViewModel.guardado.collectAsStateWithLifecycle()
     val errores by editorViewModel.errores.collectAsStateWithLifecycle()
     val sinRevisar by editorViewModel.sinRevisar.collectAsStateWithLifecycle()
+    val envio by editorViewModel.envio.collectAsStateWithLifecycle()
 
     LaunchedEffect(nivelId) {
         consignaViewModel.cargar(nivelId)
@@ -84,11 +89,15 @@ fun PantallaEditor(
         texto = texto,
         onEscribir = editorViewModel::escribir,
         onVolver = onVolver,
-        onEnviar = { onEnviar(texto) },
+        onEnviar = editorViewModel::pedirEnviar,
         onReintentar = consignaViewModel::reintentar,
         guardado = guardado,
         errores = errores,
-        sinRevisar = sinRevisar
+        sinRevisar = sinRevisar,
+        envio = envio,
+        onConfirmarEnvio = editorViewModel::confirmarEnvio,
+        onCancelarEnvio = editorViewModel::cancelarEnvio,
+        onVolverAlMapa = onVolverAlMapa
     )
 }
 
@@ -103,8 +112,14 @@ fun ContenidoEditor(
     onReintentar: () -> Unit,
     guardado: EstadoGuardado = EstadoGuardado.NADA,
     errores: List<ErrorOrtografico> = emptyList(),
-    sinRevisar: Boolean = false
+    sinRevisar: Boolean = false,
+    envio: EnvioTextoUiState = EnvioTextoUiState.Escribiendo,      // T-435
+    onConfirmarEnvio: () -> Unit = {},
+    onCancelarEnvio: () -> Unit = {},
+    onVolverAlMapa: () -> Unit = {}
 ) {
+    // T-435: antes de enviar se confirma, porque después ya no podrá cambiar su texto
+    if (envio is EnvioTextoUiState.Confirmando) DialogoConfirmarEnvio(onConfirmarEnvio, onCancelarEnvio)
     Column(
         Modifier
             .fillMaxSize()
@@ -121,7 +136,10 @@ fun ContenidoEditor(
             is ConsignaUiState.Error -> Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 ErrorConsigna(consigna, onReintentar, onVolver)
             }
-            is ConsignaUiState.Exito -> Hoja(consigna.consigna, texto, guardado, errores, sinRevisar, onEscribir, onEnviar)
+            is ConsignaUiState.Exito -> when (envio) {
+                is EnvioTextoUiState.Enviado -> TextoEnviado(envio, onVolverAlMapa)
+                else -> Hoja(consigna.consigna, texto, guardado, errores, sinRevisar, envio, onEscribir, onEnviar)
+            }
         }
     }
 }
@@ -133,6 +151,7 @@ private fun ColumnScope.Hoja(
     guardado: EstadoGuardado,
     errores: List<ErrorOrtografico>,
     sinRevisar: Boolean,
+    envio: EnvioTextoUiState,
     onEscribir: (String) -> Unit,
     onEnviar: () -> Unit
 ) {
@@ -234,10 +253,24 @@ private fun ColumnScope.Hoja(
         val llego = palabras >= consigna.palabrasMinimas
         ContadorPalabras(palabras, consigna.palabrasMinimas, guardado)
         Spacer(Modifier.height(20.dp))
+        // T-435: si no se pudo enviar, el texto sigue en la tablet y puede volver a intentarlo
+        if (envio is EnvioTextoUiState.Error) {
+            Text(
+                envio.mensaje,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = ColoresAventura.Rojo,
+                modifier = Modifier
+                    .semantics { liveRegion = LiveRegionMode.Polite }
+                    .testTag("aviso_envio")
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+        val enviando = envio is EnvioTextoUiState.Enviando
         // T-324: se activa recién al llegar al mínimo de palabras de la consigna
         Button(
             onClick = onEnviar,
-            enabled = llego,
+            enabled = llego && !enviando,
             colors = ButtonDefaults.buttonColors(
                 containerColor = ColoresAventura.Naranja,
                 disabledContainerColor = ColoresAventura.Gris
@@ -245,9 +278,124 @@ private fun ColumnScope.Hoja(
             shape = RoundedCornerShape(36.dp),
             modifier = Modifier.fillMaxWidth().height(72.dp).testTag("boton_enviar_texto")
         ) {
-            Text("Enviar mi texto", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+            if (enviando) {
+                CircularProgressIndicator(color = Color.White, strokeWidth = 4.dp, modifier = Modifier.size(32.dp).testTag("enviando_texto"))
+                Spacer(Modifier.width(12.dp))
+                Text("Enviando…", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            } else {
+                Text("Enviar mi texto", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+            }
         }
     }
+    }
+}
+
+// T-435: confirmación antes de enviar
+@Composable
+private fun DialogoConfirmarEnvio(onConfirmar: () -> Unit, onCancelar: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onCancelar,
+        title = { Text("¿Enviar tu texto?", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = ColoresAventura.TextoOscuro) },
+        text = {
+            Text(
+                "Cuando lo envíes ya no podrás cambiarlo. Tu profesor lo va a leer.",
+                fontSize = 20.sp,
+                color = ColoresAventura.TextoOscuro
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirmar,
+                colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Naranja),
+                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier.height(56.dp).testTag("boton_confirmar_envio")
+            ) { Text("Sí, enviar", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancelar, modifier = Modifier.height(56.dp).testTag("boton_cancelar_envio")) {
+                Text("Seguir escribiendo", fontSize = 20.sp, color = ColoresAventura.TextoOscuro)
+            }
+        },
+        modifier = Modifier.testTag("dialogo_enviar_texto")
+    )
+}
+
+// T-435: después de enviar, el koala lo felicita con su puntaje (si el backend docente respondió)
+@Composable
+private fun ColumnScope.TextoEnviado(enviado: EnvioTextoUiState.Enviado, onVolverAlMapa: () -> Unit) {
+    Column(
+        Modifier
+            .weight(1f)
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Koala(tamano = 180.dp, saludando = true)
+        Spacer(Modifier.height(20.dp))
+        Text(
+            "¡Enviaste tu texto!",
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = ColoresAventura.Turquesa,
+            modifier = Modifier.testTag("titulo_texto_enviado")
+        )
+        enviado.escritura?.let { escritura ->
+            val estrellas = escritura.estrellas.coerceIn(0, 3)
+            Spacer(Modifier.height(16.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.semantics { contentDescription = "$estrellas de 3 estrellas" }.testTag("estrellas_texto")
+            ) {
+                repeat(3) { i ->
+                    Icon(
+                        painterResource(R.drawable.ic_estrella),
+                        contentDescription = null,
+                        tint = if (i < estrellas) ColoresAventura.Naranja else ColoresAventura.Gris,
+                        modifier = Modifier.size(if (i == 1) 88.dp else 72.dp)
+                    )
+                }
+            }
+            escritura.mensaje?.let {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    it,
+                    fontSize = 22.sp,
+                    textAlign = TextAlign.Center,
+                    color = ColoresAventura.TextoOscuro,
+                    modifier = Modifier.widthIn(max = 640.dp).testTag("mensaje_texto")
+                )
+            }
+        }
+        // Sin puntaje todavía: el profesor igual recibió el texto
+        if (enviado.escritura == null) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "Tu profesor ya puede leerlo.",
+                fontSize = 22.sp,
+                color = ColoresAventura.TextoOscuro,
+                modifier = Modifier.testTag("mensaje_texto")
+            )
+        }
+        enviado.reto?.takeIf { it.siguienteRecienDesbloqueado }?.siguienteNivelNombre?.let {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "¡Desbloqueaste un nivel nuevo: $it!",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                color = ColoresAventura.Naranja,
+                modifier = Modifier.testTag("nivel_desbloqueado_texto")
+            )
+        }
+        Spacer(Modifier.height(28.dp))
+        Button(
+            onClick = onVolverAlMapa,
+            colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Turquesa),
+            shape = RoundedCornerShape(36.dp),
+            modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth().height(72.dp).testTag("boton_volver_mapa_texto")
+        ) { Text("Volver al mapa", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
     }
 }
 

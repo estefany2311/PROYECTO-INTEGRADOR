@@ -1,5 +1,6 @@
 package com.proyecto.movil.model.remote
 
+import com.proyecto.movil.model.ResultadoEscritura
 import retrofit2.Response
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -13,4 +14,8 @@ interface PuntajeApi {
     // US-38: marca la tarea del docente como entregada (idempotente)
     @POST("api/estudiante/asignaciones/{asignacionId}/entregar")
     suspend fun entregarTarea(@Path("asignacionId") asignacionId: Long): Response<Unit>
+
+    // T-435 (US-22): puntaje de escritura del texto enviado; lo guarda y suma los puntos (idempotente)
+    @POST("api/estudiante/evidencias/{evidenciaId}/escritura")
+    suspend fun evaluarEscritura(@Path("evidenciaId") evidenciaId: Long): Response<ResultadoEscritura>
 }

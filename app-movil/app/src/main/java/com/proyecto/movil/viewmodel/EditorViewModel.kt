@@ -4,11 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.proyecto.movil.Dependencias
 import com.proyecto.movil.model.ErrorOrtografico
+import com.proyecto.movil.model.ResultadoEnvioTexto
+import com.proyecto.movil.model.ResultadoEscritura
 import com.proyecto.movil.model.ResultadoOrtografia
+import com.proyecto.movil.model.ResultadoReto
 import com.proyecto.movil.model.local.AlmacenBorradores
 import com.proyecto.movil.model.remote.IMonitorRed
 import com.proyecto.movil.model.repository.IOrtografiaRepository
+import com.proyecto.movil.model.repository.ITextoRepository
 import com.proyecto.movil.model.repository.OrtografiaRepository
+import com.proyecto.movil.model.repository.TextoRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,13 +26,26 @@ import kotlinx.coroutines.withContext
 // T-325: lo que muestra el editor junto al contador ("Guardando…" / "Guardado en la tablet")
 enum class EstadoGuardado { NADA, GUARDANDO, GUARDADO }
 
+// T-435 (US-21): el envío del texto final
+sealed class EnvioTextoUiState {
+    object Escribiendo : EnvioTextoUiState()
+    object Confirmando : EnvioTextoUiState()     // "¿Enviar tu texto?"
+    object Enviando : EnvioTextoUiState()
+    data class Enviado(val escritura: ResultadoEscritura?, val reto: ResultadoReto?) : EnvioTextoUiState()
+    data class Error(val mensaje: String) : EnvioTextoUiState()
+}
+
 class EditorViewModel(
     private val almacen: AlmacenBorradores = Dependencias.almacenBorradores,
     private val estudianteId: () -> Long = { Dependencias.almacenSesion.leer()?.estudianteId ?: 0L },
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val ortografia: IOrtografiaRepository = OrtografiaRepository(),
-    private val red: IMonitorRed = Dependencias.monitorRed
+    private val red: IMonitorRed = Dependencias.monitorRed,
+    private val textos: ITextoRepository = TextoRepository()
 ) : ViewModel() {
+
+    private val _envio = MutableStateFlow<EnvioTextoUiState>(EnvioTextoUiState.Escribiendo)
+    val envio: StateFlow<EnvioTextoUiState> = _envio
 
     private val _texto = MutableStateFlow("")
     val texto: StateFlow<String> = _texto
@@ -129,6 +147,38 @@ class EditorViewModel(
         }
     }
 
+    // T-435: el botón "Enviar" pide confirmar antes de enviar
+    fun pedirEnviar() {
+        if (_texto.value.isBlank()) return
+        if (_envio.value is EnvioTextoUiState.Enviando || _envio.value is EnvioTextoUiState.Enviado) return
+        _envio.value = EnvioTextoUiState.Confirmando
+    }
+
+    fun cancelarEnvio() {
+        if (_envio.value is EnvioTextoUiState.Confirmando) _envio.value = EnvioTextoUiState.Escribiendo
+    }
+
+    fun confirmarEnvio() {
+        val nivel = nivelId ?: return
+        if (_envio.value !is EnvioTextoUiState.Confirmando) return
+        _envio.value = EnvioTextoUiState.Enviando
+        val enviado = _texto.value
+        viewModelScope.launch {
+            _envio.value = when (val r = textos.enviar(nivel, enviado)) {
+                is ResultadoEnvioTexto.Exito -> {
+                    // Ya está en el servidor: el borrador de la tablet no hace falta
+                    guardadoPendiente?.cancel()
+                    sinGuardar = false
+                    withContext(io) { almacen.borrar(estudianteId(), nivel) }
+                    EnvioTextoUiState.Enviado(r.escritura, r.reto)
+                }
+                is ResultadoEnvioTexto.Rechazado -> EnvioTextoUiState.Error(r.mensaje)
+                ResultadoEnvioTexto.SinConexion -> EnvioTextoUiState.Error(MENSAJE_SIN_CONEXION)
+                ResultadoEnvioTexto.SesionVencida -> EnvioTextoUiState.Error(MENSAJE_SESION_VENCIDA)
+            }
+        }
+    }
+
     // Al salir del editor se guarda en ese momento lo que faltaba (el archivo es pequeño).
     // Se usa sinGuardar porque Android cancela viewModelScope antes de llamar a onCleared()
     override fun onCleared() {
@@ -140,5 +190,7 @@ class EditorViewModel(
         const val MAX_CARACTERES = 3_000
         const val ESPERA_GUARDADO_MS = 1_000L
         const val ESPERA_VERIFICAR_MS = 800L
+        const val MENSAJE_SIN_CONEXION = "No hay internet. Tu texto sigue guardado en la tablet; intenta enviarlo otra vez."
+        const val MENSAJE_SESION_VENCIDA = "Tu sesión terminó. Tu texto sigue guardado en la tablet."
     }
 }

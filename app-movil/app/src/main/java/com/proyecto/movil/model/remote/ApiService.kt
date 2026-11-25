@@ -5,6 +5,7 @@ import com.proyecto.movil.model.CompletarNivelRequest
 import com.proyecto.movil.model.EstadoEvidencia
 import com.proyecto.movil.model.ResultadoEvaluacion
 import com.proyecto.movil.model.ConsignaNivel
+import com.proyecto.movil.model.EnviarTextoRequest
 import com.proyecto.movil.model.InicioSesionRequest
 import com.proyecto.movil.model.LecturaNivel
 import com.proyecto.movil.model.NivelDetalle
@@ -12,6 +13,7 @@ import com.proyecto.movil.model.Perfil
 import com.proyecto.movil.model.RespuestaOrtografia
 import com.proyecto.movil.model.ResultadoReto
 import com.proyecto.movil.model.SesionRespuesta
+import com.proyecto.movil.model.TextoRecibido
 import com.proyecto.movil.model.VerificarTextoRequest
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -76,4 +78,15 @@ interface ApiService {
     // T-426: precisión, estrellas, puntos y nivel desbloqueado (T-425)
     @GET("api/estudiante/evidencias/{evidenciaId}/resultado")
     suspend fun resultadoLectura(@Path("evidenciaId") evidenciaId: Long): Response<ResultadoEvaluacion>
+
+    // T-435: envía el texto final del editor (T-434). Response<> para leer el mensaje de los 400
+    @POST("api/estudiante/niveles/{nivelId}/texto")
+    suspend fun enviarTexto(
+        @Path("nivelId") nivelId: Int,
+        @Body request: EnviarTextoRequest
+    ): Response<TextoRecibido>
+
+    // T-435: con el texto ya calificado registra el intento y desbloquea el siguiente nivel
+    @POST("api/estudiante/evidencias/{evidenciaId}/completar")
+    suspend fun completarEscritura(@Path("evidenciaId") evidenciaId: Long): Response<ResultadoReto>
 }
