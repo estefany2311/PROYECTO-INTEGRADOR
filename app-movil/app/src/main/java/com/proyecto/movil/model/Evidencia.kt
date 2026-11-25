@@ -28,5 +28,20 @@ data class ResultadoEvaluacion(
     val puntos: Int?,
     val nivelDesbloqueadoId: Int?,
     val nivelDesbloqueadoNombre: String?,
-    val asignacionId: Long?
-)
+    val asignacionId: Long?,
+    val palabras: List<PalabraLeida>? = null   // T-428: Gson deja null si el backend no la manda
+) {
+    // T-428: sin repetir y sin puntuación, para la lista "Palabras por mejorar"
+    fun palabrasPorMejorar(): List<String> =
+        palabras.orEmpty()
+            .filter { it.mejorar }
+            .map { limpiarPalabra(it.texto) }
+            .filter { it.isNotEmpty() }
+            .distinctBy { it.lowercase() }
+}
+
+// T-428: una palabra del texto como está escrita ("cóndor.") y si el niño debe practicarla
+data class PalabraLeida(val texto: String, val mejorar: Boolean)
+
+// "¡Hola," -> "Hola": lo que se muestra en la lista y lo que dice la voz del teléfono
+fun limpiarPalabra(texto: String): String = texto.trim { !it.isLetterOrDigit() }

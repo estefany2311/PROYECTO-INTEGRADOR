@@ -5,6 +5,7 @@ import com.proyecto.usuario.estudiante.dto.ResultadoLecturaResponse;
 import com.proyecto.usuario.estudiante.exception.EvidenciaNoEncontradaException;
 import com.proyecto.usuario.estudiante.repository.EvidenciaRepository;
 import com.proyecto.usuario.estudiante.service.AutenticadorTablet;
+import com.proyecto.usuario.estudiante.service.ResultadoLecturaService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,10 +16,13 @@ public class EvidenciaController {
 
     private final AutenticadorTablet autenticador;
     private final EvidenciaRepository evidencias;
+    private final ResultadoLecturaService resultados;
 
-    public EvidenciaController(AutenticadorTablet autenticador, EvidenciaRepository evidencias) {
+    public EvidenciaController(AutenticadorTablet autenticador, EvidenciaRepository evidencias,
+                               ResultadoLecturaService resultados) {
         this.autenticador = autenticador;
         this.evidencias = evidencias;
+        this.resultados = resultados;
     }
 
     @GetMapping("/{evidenciaId}/estado")
@@ -29,12 +33,13 @@ public class EvidenciaController {
         return evidencias.estado(evidenciaId, estudianteId).orElseThrow(EvidenciaNoEncontradaException::new);
     }
 
-    // T-425: precisión, estrellas, puntos y nivel desbloqueado; mientras procesa llega con estado "procesando"
+    // T-425: precisión, estrellas, puntos y nivel desbloqueado; mientras procesa llega con estado "procesando".
+    // T-428: también el texto palabra por palabra, con las que debe mejorar
     @GetMapping("/{evidenciaId}/resultado")
     public ResultadoLecturaResponse resultado(
             @PathVariable long evidenciaId,
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         long estudianteId = autenticador.estudianteDe(authorization);
-        return evidencias.resultado(evidenciaId, estudianteId).orElseThrow(EvidenciaNoEncontradaException::new);
+        return resultados.resultado(evidenciaId, estudianteId).orElseThrow(EvidenciaNoEncontradaException::new);
     }
 }

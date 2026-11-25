@@ -6,6 +6,7 @@ import com.proyecto.usuario.estudiante.model.DatosLectura;
 import com.proyecto.usuario.estudiante.model.PalabraAlineada;
 import com.proyecto.usuario.estudiante.model.PendienteVoz;
 import com.proyecto.usuario.estudiante.model.ResultadoPrecision;
+import com.proyecto.usuario.estudiante.model.TextoCalificado;
 import com.proyecto.usuario.estudiante.model.Transcripcion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,8 +157,24 @@ public class EvidenciaRepository {
                         rs.getObject("umbral_pct", Integer.class), rs.getObject("aprobado", Boolean.class),
                         rs.getObject("estrellas", Integer.class), rs.getObject("puntos", Integer.class),
                         rs.getObject("nivel_desbloqueado", Integer.class), rs.getString("nivel_nombre"),
-                        rs.getObject("asignacion_id", Long.class)))
+                        rs.getObject("asignacion_id", Long.class), List.of()))
                 .optional();
+    }
+
+    // T-428: el texto que leyó y el tipo de cada palabra del texto, para marcar las que debe mejorar
+    public Optional<TextoCalificado> textoCalificado(long evidenciaId) {
+        return jdbc.sql("SELECT texto_lectura FROM evidencia_lectura WHERE evidencia_id = :id")
+                .param("id", evidenciaId)
+                .query(String.class)
+                .optional()
+                .map(texto -> new TextoCalificado(texto, jdbc.sql("""
+                                SELECT tipo FROM evidencia_resultado_palabra
+                                WHERE evidencia_id = :id AND tipo <> 'agregada'
+                                ORDER BY orden
+                                """)
+                        .param("id", evidenciaId)
+                        .query(String.class)
+                        .list()));
     }
 
     // T-416: cada palabra que escuchó Whisper con sus tiempos (la fluidez de Noemí las lee)
