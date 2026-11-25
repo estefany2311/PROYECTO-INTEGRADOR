@@ -16,6 +16,12 @@ class Lectura(models.Model):
         ('avanzada', 'Avanzada'),
     ]
 
+    
+    FUENTES = [
+        ('manual', 'Manual'),
+        ('oficial', 'Oficial'),
+    ]
+
     titulo = models.CharField(max_length=150)
     texto = models.TextField()
     tipo_reto = models.CharField(max_length=20, choices=TIPOS_RETO)
@@ -25,6 +31,9 @@ class Lectura(models.Model):
     )
     dificultad = models.CharField(max_length=20, choices=DIFICULTADES, default='basica')
     activo = models.BooleanField(default=True)
+        # T-442: de dónde viene la lectura (manual o importada de un recurso oficial)
+    fuente = models.CharField(max_length=10, choices=FUENTES, default='manual', db_default='manual')
+    url_recurso = models.URLField(max_length=500, blank=True, default='', db_default='')
     creado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -43,3 +52,90 @@ class Lectura(models.Model):
 
     def __str__(self):
         return self.titulo
+
+
+
+
+class RecursoOficial(models.Model):
+    """US-39 · T-440: recurso de la Biblioteca Escolar Digital (API oficial), solo primaria.
+
+    Se llena con el comando sincronizar_recursos (T-441). Si "lectura" está vacío,
+    el recurso todavía no se importó al catálogo.
+    """
+    FUENTE = 'Biblioteca Escolar Digital – Ministerio de Educación del Perú'
+
+    uuid = models.CharField(max_length=36, unique=True)
+    titulo = models.CharField(max_length=300)
+    descripcion = models.TextField(blank=True)
+    grado = models.PositiveSmallIntegerField(
+        null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(6)])
+    competencia = models.CharField(max_length=20, choices=Lectura.TIPOS_RETO, blank=True)
+    temas = models.JSONField(default=list, blank=True)
+    url_recurso = models.URLField(max_length=500)
+    url_pdf = models.URLField(max_length=500, blank=True)
+    lectura = models.ForeignKey(
+        Lectura, on_delete=models.SET_NULL, null=True, blank=True, related_name='recursos_oficiales')
+    sincronizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'recursos_oficiales'
+        ordering = ['grado', 'titulo']
+        verbose_name = 'Recurso oficial'
+        verbose_name_plural = 'Recursos oficiales'
+
+    @property
+    def importado(self):
+        return self.lectura_id is not None
+
+    def __str__(self):
+        grado = f'{self.grado}.° grado' if self.grado else 'sin grado'
+        return f'{self.titulo} ({grado})'
+
+
+class RecursoLectura(models.Model):
+    """US-42: imagen o audio asociado a una lectura (ilustración, portada o narración).
+
+    El archivo se guarda en la carpeta media/ del backend (T-344); aquí queda su ruta.
+    """
+    TIPOS = [
+        ('imagen', 'Imagen'),
+        ('audio', 'Audio'),
+    ]
+
+    lectura = models.ForeignKey(
+        Lectura,
+        on_delete=models.CASCADE,          # si se borra la lectura, se borran sus recursos
+        related_name='recursos',
+    )
+    tipo = models.CharField(max_length=10, choices=TIPOS)
+    archivo = models.FileField(upload_to='recursos_lectura/%Y/%m/', max_length=255)
+    nombre_original = models.CharField(
+        max_length=255,
+        help_text='Nombre del archivo tal como lo subió el admin (p. ej. zorro-andino.png).',
+    )
+    tamano = models.PositiveIntegerField(help_text='Tamaño del archivo en bytes.')
+    descripcion = models.CharField(
+        max_length=120,
+        blank=True,
+        default='',
+        db_default='',
+        help_text='Para qué sirve: portada, ilustración, narración...',
+    )
+    subido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='recursos_subidos',
+    )
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # Nombre claro para que la app del estudiante (Spring Boot) la pueda leer
+        db_table = 'recursos_lectura'
+        ordering = ['lectura', 'creado_en']
+        verbose_name = 'Recurso de lectura'
+        verbose_name_plural = 'Recursos de lectura'
+
+    def __str__(self):
+        return f'{self.get_tipo_display()} · {self.nombre_original} ({self.lectura.titulo})'

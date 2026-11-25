@@ -1,0 +1,259 @@
+import { useEffect, useState } from "react";
+import { obtenerReporteAulas, obtenerReporteColegios } from "../api";
+import BarraSemaforo from "../components/BarraSemaforo";
+import BarraFiltros from "../components/BarraFiltros";
+import BotonesDescarga from "../components/BotonesDescarga";
+import { GraficoCompetencias, GraficoSemaforo } from "../components/GraficosReporte";
+import Promedio from "../components/Promedio";
+
+// US-47 · T-269: reporte consolidado por colegio y por aula (usa los endpoints de T-267 y T-268)
+
+const COMPETENCIAS = [
+  { clave: "lectura", texto: "Lectura" },
+  { clave: "escritura", texto: "Escritura" },
+  { clave: "oralidad", texto: "Oralidad" },
+];
+
+const FILTROS_VACIOS = { grado: "", desde: "", hasta: "" };
+const fechaCorta = (iso) => iso.split("-").reverse().join("/");   // 2026-09-01 → 01/09/2026
+
+export default function Reportes({ onNoAutorizado }) {
+  const [vista, setVista] = useState("colegios"); // "colegios" | "aulas"
+  const [colegios, setColegios] = useState([]);   // para el selector (siempre todos)
+  const [colegioId, setColegioId] = useState("");
+  const [filtros, setFiltros] = useState(FILTROS_VACIOS); // US-49: grado y periodo aplicados
+  const [reporte, setReporte] = useState(null);   // { resumen, colegios }
+  const [aulas, setAulas] = useState(null);       // { colegio, aulas }
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+
+  const manejarError = (err) => {
+    if (err.estado === 401) return onNoAutorizado();
+    if (err.estado === 403) return setError("No tienes permiso para ver los reportes.");
+        // 400 de los filtros: { desde: ["..."], hasta: ["..."] } → se muestran todos los mensajes
+    const mensajes = err.estado === 400 && err.datos ? Object.values(err.datos).flat().join(" ") : null;
+    setError(mensajes || err.datos?.detail || err.mensaje || "No se pudo cargar el reporte.");
+  };
+
+  // Reporte por colegio (todos o uno). El "cargando" se activa al cambiar de colegio (elegirColegio)
+  useEffect(() => {
+    obtenerReporteColegios(colegioId, filtros)
+      .then((datos) => {
+        setReporte(datos);
+        if (!colegioId) setColegios(datos.colegios);
+      })
+      .catch(manejarError)
+      .finally(() => setCargando(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [colegioId, filtros]);
+
+  // Aulas del colegio elegido
+  useEffect(() => {
+    if (vista !== "aulas" || !colegioId) return;
+    obtenerReporteAulas(colegioId, filtros).then(setAulas).catch(manejarError);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vista, colegioId, filtros]);
+
+  // Solo se muestran las aulas si son del colegio elegido (mientras llegan las nuevas, sale "Cargando…")
+  const aulasDelColegio = aulas && String(aulas.colegio.id) === colegioId ? aulas : null;
+
+  const elegirColegio = (id) => {
+    if (id === colegioId) return;
+    setCargando(true);
+    setError("");
+    setColegioId(id);
+  };
+
+  const verAulas = (id) => {
+    elegirColegio(String(id));
+    setVista("aulas");
+  };
+
+  
+  // T-356: la barra avisa con los filtros elegidos; si nada cambió, no se vuelve a pedir
+  const aplicarFiltros = ({ colegio, grado, desde, hasta }) => {
+    const nuevos = { grado, desde, hasta };
+    if (colegio === colegioId && JSON.stringify(nuevos) === JSON.stringify(filtros)) return;
+    setCargando(true);
+    setError("");
+    setAulas(null);
+    setColegioId(colegio);
+    setFiltros(nuevos);
+  };
+
+  const resumen = reporte?.resumen;
+  const filas = reporte?.colegios ?? [];
+  // Promedio general: promedio de las competencias del resumen (los mismos alumnos que las otras tarjetas)
+  const promediosResumen = Object.values(resumen?.promedios ?? {}).filter((p) => p !== null && p !== undefined);
+  const promedioGeneral = promediosResumen.length
+    ? promediosResumen.reduce((s, p) => s + p, 0) / promediosResumen.length
+    : null;
+
+  const nombreColegio = colegios.find((c) => String(c.colegio_id) === colegioId)?.nombre;
+  const periodo = filtros.desde && filtros.hasta ? `del ${fechaCorta(filtros.desde)} al ${fechaCorta(filtros.hasta)}`
+    : filtros.desde ? `desde el ${fechaCorta(filtros.desde)}`
+    : filtros.hasta ? `hasta el ${fechaCorta(filtros.hasta)}` : "";
+  const alcance = [
+    colegioId ? nombreColegio ?? "Colegio elegido" : "Todos los colegios",
+    filtros.grado ? `${filtros.grado}.° grado` : "",
+    periodo,
+  ].filter(Boolean).join(" · ");
+
+  const tarjetas = [
+    { titulo: "Alumnos activos", valor: resumen?.alumnos ?? 0, icono: "bi-people", tono: "verde-marca" },
+    { titulo: "Evaluaciones", valor: resumen?.evaluaciones ?? 0, icono: "bi-clipboard-check", tono: "azul" },
+    { titulo: "Promedio general", valor: promedioGeneral === null ? "—" : `${promedioGeneral.toFixed(1)}`, icono: "bi-graph-up", tono: "naranja" },
+    { titulo: "Necesitan refuerzo", valor: resumen?.semaforo?.rojo ?? 0, icono: "bi-life-preserver", tono: "rojo" },
+  ];
+
+  return (
+    <section>
+            <div className="page-title d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
+        <div>
+          <h1>Reportes consolidados</h1>
+          <div className="breadcrumb text-secondary">Análisis / Reportes</div>
+        </div>
+        <BotonesDescarga colegio={colegioId} filtros={filtros} onNoAutorizado={onNoAutorizado} />
+      </div>
+
+      <BarraFiltros
+        key={`${colegioId}|${filtros.grado}|${filtros.desde}|${filtros.hasta}`}
+        colegios={colegios}
+        valores={{ colegio: colegioId, ...filtros }}
+        onAplicar={aplicarFiltros}
+      />
+      <p className="note mb-3"><i className="bi bi-info-circle me-1"></i>Mostrando: {alcance}</p>
+
+      {error && <div className="alert alert-danger py-2 small">{error}</div>}
+
+      <div className="row g-3 mb-4">
+        {tarjetas.map((t) => (
+          <div className="col-6 col-xl-3" key={t.titulo}>
+            <div className={`card tarjeta-reporte tono-${t.tono}`}>
+              <div className="card-body d-flex align-items-center gap-3">
+                <span className="tarjeta-icono"><i className={`bi ${t.icono}`}></i></span>
+                <div>
+                  <div className="note fw-bold">{t.titulo}</div>
+                  <div className="tarjeta-valor">{cargando ? "…" : t.valor}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="row g-3 mb-4">
+        <div className="col-lg-7">
+          <GraficoCompetencias promedios={resumen?.promedios} alcance={alcance} cargando={cargando} />
+        </div>
+        <div className="col-lg-5">
+          <GraficoSemaforo semaforo={resumen?.semaforo} alcance={alcance} cargando={cargando} />
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header d-flex flex-wrap align-items-center gap-2">
+          <div className="filtro-vista" role="group" aria-label="Ver por">
+            <button type="button" className={vista === "colegios" ? "activo" : ""} onClick={() => setVista("colegios")}>
+              Por colegio
+            </button>
+            <button type="button" className={vista === "aulas" ? "activo" : ""} onClick={() => setVista("aulas")}>
+              Por aula
+            </button>
+          </div>
+          {vista === "aulas" && aulasDelColegio && (
+            <span className="note ms-auto">
+              {aulasDelColegio.colegio.nombre} · código modular {aulasDelColegio.colegio.codigo_modular}
+            </span>
+          )}
+        </div>
+
+        {vista === "colegios" && (
+          cargando ? (
+            <div className="text-center text-secondary py-5">Cargando…</div>
+          ) : filas.length === 0 ? (
+            <div className="text-center text-secondary py-5">No hay colegios activos.</div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Colegio</th>
+                    <th>Alumnos</th>
+                    {COMPETENCIAS.map((c) => <th key={c.clave}>{c.texto}</th>)}
+                    <th>General</th>
+                    <th>Semáforo</th>
+                    <th className="text-end">Detalle</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filas.map((c) => (
+                    <tr key={c.colegio_id}>
+                      <td>
+                        <div className="fw-bold">{c.nombre}</div>
+                        <div className="note">{c.codigo_modular}{c.region ? ` · ${c.region}` : ""}</div>
+                      </td>
+                      <td>{c.alumnos}</td>
+                      {COMPETENCIAS.map((k) => <td key={k.clave}><Promedio valor={c.promedios[k.clave]} /></td>)}
+                      <td><Promedio valor={c.promedio_general} /></td>
+                      <td><BarraSemaforo semaforo={c.semaforo} /></td>
+                      <td className="text-end">
+                        <button type="button" className="btn btn-sm btn-light" onClick={() => verAulas(c.colegio_id)}>
+                          Ver aulas <i className="bi bi-chevron-right"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        )}
+
+        {vista === "aulas" && (
+          !colegioId ? (
+            <div className="text-center text-secondary py-5">Elige un colegio arriba para ver sus aulas.</div>
+          ) : !aulasDelColegio ? (
+            <div className="text-center text-secondary py-5">Cargando…</div>
+          ) : aulasDelColegio.aulas.length === 0 ? (
+            <div className="text-center text-secondary py-5">Este colegio todavía no tiene aulas registradas.</div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Aula</th>
+                    <th>Docente</th>
+                    <th>Alumnos</th>
+                    {COMPETENCIAS.map((c) => <th key={c.clave}>{c.texto}</th>)}
+                    <th>General</th>
+                    <th>Semáforo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {aulasDelColegio.aulas.map((a) => (
+                    <tr key={a.aula_id}>
+                      <td className="fw-bold">{a.nombre}</td>
+                      <td>{a.docente ?? <span className="note">—</span>}</td>
+                      <td>{a.alumnos}</td>
+                      {COMPETENCIAS.map((k) => <td key={k.clave}><Promedio valor={a.promedios[k.clave]} /></td>)}
+                      <td><Promedio valor={a.promedio_general} /></td>
+                      <td><BarraSemaforo semaforo={a.semaforo} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        )}
+
+        <div className="card-footer note leyenda">
+          <span><span className="punto punto-verde"></span>Logrado: 75 o más</span>
+          <span><span className="punto punto-amarillo"></span>En proceso: 50 a 74</span>
+          <span><span className="punto punto-rojo"></span>En inicio: menos de 50</span>
+          <span><span className="punto punto-sin_evaluar"></span>Sin evaluar</span>
+        </div>
+      </div>
+    </section>
+  );
+}

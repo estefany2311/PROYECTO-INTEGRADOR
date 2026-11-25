@@ -70,7 +70,7 @@ public class AsignacionService {
                     "Ese alumno ya tiene esta tarea", HttpStatus.CONFLICT);
         }
 
-        Asignacion asignacion = new Asignacion(req.lecturaId(), estudiante);
+        Asignacion asignacion = new Asignacion(req.lecturaId(), estudiante, req.fechaLimite());
         try {
             // flush: si dos peticiones llegan a la vez, el índice único de la BD decide
             asignacionRepository.saveAndFlush(asignacion);
@@ -80,7 +80,8 @@ public class AsignacionService {
         }
 
         return new AsignacionResponse(asignacion.getId(), req.lecturaId(),
-                req.estudianteId(), asignacion.getFechaAsignacion());
+                req.estudianteId(), asignacion.getFechaAsignacion(),
+                asignacion.getFechaLimite(), asignacion.getEstado());
     }
 
     // valida que el aula exista y pertenezca al docente autenticado

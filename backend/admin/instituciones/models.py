@@ -12,6 +12,7 @@ class Colegio(models.Model):
     )
     nombre = models.CharField(max_length=150)
     region = models.CharField(max_length=60)
+    provincia = models.CharField(max_length=80, blank=True, default='', db_default='')
     distrito = models.CharField(max_length=80, blank=True)
     activo = models.BooleanField(default=True)
     creado_en = models.DateTimeField(auto_now_add=True)

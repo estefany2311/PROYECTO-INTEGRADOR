@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { asignarLectura } from "../api";
+import { hoyISO } from "../fechaLimite";
 
 /**
  * T-193 (US-36): modal para asignar una lectura del catálogo a un alumno concreto.
@@ -9,6 +10,7 @@ import { asignarLectura } from "../api";
 export default function AsignarTarea({ aulaId, lectura, alumnos, cargando = false, onCerrar, onAsignada }) {
   const activos = alumnos.filter((a) => a.activo);
   const [estudianteId, setEstudianteId] = useState("");
+  const [fechaLimite, setFechaLimite] = useState("");
   const [error, setError] = useState(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -27,6 +29,8 @@ export default function AsignarTarea({ aulaId, lectura, alumnos, cargando = fals
       await asignarLectura(aulaId, {
         lecturaId: lectura.id,
         estudianteId: elegido.id,
+        // T-390 (US-38): opcional; sin fecha, la tarea nunca vence
+        ...(fechaLimite ? { fechaLimite } : {}),
       });
       onAsignada(
         `Tarea «${lectura.titulo}» asignada a ${elegido.nombres} ${elegido.apellidos}`
@@ -84,6 +88,19 @@ export default function AsignarTarea({ aulaId, lectura, alumnos, cargando = fals
             ) : (
               <div className="form-text">Solo se muestran alumnos activos.</div>
             )}
+
+            <label htmlFor="fecha-limite-tarea" className="form-label fw-semibold mt-3">
+              Fecha límite <span className="text-secondary fw-normal">(opcional)</span>
+            </label>
+            <input
+              id="fecha-limite-tarea"
+              type="date"
+              className="form-control"
+              min={hoyISO()}
+              value={fechaLimite}
+              onChange={(ev) => setFechaLimite(ev.target.value)}
+            />
+            <div className="form-text">Si la dejas vacía, la tarea no vence.</div>
           </div>
 
           <div className="modal-footer border-0">

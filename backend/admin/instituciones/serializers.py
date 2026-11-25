@@ -29,7 +29,7 @@ class ColegioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Colegio
         fields = [
-            'id', 'codigo_modular', 'nombre', 'region', 'distrito', 'activo',
+            'id', 'codigo_modular', 'nombre', 'region', 'provincia', 'distrito', 'activo',
             'creado_en', 'docentes', 'total_docentes',
         ]
         read_only_fields = ['id', 'creado_en']

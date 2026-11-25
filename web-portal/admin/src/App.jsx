@@ -1,15 +1,22 @@
 import { useEffect, useState } from "react";
-import Login from "./Login";
-import CrearDocente from "./CrearDocente";
-import ListaDocentes from "./ListaDocentes";
+import CrearDocente from "./components/CrearDocente";
+import ListaDocentes from "./components/ListaDocentes";
+import Login from "./pages/Login";
 import Layout from "./components/Layout";
 import Colegios from "./pages/Colegios";
 import RolesPermisos from "./pages/RolesPermisos";
 import Catalogo from "./pages/Catalogo";
 import Usuarios from "./pages/Usuarios";
 import Inicio from "./pages/Inicio";
+import ConfiguracionVoz from "./pages/ConfiguracionVoz";
 import { obtenerMiPerfil, sesion } from "./api";
 import "./App.css";
+import "./estilos/paginas/index.css";
+import ConfiguracionOrtografia from "./pages/ConfiguracionOrtografia";
+import ReglasPuntuacion from "./pages/ReglasPuntuacion";
+import ReglasDesbloqueo from "./pages/ReglasDesbloqueo";
+import Reportes from "./pages/Reportes";
+import MapaCalor from "./pages/MapaCalor";
 
 export default function App() {
   const [autenticado, setAutenticado] = useState(Boolean(sesion.token));
@@ -74,8 +81,11 @@ export default function App() {
   }
 
   // Inicio siempre está disponible; las demás páginas requieren el permiso "<modulo>.ver"
-  const paginaActual = pagina === "dashboard" || puede(`${pagina}.ver`) ? pagina : "dashboard";
-
+    // Pestañas que usan el permiso de otro módulo
+  const MODULO_DE_PAGINA = { ortografia: "configuracion", puntuacion: "configuracion", desbloqueo: "configuracion", mapacalor: "reportes" };
+  const paginaActual =
+    pagina === "dashboard" || puede(`${MODULO_DE_PAGINA[pagina] ?? pagina}.ver`) ? pagina : "dashboard";
+ 
   return (
     <Layout
       pagina={paginaActual}
@@ -109,6 +119,20 @@ export default function App() {
 
       {paginaActual === "catalogo" && <Catalogo onNoAutorizado={sesionExpirada} puede={puede} />}
 
+      {paginaActual === "configuracion" && <ConfiguracionVoz onNoAutorizado={sesionExpirada} puede={puede} />}
+
+      
+      {paginaActual === "ortografia" && <ConfiguracionOrtografia onNoAutorizado={sesionExpirada} puede={puede} />}
+
+      
+      {paginaActual === "puntuacion" && <ReglasPuntuacion onNoAutorizado={sesionExpirada} puede={puede} />}
+
+      {paginaActual === "desbloqueo" && <ReglasDesbloqueo onNoAutorizado={sesionExpirada} puede={puede} />}
+
+      {paginaActual === "reportes" && <Reportes onNoAutorizado={sesionExpirada} />}
+
+      {paginaActual === "mapacalor" && <MapaCalor onNoAutorizado={sesionExpirada} />}
+
       {paginaActual === "usuarios" && (
         <Usuarios onNoAutorizado={sesionExpirada} puede={puede} usuarioActualId={perfil.id} />
       )}
@@ -117,7 +141,7 @@ export default function App() {
         <section>
           <div className="page-title mb-4">
             <h1>
-              Docentes <span className="story">US-43</span>
+              Docentes
             </h1>
             <div className="breadcrumb text-secondary">Instituciones / Docentes</div>
           </div>

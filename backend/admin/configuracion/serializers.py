@@ -1,0 +1,185 @@
+from decimal import Decimal
+
+from rest_framework import serializers
+
+from .models import (ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion,
+PalabraPermitida, ReglaDesbloqueo, ReglaPuntuacion)
+
+from .servicios import niveles_del_tipo
+
+# Límites permitidos (los mismos del modelo y de la pantalla)
+PRECISION = (0, 100)
+PAUSAS = (Decimal('0'), Decimal('10'))
+PALABRAS = (10, 200)
+
+
+def mensajes(minimo, maximo, unidad):
+    texto = f'Debe estar entre {minimo} y {maximo} {unidad}.'
+    return {'min_value': texto, 'max_value': texto, 'invalid': 'Ingresa un número válido.',
+            'required': 'Este campo es obligatorio.', 'null': 'Este campo es obligatorio.'}
+
+
+class ConfiguracionEvaluacionSerializer(serializers.ModelSerializer):
+    actualizado_por = serializers.CharField(source='actualizado_por.username', read_only=True, default=None)
+
+    # T-249: rangos con mensajes claros
+    umbral_precision = serializers.IntegerField(
+        min_value=PRECISION[0], max_value=PRECISION[1], error_messages=mensajes(*PRECISION, '%%'))
+    tolerancia_pausas = serializers.DecimalField(
+        max_digits=3, decimal_places=1, min_value=PAUSAS[0], max_value=PAUSAS[1],
+        error_messages={**mensajes(0, 10, 'segundos'),
+                        'max_decimal_places': 'Usa como máximo un decimal (por ejemplo 2.5).',
+                        'max_digits': 'Debe estar entre 0 y 10 segundos.'})
+    palabras_por_minuto = serializers.IntegerField(
+        min_value=PALABRAS[0], max_value=PALABRAS[1], error_messages=mensajes(*PALABRAS, 'palabras por minuto'))
+
+    class Meta:
+        model = ConfiguracionEvaluacion
+        fields = ['grado', 'umbral_precision', 'tolerancia_pausas', 'palabras_por_minuto',
+                  'actualizado_por', 'actualizado_en']
+        # El grado no se cambia: cada fila es un grado fijo (1.° a 6.°)
+        read_only_fields = ['grado', 'actualizado_por', 'actualizado_en']
+
+    def validate(self, attrs):
+        """T-249: a mayor grado, mayor exigencia (precisión y palabras por minuto)."""
+        if self.instance is None:
+            return attrs
+        grado = self.instance.grado
+        anterior = ConfiguracionEvaluacion.objects.filter(grado=grado - 1).first()
+        siguiente = ConfiguracionEvaluacion.objects.filter(grado=grado + 1).first()
+        errores = {}
+        for campo, nombre in (('umbral_precision', 'la precisión'), ('palabras_por_minuto', 'las palabras por minuto')):
+            if campo not in attrs:
+                continue
+            valor = attrs[campo]
+            if anterior and valor < getattr(anterior, campo):
+                errores[campo] = (f'En {grado}.° grado {nombre} no puede ser menor que en {grado - 1}.° '
+                                  f'({getattr(anterior, campo)}).')
+            elif siguiente and valor > getattr(siguiente, campo):
+                errores[campo] = (f'En {grado}.° grado {nombre} no puede ser mayor que en {grado + 1}.° '
+                                  f'({getattr(siguiente, campo)}).')
+        if errores:
+            raise serializers.ValidationError(errores)
+        return attrs
+
+
+
+class HistorialConfiguracionSerializer(serializers.ModelSerializer):
+    usuario = serializers.CharField(source='usuario.username', read_only=True, default=None)
+    campo_texto = serializers.CharField(source='get_campo_display', read_only=True)
+
+    class Meta:
+        model = HistorialConfiguracion
+        fields = ['id', 'grado', 'campo', 'campo_texto', 'valor_anterior', 'valor_nuevo', 'usuario', 'fecha']
+
+
+
+class ConfiguracionOrtografiaSerializer(serializers.ModelSerializer):
+    actualizado_por = serializers.CharField(source='actualizado_por.username', read_only=True, default=None)
+    sensibilidad = serializers.ChoiceField(
+        choices=ConfiguracionOrtografia.SENSIBILIDADES,
+        error_messages={'invalid_choice': 'La sensibilidad debe ser baja, media o alta.'},
+    )
+
+    class Meta:
+        model = ConfiguracionOrtografia
+        fields = ['grado', 'sensibilidad', 'ignorar_tildes', 'actualizado_por', 'actualizado_en']
+        read_only_fields = ['grado', 'actualizado_por', 'actualizado_en']
+
+
+class PalabraPermitidaSerializer(serializers.ModelSerializer):
+    creado_por = serializers.CharField(source='creado_por.username', read_only=True, default=None)
+
+    class Meta:
+        model = PalabraPermitida
+        fields = ['id', 'palabra', 'creado_por', 'creado_en']
+        read_only_fields = ['id', 'creado_por', 'creado_en']
+
+    def validate_palabra(self, value):
+        palabra = ' '.join(value.split())  # quita espacios de más
+        if len(palabra) < 2:
+            raise serializers.ValidationError('La palabra debe tener al menos 2 letras.')
+        if not all(c.isalpha() or c in " -'" for c in palabra):
+            raise serializers.ValidationError('Solo se permiten letras, espacios, guiones y apóstrofos.')
+        if PalabraPermitida.objects.filter(palabra__iexact=palabra).exists():
+            raise serializers.ValidationError('Esa palabra ya está en la lista.')
+        return palabra
+
+
+class ReglaPuntuacionSerializer(serializers.ModelSerializer):
+    actualizado_por = serializers.CharField(source='actualizado_por.username', read_only=True, default=None)
+    tipo_reto_texto = serializers.CharField(source='get_tipo_reto_display', read_only=True)
+
+    # T-261: rangos con mensajes claros (el %% se muestra como %)
+    puntos = serializers.IntegerField(min_value=1, max_value=100, error_messages=mensajes(1, 100, 'puntos'))
+    umbral_1_estrella = serializers.IntegerField(min_value=0, max_value=100, error_messages=mensajes(0, 100, '%%'))
+    umbral_2_estrellas = serializers.IntegerField(min_value=0, max_value=100, error_messages=mensajes(0, 100, '%%'))
+    umbral_3_estrellas = serializers.IntegerField(min_value=0, max_value=100, error_messages=mensajes(0, 100, '%%'))
+
+    class Meta:
+        model = ReglaPuntuacion
+        fields = ['tipo_reto', 'tipo_reto_texto', 'puntos', 'umbral_1_estrella', 'umbral_2_estrellas',
+                  'umbral_3_estrellas', 'actualizado_por', 'actualizado_en']
+        # Cada regla es de un tipo de reto fijo
+        read_only_fields = ['tipo_reto', 'actualizado_por', 'actualizado_en']
+
+    def validate(self, attrs):
+        """T-261: los umbrales deben subir: 1 ★ < 2 ★ < 3 ★."""
+        def valor(campo):
+            # Con PATCH puede llegar solo un umbral: se completa con el valor guardado
+            if campo in attrs:
+                return attrs[campo]
+            return getattr(self.instance, campo) if self.instance else None
+
+        una, dos, tres = valor('umbral_1_estrella'), valor('umbral_2_estrellas'), valor('umbral_3_estrellas')
+        errores = {}
+        if None not in (una, dos) and dos <= una:
+            errores['umbral_2_estrellas'] = f'Debe ser mayor que el umbral de 1 estrella ({una} %).'
+        if None not in (dos, tres) and tres <= dos:
+            errores['umbral_3_estrellas'] = f'Debe ser mayor que el umbral de 2 estrellas ({dos} %).'
+        if errores:
+            raise serializers.ValidationError(errores)
+
+        # T-338 (US-54): no bajar los puntos por debajo de lo que pide un nivel para desbloquearse
+        if 'puntos' in attrs and self.instance:
+            niveles = {n['id']: n['nombre'] for n in niveles_del_tipo(self.instance.tipo_reto)}
+            regla = (ReglaDesbloqueo.objects
+                     .filter(nivel_id__in=niveles, puntaje_minimo__gt=attrs['puntos'])
+                     .order_by('-puntaje_minimo').first())
+            if regla:
+                raise serializers.ValidationError({'puntos': (
+                    f'El nivel «{niveles[regla.nivel_id]}» pide {regla.puntaje_minimo} puntos para desbloquear '
+                    f'el siguiente: los puntos no pueden ser menores. Baja primero esa regla de desbloqueo.')})
+        return attrs
+
+
+class ReglaDesbloqueoSerializer(serializers.ModelSerializer):
+    """US-54: lo que el admin puede cambiar de la regla de un nivel."""
+
+    estrellas_minimas = serializers.IntegerField(min_value=0, max_value=3, error_messages=mensajes(0, 3, 'estrellas'))
+    puntaje_minimo = serializers.IntegerField(min_value=0, max_value=100, error_messages=mensajes(0, 100, 'puntos'))
+
+    class Meta:
+        model = ReglaDesbloqueo
+        fields = ['estrellas_minimas', 'puntaje_minimo']
+
+    
+    def validate(self, attrs):
+        """T-338: que la regla se pueda cumplir (ningún nivel imposible de desbloquear)."""
+        nivel = self.context['nivel']
+        if not nivel['activo']:
+            raise serializers.ValidationError(
+                {'detail': 'El nivel está desactivado: actívalo antes de cambiar su regla.'})
+
+        # Con PATCH puede llegar solo un campo: se completa con el valor guardado (o 0)
+        if 'puntaje_minimo' in attrs:
+            puntaje = attrs['puntaje_minimo']
+        else:
+            puntaje = self.instance.puntaje_minimo if self.instance else 0
+
+        regla_puntos = ReglaPuntuacion.objects.filter(tipo_reto=nivel['tipo_reto']).first()
+        if regla_puntos and puntaje > regla_puntos.puntos:
+            raise serializers.ValidationError({'puntaje_minimo': (
+                f'Un reto de {nivel["tipo_reto"]} da como máximo {regla_puntos.puntos} puntos: '
+                f'el puntaje mínimo no puede ser mayor.')})
+        return attrs

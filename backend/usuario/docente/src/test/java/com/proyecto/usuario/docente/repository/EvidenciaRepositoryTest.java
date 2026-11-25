@@ -1,0 +1,148 @@
+package com.proyecto.usuario.docente.repository;
+
+import com.proyecto.usuario.docente.model.Evidencia;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import javax.sql.DataSource;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * T-298 (US-31): prueba las consultas REALES de evidencias pendientes contra
+ * PostgreSQL. Inserta datos con ids negativos y la transaccion de @DataJpaTest
+ * hace rollback.
+ */
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class EvidenciaRepositoryTest {
+
+    @Autowired EvidenciaRepository evidenciaRepository;
+    @Autowired DataSource dataSource;
+
+    private JdbcTemplate jdbc;
+
+    @BeforeEach
+    void insertarDatosDePrueba() {
+        jdbc = new JdbcTemplate(dataSource);
+        jdbc.update("""
+                INSERT INTO aula (id, nombre, docente_id, codigo)
+                VALUES (-2002, 'Aula de prueba T-298', 1, 'T298AA')
+                """);
+        jdbc.update("INSERT INTO aula_grado (aula_id, grado_id) VALUES (-2002, 1)");
+        jdbc.update("""
+                INSERT INTO estudiante (id, nombres, apellidos, aula_id, grado_id, activo)
+                VALUES (-3101, 'Minji', 'Prueba', -2002, 1, true)
+                """);
+
+        jdbc.update("""
+                INSERT INTO nivel (id, orden, nombre, tipo_reto)
+                VALUES (-101, -101, 'Nivel audio T-298', 'lectura'),
+                       (-102, -102, 'Nivel texto T-298', 'escritura')
+                """);
+
+        insertarEvidencia(-5001, -101, "audio", Evidencia.PENDIENTE, 3);
+        insertarEvidencia(-5002, -102, "texto", Evidencia.PENDIENTE, 1);
+        insertarEvidencia(-5003, -101, "audio", Evidencia.APROBADA, 2);
+    }
+
+    private void insertarEvidencia(long id, long nivelId, String tipo,
+                                   String estado, int diasAtras) {
+        jdbc.update("""
+                INSERT INTO evidencia (id, estudiante_id, nivel_id, tipo, audio_url,
+                                       texto, estado_revision, creado_en)
+                VALUES (?, -3101, ?, ?,
+                        CASE WHEN ? = 'audio' THEN 'https://cdn.ejemplo.pe/audio.mp3' END,
+                        CASE WHEN ? = 'texto' THEN 'Texto de prueba' END,
+                        ?, now() - (? * interval '1 day'))
+                """, id, nivelId, tipo, tipo, tipo, estado, diasAtras);
+    }
+
+    // T-377 (US-33): la evidencia guarda la nota final y el estado corregida
+    @Test
+    void guardaLaCalificacionFinalYElEstadoCorregida() {
+        jdbc.update("""
+                UPDATE evidencia
+                SET estado_revision = 'corregida',
+                    calificacion_final = 90,
+                    motivo_correccion = 'El audio tiene ruido de fondo.'
+                WHERE id = -5003
+                """);
+
+        Evidencia corregida = evidenciaRepository.findById(-5003L).orElseThrow();
+
+        assertEquals(Evidencia.CORREGIDA, corregida.getEstadoRevision());
+        assertEquals((short) 90, corregida.getCalificacionFinal());
+        assertEquals("El audio tiene ruido de fondo.", corregida.getMotivoCorreccion());
+    }
+
+    // T-383 (US-34): la evidencia guarda el comentario de retroalimentación
+    @Test
+    void guardaElComentarioDeRetroalimentacion() {
+        jdbc.update("""
+                UPDATE evidencia
+                SET comentario = 'Muy bien leído; practica las pausas.'
+                WHERE id = -5003
+                """);
+
+        Evidencia revisada = evidenciaRepository.findById(-5003L).orElseThrow();
+
+        assertEquals("Muy bien leído; practica las pausas.", revisada.getComentario());
+    }
+
+    @Test
+    void devuelveSoloLasPendientesDeLaMasRecienteALaMasAntigua() {
+        List<Evidencia> pendientes = evidenciaRepository
+                .findByEstudianteAulaIdAndEstadoRevisionOrderByCreadoEnDescIdDesc(
+                        -2002L, Evidencia.PENDIENTE);
+
+        assertEquals(2, pendientes.size());
+        assertEquals(-5002L, pendientes.get(0).getId());
+        assertEquals("texto", pendientes.get(0).getTipo());
+        assertEquals(-5001L, pendientes.get(1).getId());
+        assertEquals("audio", pendientes.get(1).getTipo());
+        assertEquals("Minji", pendientes.get(0).getEstudiante().getNombres());
+        assertEquals("Nivel texto T-298", pendientes.get(0).getNivel().getNombre());
+    }
+
+    @Test
+    void filtraLasPendientesPorTipo() {
+        List<Evidencia> audio = evidenciaRepository
+                .findByEstudianteAulaIdAndEstadoRevisionAndTipoOrderByCreadoEnDescIdDesc(
+                        -2002L, Evidencia.PENDIENTE, Evidencia.AUDIO);
+        List<Evidencia> texto = evidenciaRepository
+                .findByEstudianteAulaIdAndEstadoRevisionAndTipoOrderByCreadoEnDescIdDesc(
+                        -2002L, Evidencia.PENDIENTE, Evidencia.TEXTO);
+
+        assertEquals(1, audio.size());
+        assertEquals(-5001L, audio.get(0).getId());
+        assertEquals(1, texto.size());
+        assertEquals(-5002L, texto.get(0).getId());
+    }
+
+    // T-371 (US-32): el detalle busca la evidencia por id y aula
+    @Test
+    void encuentraUnaEvidenciaDelAulaSinImportarSuEstado() {
+        Evidencia encontrada = evidenciaRepository
+                .findByIdAndEstudianteAulaId(-5003L, -2002L)
+                .orElseThrow();
+
+        assertEquals(-5003L, encontrada.getId());
+        assertEquals(Evidencia.APROBADA, encontrada.getEstadoRevision());
+        assertEquals("Minji", encontrada.getEstudiante().getNombres());
+        assertEquals("Nivel audio T-298", encontrada.getNivel().getNombre());
+    }
+
+    @Test
+    void noEncuentraUnaEvidenciaDeOtraAula() {
+        assertTrue(evidenciaRepository
+                .findByIdAndEstudianteAulaId(-5001L, -9999L)
+                .isEmpty());
+    }
+}
