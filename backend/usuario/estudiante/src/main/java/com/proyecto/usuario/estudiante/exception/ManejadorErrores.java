@@ -92,6 +92,12 @@ public class ManejadorErrores {
         return respuesta(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 
+    // T-434 · 400: el nivel no es de escritura o al texto le faltan palabras
+    @ExceptionHandler(TextoInvalidoException.class)
+    public ResponseEntity<Map<String, Object>> textoInvalido(TextoInvalidoException e) {
+        return respuesta(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
     // T-413 · 415: no es un WAV mono de 16 kHz y 16 bits
     @ExceptionHandler(FormatoAudioNoSoportadoException.class)
     public ResponseEntity<Map<String, Object>> formatoAudio(FormatoAudioNoSoportadoException e) {
