@@ -4,6 +4,8 @@ import android.content.Context
 import com.proyecto.movil.model.audio.AlmacenGrabaciones
 import com.proyecto.movil.model.audio.ColaEnviosWorkManager
 import com.proyecto.movil.model.audio.IColaEnvios
+import com.proyecto.movil.model.audio.IPronunciador
+import com.proyecto.movil.model.audio.PronunciadorTts
 import com.proyecto.movil.model.local.AlmacenBorradores
 import com.proyecto.movil.model.local.AlmacenSesionSeguro
 import com.proyecto.movil.model.local.IAlmacenSesion
@@ -33,6 +35,10 @@ object Dependencias {
     lateinit var colaEnvios: IColaEnvios
         private set
 
+    // T-430: la voz del teléfono que dice las palabras por mejorar
+    lateinit var pronunciador: IPronunciador
+        private set
+
     fun iniciar(context: Context) {
         if (::almacenSesion.isInitialized) return
         almacenSesion = AlmacenSesionSeguro(context.applicationContext)
@@ -43,6 +49,7 @@ object Dependencias {
         almacenBorradores.limpiar()   // borra los de más de 30 días
         monitorRed = MonitorRed(context.applicationContext)
         colaEnvios = ColaEnviosWorkManager(context.applicationContext)
+        pronunciador = PronunciadorTts(context.applicationContext)
         // T-314 grababa en la caché; esa carpeta ya no se usa
         java.io.File(context.cacheDir, "grabaciones").deleteRecursively()
         // Cada petición a la API lleva el token guardado (si hay sesión)

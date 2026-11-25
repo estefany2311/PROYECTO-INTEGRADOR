@@ -6,6 +6,12 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- T-313 (US-11): grabar la lectura en voz alta del niño -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- T-430 (US-14): desde Android 11 hay que declarar que la app usa la voz del teléfono -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
     <application
         android:name=".AppMovil"
         android:allowBackup="false"

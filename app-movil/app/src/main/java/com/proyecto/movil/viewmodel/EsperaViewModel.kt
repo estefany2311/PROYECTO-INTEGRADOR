@@ -2,8 +2,11 @@ package com.proyecto.movil.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.proyecto.movil.Dependencias
 import com.proyecto.movil.model.ResultadoEstado
 import com.proyecto.movil.model.ResultadoEvaluacion
+import com.proyecto.movil.model.audio.IPronunciador
+import com.proyecto.movil.model.limpiarPalabra
 import com.proyecto.movil.model.repository.EvidenciaRepository
 import com.proyecto.movil.model.repository.IEvidenciaRepository
 import kotlinx.coroutines.Job
@@ -23,11 +26,16 @@ sealed class EsperaUiState {
 
 // T-418 (US-13): pregunta cada 2 segundos si la IA ya terminó (T-416)
 class EsperaViewModel(
-    private val evidencias: IEvidenciaRepository = EvidenciaRepository()
+    private val evidencias: IEvidenciaRepository = EvidenciaRepository(),
+    private val pronunciador: () -> IPronunciador = { Dependencias.pronunciador }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<EsperaUiState>(EsperaUiState.Escuchando)
     val uiState: StateFlow<EsperaUiState> = _uiState
+
+    // T-430: la palabra que el niño tocó por última vez (se resalta mientras la escucha)
+    private val _palabraElegida = MutableStateFlow<String?>(null)
+    val palabraElegida: StateFlow<String?> = _palabraElegida
 
     private var consulta: Job? = null
 
@@ -67,6 +75,14 @@ class EsperaViewModel(
         if (resultado == null || resultado.estado != LISTO) return EsperaUiState.Lista(transcripcion)
         viewModelScope.launch { evidencias.avisarDocente(evidenciaId, resultado.asignacionId) }
         return EsperaUiState.Resultado(resultado)
+    }
+
+    // T-430: dice la palabra con la voz del teléfono
+    fun escuchar(palabra: String) {
+        val limpia = limpiarPalabra(palabra)
+        if (limpia.isEmpty()) return
+        _palabraElegida.value = limpia
+        pronunciador().decir(limpia)
     }
 
     companion object {
