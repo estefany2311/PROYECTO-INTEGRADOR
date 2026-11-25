@@ -1,6 +1,7 @@
 package com.proyecto.usuario.estudiante.service;
 
 import com.proyecto.usuario.estudiante.dto.ResultadoLecturaResponse;
+import com.proyecto.usuario.estudiante.model.MejorIntento;
 import com.proyecto.usuario.estudiante.model.PalabraTexto;
 import com.proyecto.usuario.estudiante.model.TextoCalificado;
 import com.proyecto.usuario.estudiante.repository.EvidenciaRepository;
@@ -11,10 +12,12 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
-// T-428 (US-14): el resultado lleva el texto con las palabras por mejorar solo cuando ya está calificado
+// T-428/T-432 (US-14, US-16): el resultado lleva las palabras por mejorar y el mejor intento anterior
+// solo cuando ya está calificado
 class ResultadoLecturaServiceTest {
 
     private EvidenciaRepository evidencias;
@@ -43,6 +46,23 @@ class ResultadoLecturaServiceTest {
 
         assertTrue(servicio.resultado(50L, 7L).orElseThrow().palabras().isEmpty());
         verify(evidencias, never()).textoCalificado(anyLong());
+    }
+
+    // T-432
+    @Test
+    void cuandoEstaListoTraeSuMejorIntentoAnterior() {
+        when(evidencias.resultado(50L, 7L)).thenReturn(Optional.of(resultado("listo", 2)));
+        when(evidencias.mejorAnterior(50L)).thenReturn(new MejorIntento(2, 75, 1));
+
+        assertEquals(new MejorIntento(2, 75, 1), servicio.resultado(50L, 7L).orElseThrow().mejorAnterior());
+    }
+
+    @Test
+    void mientrasProcesaNoBuscaElMejorIntento() {
+        when(evidencias.resultado(50L, 7L)).thenReturn(Optional.of(resultado("procesando", null)));
+
+        assertNull(servicio.resultado(50L, 7L).orElseThrow().mejorAnterior());
+        verify(evidencias, never()).mejorAnterior(anyLong());
     }
 
     @Test

@@ -118,7 +118,13 @@ fun NavegacionApp(almacen: IAlmacenSesion = Dependencias.almacenSesion) {
         ) { entrada ->
             PantallaEspera(
                 evidenciaId = entrada.arguments?.getLong(Rutas.ARG_EVIDENCIA) ?: 0L,
-                onVolverAlMapa = { nav.popBackStack(Rutas.MAPA, inclusive = false) }
+                onVolverAlMapa = { nav.popBackStack(Rutas.MAPA, inclusive = false) },
+                // T-431: vuelve a la lectura del mismo nivel para leer y grabar otra vez
+                onIntentarDeNuevo = { nivelId ->
+                    if (!nav.popBackStack(Rutas.LECTURA, inclusive = false)) {
+                        nav.navigate(Rutas.lectura(nivelId)) { popUpTo(Rutas.MAPA) }
+                    }
+                }
             )
         }
         composable(Rutas.CONSIGNA, arguments = ARGUMENTO_NIVEL) { entrada ->

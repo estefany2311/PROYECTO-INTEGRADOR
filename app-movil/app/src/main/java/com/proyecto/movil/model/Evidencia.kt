@@ -29,8 +29,26 @@ data class ResultadoEvaluacion(
     val nivelDesbloqueadoId: Int?,
     val nivelDesbloqueadoNombre: String?,
     val asignacionId: Long?,
-    val palabras: List<PalabraLeida>? = null   // T-428: Gson deja null si el backend no la manda
+    val palabras: List<PalabraLeida>? = null,   // T-428: Gson deja null si el backend no la manda
+    val mejorAnterior: MejorIntento? = null      // T-432: cómo le fue antes en este nivel
 ) {
+    // T-432: si superó, igualó o no alcanzó su mejor intento anterior; null en su primer intento
+    fun mensajeMejorIntento(): String? {
+        val anterior = mejorAnterior ?: return null
+        val antes = anterior.precision ?: return null
+        val ahora = precision ?: return null
+        if (anterior.intentos == 0) return null
+        return when {
+            ahora > antes -> "¡Superaste tu mejor intento!"
+            ahora == antes -> "¡Igualaste tu mejor intento!"
+            else -> when (val e = anterior.estrellas ?: 0) {
+                0 -> "Esta vez te fue un poco menos bien. ¡Tú puedes!"
+                1 -> "Tu mejor intento fue de 1 estrella. ¡Tú puedes!"
+                else -> "Tu mejor intento fue de $e estrellas. ¡Tú puedes!"
+            }
+        }
+    }
+
     // T-428: sin repetir y sin puntuación, para la lista "Palabras por mejorar"
     fun palabrasPorMejorar(): List<String> =
         palabras.orEmpty()
@@ -39,6 +57,9 @@ data class ResultadoEvaluacion(
             .filter { it.isNotEmpty() }
             .distinctBy { it.lowercase() }
 }
+
+// T-432: intentos anteriores ya calificados en el mismo nivel y el mejor de ellos
+data class MejorIntento(val intentos: Int, val precision: Int?, val estrellas: Int?)
 
 // T-428: una palabra del texto como está escrita ("cóndor.") y si el niño debe practicarla
 data class PalabraLeida(val texto: String, val mejorar: Boolean)

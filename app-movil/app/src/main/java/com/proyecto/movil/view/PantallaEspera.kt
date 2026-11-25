@@ -44,12 +44,13 @@ import com.proyecto.movil.viewmodel.EsperaViewModel
 fun PantallaEspera(
     evidenciaId: Long,
     onVolverAlMapa: () -> Unit,
+    onIntentarDeNuevo: (Int) -> Unit = {},
     esperaViewModel: EsperaViewModel = viewModel()
 ) {
     val estado by esperaViewModel.uiState.collectAsStateWithLifecycle()
     val palabraElegida by esperaViewModel.palabraElegida.collectAsStateWithLifecycle()
     LaunchedEffect(evidenciaId) { esperaViewModel.seguir(evidenciaId) }
-    ContenidoEspera(estado, palabraElegida, esperaViewModel::escuchar, onVolverAlMapa)
+    ContenidoEspera(estado, palabraElegida, esperaViewModel::escuchar, onVolverAlMapa, onIntentarDeNuevo)
 }
 
 // Sin ViewModel: para @Preview y para las pruebas
@@ -57,13 +58,15 @@ fun PantallaEspera(
 fun ContenidoEspera(estado: EsperaUiState, onVolverAlMapa: () -> Unit) =
     ContenidoEspera(estado, palabraElegida = null, onEscuchar = {}, onVolverAlMapa = onVolverAlMapa)
 
-// T-428/T-430: con la palabra elegida y qué hacer al tocar una palabra por mejorar
+// T-428/T-430: con la palabra elegida y qué hacer al tocar una palabra por mejorar.
+// T-431: onIntentarDeNuevo recibe el nivel para volver a empezar el reto
 @Composable
 fun ContenidoEspera(
     estado: EsperaUiState,
     palabraElegida: String?,
     onEscuchar: (String) -> Unit,
-    onVolverAlMapa: () -> Unit
+    onVolverAlMapa: () -> Unit,
+    onIntentarDeNuevo: (Int) -> Unit = {}
 ) {
     Column(
         Modifier.fillMaxSize().background(ColoresAventura.Cielo).verticalScroll(rememberScrollState()).padding(24.dp),
@@ -109,8 +112,18 @@ fun ContenidoEspera(
             is EsperaUiState.Error -> Aviso(estado.mensaje)
             EsperaUiState.TardaMucho -> Aviso("Está tardando más de lo normal. Tu profesor igual recibirá tu lectura.")
         }
-        if (estado !is EsperaUiState.Escuchando) {
+        // T-431: con el resultado puede repetir la lectura para mejorar
+        if (estado is EsperaUiState.Resultado) {
             Spacer(Modifier.height(28.dp))
+            Button(
+                onClick = { onIntentarDeNuevo(estado.resultado.nivelId) },
+                colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Naranja),
+                shape = RoundedCornerShape(36.dp),
+                modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth().height(72.dp).testTag("boton_intentar_de_nuevo")
+            ) { Text("Intentar de nuevo", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+        }
+        if (estado !is EsperaUiState.Escuchando) {
+            Spacer(Modifier.height(if (estado is EsperaUiState.Resultado) 16.dp else 28.dp))
             Button(
                 onClick = onVolverAlMapa,
                 colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Turquesa),
@@ -157,6 +170,18 @@ private fun ResultadoConEstrellas(resultado: ResultadoEvaluacion, palabraElegida
             fontWeight = FontWeight.Bold,
             color = ColoresAventura.Turquesa,
             modifier = Modifier.testTag("puntos_resultado")
+        )
+    }
+    // T-432: si superó su mejor intento en este nivel
+    resultado.mensajeMejorIntento()?.let {
+        Spacer(Modifier.height(8.dp))
+        Text(
+            it,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+            color = ColoresAventura.TextoOscuro,
+            modifier = Modifier.testTag("mejor_intento")
         )
     }
     resultado.nivelDesbloqueadoNombre?.let {

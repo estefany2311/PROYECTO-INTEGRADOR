@@ -4,6 +4,7 @@ import com.proyecto.usuario.estudiante.dto.EstadoEvidenciaResponse;
 import com.proyecto.usuario.estudiante.dto.ResultadoLecturaResponse;
 import com.proyecto.usuario.estudiante.exception.ManejadorErrores;
 import com.proyecto.usuario.estudiante.exception.TokenFaltanteException;
+import com.proyecto.usuario.estudiante.model.MejorIntento;
 import com.proyecto.usuario.estudiante.model.PalabraTexto;
 import com.proyecto.usuario.estudiante.repository.EvidenciaRepository;
 import com.proyecto.usuario.estudiante.service.AutenticadorTablet;
@@ -115,5 +116,19 @@ class EvidenciaControllerTest {
                 .andExpect(jsonPath("$.palabras[1].texto").value("una"))
                 .andExpect(jsonPath("$.palabras[1].mejorar").value(true))
                 .andExpect(jsonPath("$.palabras[2].mejorar").value(false));
+    }
+
+    // T-432
+    @Test
+    void elResultadoTraeElMejorIntentoAnterior() throws Exception {
+        when(resultados.resultado(50L, 7L)).thenReturn(Optional.of(new ResultadoLecturaResponse(
+                50L, 1, "listo", "Había una vez", 90, 9, 10, 100, 70, true, 2, 9, null, null, null,
+                List.of(), new MejorIntento(1, 60, 1))));
+
+        mvc.perform(get("/api/estudiante/evidencias/50/resultado").header("Authorization", TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mejorAnterior.intentos").value(1))
+                .andExpect(jsonPath("$.mejorAnterior.precision").value(60))
+                .andExpect(jsonPath("$.mejorAnterior.estrellas").value(1));
     }
 }
