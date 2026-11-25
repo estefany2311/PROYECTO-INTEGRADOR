@@ -146,6 +146,7 @@ fun ContenidoEditor(
             }
             is ConsignaUiState.Exito -> when (envio) {
                 is EnvioTextoUiState.Enviado -> TextoEnviado(envio, onVolverAlMapa)
+                is EnvioTextoUiState.YaEnviado -> TextoYaEnviado(envio.texto, onVolverAlMapa)   // T-436
                 else -> Hoja(consigna.consigna, texto, guardado, errores, sinRevisar, envio, onEscribir, onEnviar, onElegirSugerencia)
             }
         }
@@ -200,6 +201,7 @@ private fun ColumnScope.Hoja(
         // La hoja: letra grande, interlineado amplio y borde naranja como en el mockup
         BasicTextField(
             value = valor,
+            readOnly = envio is EnvioTextoUiState.Enviando,     // T-436: mientras se envía no se cambia
             onValueChange = { nuevo ->
                 // Solo un toque (mismo texto, otro lugar del cursor) abre el menú; al escribir se cierra
                 if (nuevo.text != valor.text) tocoUnaPalabra = false
@@ -338,6 +340,58 @@ internal fun palabraTocada(valor: TextFieldValue, errores: List<ErrorOrtografico
     val texto = valor.text
     return errores.firstOrNull { e ->
         cursor in e.inicio..e.fin && e.fin <= texto.length && texto.substring(e.inicio, e.fin) == e.palabra
+    }
+}
+
+// T-436 (US-21): al volver a un nivel que ya envió, ve su texto pero ya no lo puede cambiar
+@Composable
+private fun ColumnScope.TextoYaEnviado(texto: String, onVolverAlMapa: () -> Unit) {
+    Column(
+        Modifier
+            .weight(1f)
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Koala(tamano = 140.dp, saludando = true)
+        Spacer(Modifier.height(16.dp))
+        Text(
+            "Ya enviaste tu texto",
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Bold,
+            color = ColoresAventura.Turquesa,
+            modifier = Modifier.testTag("titulo_ya_enviado")
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Tu profesor lo va a leer. Ya no se puede cambiar.",
+            fontSize = 20.sp,
+            textAlign = TextAlign.Center,
+            color = ColoresAventura.TextoOscuro
+        )
+        Spacer(Modifier.height(20.dp))
+        Text(
+            texto,
+            fontSize = 26.sp,
+            lineHeight = 40.sp,
+            color = ColoresAventura.TextoOscuro,
+            modifier = Modifier
+                .widthIn(max = 720.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color.White)
+                .border(3.dp, ColoresAventura.Gris, RoundedCornerShape(24.dp))
+                .padding(24.dp)
+                .testTag("texto_ya_enviado")
+        )
+        Spacer(Modifier.height(28.dp))
+        Button(
+            onClick = onVolverAlMapa,
+            colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Turquesa),
+            shape = RoundedCornerShape(36.dp),
+            modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth().height(72.dp).testTag("boton_volver_mapa_ya_enviado")
+        ) { Text("Volver al mapa", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
     }
 }
 

@@ -34,6 +34,7 @@ sealed class EnvioTextoUiState {
     object Enviando : EnvioTextoUiState()
     data class Enviado(val escritura: ResultadoEscritura?, val reto: ResultadoReto?) : EnvioTextoUiState()
     data class Error(val mensaje: String) : EnvioTextoUiState()
+    data class YaEnviado(val texto: String) : EnvioTextoUiState()   // T-436: lo envió antes; solo se puede ver
 }
 
 class EditorViewModel(
@@ -79,6 +80,12 @@ class EditorViewModel(
     fun abrir(nivelId: Int) {
         if (this.nivelId == nivelId) return          // al girar la pantalla no se vuelve a leer
         this.nivelId = nivelId
+        // T-436: si ya lo envió, se muestra su texto y no se puede volver a editar
+        almacen.enviado(estudianteId(), nivelId)?.let {
+            _texto.value = it
+            _envio.value = EnvioTextoUiState.YaEnviado(it)
+            return
+        }
         almacen.leer(estudianteId(), nivelId)?.let {
             _texto.value = it
             _guardado.value = EstadoGuardado.GUARDADO
@@ -87,6 +94,7 @@ class EditorViewModel(
     }
 
     fun escribir(nuevo: String) {
+        if (bloqueado()) return                      // T-436: enviando o ya enviado
         // Un límite generoso para que un dedo apoyado en una tecla no llene la memoria
         val texto = nuevo.take(MAX_CARACTERES)
         if (texto == _texto.value) return
@@ -99,6 +107,7 @@ class EditorViewModel(
 
     // T-367 (US-20): cambia la palabra subrayada por la sugerencia que eligió en el menú (T-366)
     fun elegirSugerencia(error: ErrorOrtografico, sugerencia: String) {
+        if (bloqueado()) return
         val nuevo = reemplazarPalabra(_texto.value, error, sugerencia) ?: return
         // Ese error ya se corrigió; los que siguen se corren lo que cambió el largo de la palabra
         val corrimiento = sugerencia.length - (error.fin - error.inicio)
@@ -162,7 +171,7 @@ class EditorViewModel(
     // T-435: el botón "Enviar" pide confirmar antes de enviar
     fun pedirEnviar() {
         if (_texto.value.isBlank()) return
-        if (_envio.value is EnvioTextoUiState.Enviando || _envio.value is EnvioTextoUiState.Enviado) return
+        if (bloqueado()) return
         _envio.value = EnvioTextoUiState.Confirmando
     }
 
@@ -178,10 +187,10 @@ class EditorViewModel(
         viewModelScope.launch {
             _envio.value = when (val r = textos.enviar(nivel, enviado)) {
                 is ResultadoEnvioTexto.Exito -> {
-                    // Ya está en el servidor: el borrador de la tablet no hace falta
+                    // Ya está en el servidor: se guarda como enviado (T-436) y se borra el borrador
                     guardadoPendiente?.cancel()
                     sinGuardar = false
-                    withContext(io) { almacen.borrar(estudianteId(), nivel) }
+                    withContext(io) { almacen.marcarEnviado(estudianteId(), nivel, enviado) }
                     EnvioTextoUiState.Enviado(r.escritura, r.reto)
                 }
                 is ResultadoEnvioTexto.Rechazado -> EnvioTextoUiState.Error(r.mensaje)
@@ -191,11 +200,17 @@ class EditorViewModel(
         }
     }
 
+    // T-436: mientras se envía y después de enviar, el texto no se puede cambiar
+    private fun bloqueado(): Boolean = when (_envio.value) {
+        is EnvioTextoUiState.Enviando, is EnvioTextoUiState.Enviado, is EnvioTextoUiState.YaEnviado -> true
+        else -> false
+    }
+
     // Al salir del editor se guarda en ese momento lo que faltaba (el archivo es pequeño).
     // Se usa sinGuardar porque Android cancela viewModelScope antes de llamar a onCleared()
     override fun onCleared() {
         val nivel = nivelId ?: return
-        if (sinGuardar) almacen.guardar(estudianteId(), nivel, _texto.value)
+        if (sinGuardar && !bloqueado()) almacen.guardar(estudianteId(), nivel, _texto.value)
     }
 
     companion object {

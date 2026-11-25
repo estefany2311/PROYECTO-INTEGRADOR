@@ -34,6 +34,23 @@ class AlmacenBorradores(
         }
     }
 
+    // T-436 (US-21): el texto que ya se envió. Mientras exista, el editor de ese nivel queda bloqueado
+    private fun archivoEnviado(estudianteId: Long, nivelId: Int) =
+        File(File(raiz, "est_$estudianteId"), "nivel_${nivelId}_enviado.txt")
+
+    fun enviado(estudianteId: Long, nivelId: Int): String? {
+        val archivo = archivoEnviado(estudianteId, nivelId)
+        return if (archivo.isFile) archivo.readText(Charsets.UTF_8) else null
+    }
+
+    // Guarda el texto enviado y borra el borrador, que ya no hace falta
+    fun marcarEnviado(estudianteId: Long, nivelId: Int, texto: String) {
+        val destino = archivoEnviado(estudianteId, nivelId)
+        destino.parentFile?.mkdirs()
+        destino.writeText(texto, Charsets.UTF_8)
+        borrar(estudianteId, nivelId)
+    }
+
     // Lo usará el envío del texto: una vez enviado ya no hace falta el borrador
     fun borrar(estudianteId: Long, nivelId: Int) {
         archivo(estudianteId, nivelId).delete()
