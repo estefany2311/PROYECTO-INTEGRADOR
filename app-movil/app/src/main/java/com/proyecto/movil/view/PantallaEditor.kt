@@ -52,6 +52,7 @@ import com.proyecto.movil.R
 import com.proyecto.movil.model.ConsignaNivel
 import com.proyecto.movil.model.ErrorOrtografico
 import com.proyecto.movil.model.contarPalabras
+import com.proyecto.movil.model.reemplazarPalabra
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.viewmodel.ConsignaUiState
@@ -102,7 +103,8 @@ fun PantallaEditor(
         envio = envio,
         onConfirmarEnvio = editorViewModel::confirmarEnvio,
         onCancelarEnvio = editorViewModel::cancelarEnvio,
-        onVolverAlMapa = onVolverAlMapa
+        onVolverAlMapa = onVolverAlMapa,
+        onElegirSugerencia = editorViewModel::elegirSugerencia
     )
 }
 
@@ -122,7 +124,7 @@ fun ContenidoEditor(
     onConfirmarEnvio: () -> Unit = {},
     onCancelarEnvio: () -> Unit = {},
     onVolverAlMapa: () -> Unit = {},
-    onElegirSugerencia: (ErrorOrtografico, String) -> Unit = { _, _ -> }   // T-366; T-367 reemplaza la palabra
+    onElegirSugerencia: (ErrorOrtografico, String) -> Unit = { _, _ -> }   // T-366/T-367
 ) {
     // T-435: antes de enviar se confirma, porque después ya no podrá cambiar su texto
     if (envio is EnvioTextoUiState.Confirmando) DialogoConfirmarEnvio(onConfirmarEnvio, onCancelarEnvio)
@@ -249,6 +251,10 @@ private fun ColumnScope.Hoja(
                 error = error,
                 onElegir = { sugerencia ->
                     tocoUnaPalabra = false
+                    // T-367: el cursor queda justo después de la palabra corregida
+                    reemplazarPalabra(valor.text, error, sugerencia)?.let { nuevo ->
+                        campo = TextFieldValue(nuevo, TextRange(error.inicio + sugerencia.length))
+                    }
                     onElegirSugerencia(error, sugerencia)
                 },
                 onCerrar = { cerradoPara = error }

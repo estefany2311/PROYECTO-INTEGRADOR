@@ -8,6 +8,7 @@ import com.proyecto.movil.model.ResultadoEnvioTexto
 import com.proyecto.movil.model.ResultadoEscritura
 import com.proyecto.movil.model.ResultadoOrtografia
 import com.proyecto.movil.model.ResultadoReto
+import com.proyecto.movil.model.reemplazarPalabra
 import com.proyecto.movil.model.local.AlmacenBorradores
 import com.proyecto.movil.model.remote.IMonitorRed
 import com.proyecto.movil.model.repository.IOrtografiaRepository
@@ -94,6 +95,17 @@ class EditorViewModel(
         programarGuardado()
         conservarErroresQueSiguen(texto)
         programarVerificacion()
+    }
+
+    // T-367 (US-20): cambia la palabra subrayada por la sugerencia que eligió en el menú (T-366)
+    fun elegirSugerencia(error: ErrorOrtografico, sugerencia: String) {
+        val nuevo = reemplazarPalabra(_texto.value, error, sugerencia) ?: return
+        // Ese error ya se corrigió; los que siguen se corren lo que cambió el largo de la palabra
+        val corrimiento = sugerencia.length - (error.fin - error.inicio)
+        _errores.value = _errores.value
+            .filter { it != error }
+            .map { if (it.inicio >= error.fin) it.copy(inicio = it.inicio + corrimiento, fin = it.fin + corrimiento) else it }
+        escribir(nuevo)   // se guarda en la tablet y se vuelve a revisar como cualquier cambio
     }
 
     // T-330: se verifica cuando el niño deja de escribir un momento, no con cada letra

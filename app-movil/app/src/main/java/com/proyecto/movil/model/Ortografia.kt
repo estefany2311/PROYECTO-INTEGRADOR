@@ -17,6 +17,14 @@ data class ErrorOrtografico(
         sugerencias?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() } ?: listOfNotNull(sugerencia)
 }
 
+// T-367 (US-20): el texto con la palabra del error cambiada por la sugerencia elegida.
+// null si la palabra ya no está en ese lugar (el niño siguió escribiendo)
+fun reemplazarPalabra(texto: String, error: ErrorOrtografico, por: String): String? {
+    if (error.inicio < 0 || error.fin > texto.length || error.inicio > error.fin) return null
+    if (texto.substring(error.inicio, error.fin) != error.palabra) return null
+    return texto.substring(0, error.inicio) + por + texto.substring(error.fin)
+}
+
 data class RespuestaOrtografia(
     val errores: List<ErrorOrtografico>,
     val sensibilidad: String,
