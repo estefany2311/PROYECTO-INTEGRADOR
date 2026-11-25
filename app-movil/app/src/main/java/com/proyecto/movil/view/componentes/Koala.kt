@@ -1,4 +1,4 @@
-package com.proyecto.movil.view
+package com.proyecto.movil.view.componentes
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode

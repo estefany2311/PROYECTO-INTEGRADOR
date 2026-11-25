@@ -1,0 +1,4 @@
+Aquí va la grabación real para tests/test_whisper_real.py (T-420):
+  lectura_real.wav (o .m4a / .mp3)  -> tu voz leyendo un texto corto
+  lectura_real.txt                  -> el mismo texto escrito
+Si no están, esa prueba se salta.

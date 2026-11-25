@@ -1,0 +1,7 @@
+fastapi==0.115.6
+uvicorn==0.34.0
+python-multipart==0.0.20
+faster-whisper==1.1.1
+# faster-whisper importa requests al descargar el modelo, pero las versiones nuevas de huggingface_hub ya no lo instalan
+requests==2.32.3
+huggingface_hub>=0.23,<1.0

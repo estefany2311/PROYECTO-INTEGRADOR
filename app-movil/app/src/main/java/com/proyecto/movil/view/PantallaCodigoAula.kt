@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.sp
 import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.AzulClaroAvatar
 import com.proyecto.movil.ui.theme.TextoOscuro
+import com.proyecto.movil.view.componentes.KoalaSaludando
 
 @Composable
 fun PantallaCodigoAula(onContinuar: (String) -> Unit) {

@@ -3,10 +3,16 @@ package com.proyecto.movil.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.proyecto.movil.Dependencias
+import com.proyecto.movil.model.ResultadoEnvio
 import com.proyecto.movil.model.audio.AlmacenGrabaciones
 import com.proyecto.movil.model.audio.GrabadoraWav
 import com.proyecto.movil.model.audio.Grabacion
+import com.proyecto.movil.model.audio.IColaEnvios
 import com.proyecto.movil.model.audio.IGrabadora
+import com.proyecto.movil.model.audio.IReproductor
+import com.proyecto.movil.model.audio.ReproductorAudio
+import com.proyecto.movil.model.repository.AudioRepository
+import com.proyecto.movil.model.repository.IAudioRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,19 +32,42 @@ sealed class GrabacionUiState {
         val deAntes: Boolean = false
     ) : GrabacionUiState()
     data class Error(val mensaje: String) : GrabacionUiState()
+    // T-417: subiendo el audio (progreso de 0 a 1), ya enviado o falló el envío
+    data class Enviando(val grabacion: Grabacion, val progreso: Float) : GrabacionUiState()
+    data class Enviada(val evidenciaId: Long) : GrabacionUiState()
+    data class ErrorEnvio(val grabacion: Grabacion, val mensaje: String, val puedeReintentar: Boolean) : GrabacionUiState()
+    // T-419: sin internet; quedó guardada y se enviará sola cuando vuelva la conexión
+    data class EnCola(val grabacion: Grabacion) : GrabacionUiState()
 }
+
+// T-407: estado del reproductor de la grabación
+data class Reproduccion(
+    val reproduciendo: Boolean = false,
+    val posicionMs: Long = 0,
+    val error: String? = null
+)
 
 class GrabacionViewModel(
     private val grabadora: IGrabadora = GrabadoraWav(),
     private val almacen: AlmacenGrabaciones = Dependencias.almacenGrabaciones,
     // T-317: cada niño tiene sus grabaciones (varios usan la misma tablet)
-    private val estudianteId: () -> Long = { Dependencias.almacenSesion.leer()?.estudianteId ?: 0L }
+    private val estudianteId: () -> Long = { Dependencias.almacenSesion.leer()?.estudianteId ?: 0L },
+    private val reproductor: IReproductor = ReproductorAudio(),
+    private val audios: IAudioRepository = AudioRepository(),
+    // T-419: se leen recién al enviar (las pruebas antiguas no las necesitan)
+    private val cola: () -> IColaEnvios = { Dependencias.colaEnvios },
+    private val hayInternet: () -> Boolean = { Dependencias.monitorRed.conectado.value }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<GrabacionUiState>(GrabacionUiState.Lista)
     val uiState: StateFlow<GrabacionUiState> = _uiState
 
+    private val _reproduccion = MutableStateFlow(Reproduccion())
+    val reproduccion: StateFlow<Reproduccion> = _reproduccion
+
     private var reloj: Job? = null
+    private var avance: Job? = null
+    private var envio: Job? = null
     private var nivelActual = 0
 
     // T-317: al abrir la pantalla, si ya grabó este nivel se le muestra su grabación
@@ -51,6 +80,7 @@ class GrabacionViewModel(
 
     fun grabar(nivelId: Int) {
         if (grabadora.grabando) return
+        liberarReproductor()
         nivelActual = nivelId
         try {
             // Se graba en un archivo aparte; la grabación anterior se reemplaza solo si esta sale bien (T-317)
@@ -92,13 +122,101 @@ class GrabacionViewModel(
         }
     }
 
-    // Vuelve al botón de grabar. La grabación guardada sigue ahí hasta que una nueva salga bien.
+    // T-408: vuelve al botón de grabar. La grabación anterior se reemplaza cuando la nueva sale bien.
     fun grabarOtraVez() {
+        liberarReproductor()
         _uiState.value = GrabacionUiState.Lista
+    }
+
+    // T-407: el mismo botón sirve para escuchar y para pausar
+    fun escuchar() {
+        val grabada = _uiState.value as? GrabacionUiState.Grabada ?: return
+        if (reproductor.reproduciendo) {
+            pausar()
+            return
+        }
+        try {
+            if (!reproductor.preparado) reproductor.preparar(grabada.grabacion.archivo, ::alTerminarDeEscuchar)
+            reproductor.reproducir()
+        } catch (e: Exception) {
+            liberarReproductor()
+            _reproduccion.value = Reproduccion(error = MENSAJE_NO_SE_ESCUCHA)
+            return
+        }
+        _reproduccion.value = Reproduccion(reproduciendo = true, posicionMs = reproductor.posicionMs)
+        avance = viewModelScope.launch {
+            while (isActive && reproductor.reproduciendo) {
+                _reproduccion.value = Reproduccion(reproduciendo = true, posicionMs = reproductor.posicionMs)
+                delay(INTERVALO_MS)
+            }
+        }
+    }
+
+    // T-410: también se pausa cuando la app pasa a segundo plano o se va a enviar
+    fun pausar() {
+        avance?.cancel()
+        reproductor.pausar()
+        if (_reproduccion.value.reproduciendo) {
+            _reproduccion.value = Reproduccion(reproduciendo = false, posicionMs = reproductor.posicionMs)
+        }
+    }
+
+    // T-417: sube la grabación; si no hay internet se puede reintentar sin volver a grabar
+    fun enviar(nivelId: Int, lecturaId: Long) {
+        val grabacion = when (val estado = _uiState.value) {
+            is GrabacionUiState.Grabada -> estado.grabacion
+            is GrabacionUiState.ErrorEnvio -> estado.grabacion
+            is GrabacionUiState.EnCola -> estado.grabacion
+            else -> return
+        }
+        pausar()
+        // T-419: sin internet ni se intenta; queda en la cola
+        if (!hayInternet()) {
+            ponerEnCola(grabacion, nivelId, lecturaId)
+            return
+        }
+        _uiState.value = GrabacionUiState.Enviando(grabacion, 0f)
+        envio = viewModelScope.launch {
+            val resultado = audios.enviar(nivelId, lecturaId, grabacion.archivo) { progreso ->
+                val estado = _uiState.value
+                if (estado is GrabacionUiState.Enviando) _uiState.value = estado.copy(progreso = progreso)
+            }
+            _uiState.value = when (resultado) {
+                is ResultadoEnvio.Exito -> {
+                    liberarReproductor()
+                    almacen.borrar(estudianteId(), nivelId)   // T-317: ya está en el servidor
+                    cola().cancelar(estudianteId(), nivelId)   // por si estaba pendiente de antes
+                    GrabacionUiState.Enviada(resultado.recibido.evidenciaId)
+                }
+                is ResultadoEnvio.Rechazado -> GrabacionUiState.ErrorEnvio(grabacion, resultado.mensaje, puedeReintentar = false)
+                ResultadoEnvio.SinConexion -> {
+                    ponerEnCola(grabacion, nivelId, lecturaId)   // T-419
+                    return@launch
+                }
+                ResultadoEnvio.SesionVencida -> GrabacionUiState.ErrorEnvio(grabacion, MENSAJE_SESION_VENCIDA, puedeReintentar = false)
+            }
+        }
+    }
+
+    private fun ponerEnCola(grabacion: Grabacion, nivelId: Int, lecturaId: Long) {
+        cola().programar(estudianteId(), nivelId, lecturaId)
+        _uiState.value = GrabacionUiState.EnCola(grabacion)
+    }
+
+    private fun alTerminarDeEscuchar() {
+        avance?.cancel()
+        _reproduccion.value = Reproduccion()
+    }
+
+    private fun liberarReproductor() {
+        avance?.cancel()
+        reproductor.liberar()
+        _reproduccion.value = Reproduccion()
     }
 
     // Si el niño sale de la pantalla mientras graba, se apaga el micrófono y se borra la grabación a medias
     override fun onCleared() {
+        liberarReproductor()   // T-410
         reloj?.cancel()
         if (grabadora.grabando) {
             grabadora.detener()
@@ -114,5 +232,8 @@ class GrabacionViewModel(
         const val AVISO_FINAL_MS = 15_000L
         const val MENSAJE_SIN_MICROFONO = "No pudimos usar el micrófono. Pide ayuda a tu profesor."
         const val MENSAJE_SIN_AUDIO = "No escuchamos nada. Intenta grabar otra vez."
+        const val MENSAJE_NO_SE_ESCUCHA = "No pudimos reproducir tu grabación. Vuelve a grabar."
+        const val MENSAJE_SIN_CONEXION = "No pudimos enviar tu lectura. Revisa el internet e intenta otra vez."
+        const val MENSAJE_SESION_VENCIDA = "Tu sesión terminó. Pide ayuda a tu profesor para entrar otra vez."
     }
 }

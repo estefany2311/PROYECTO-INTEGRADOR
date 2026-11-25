@@ -21,7 +21,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,30 +48,46 @@ import com.proyecto.movil.viewmodel.GrabacionUiState
 import com.proyecto.movil.viewmodel.GrabacionViewModel
 import com.proyecto.movil.viewmodel.LecturaUiState
 import com.proyecto.movil.viewmodel.LecturaViewModel
+import com.proyecto.movil.viewmodel.Reproduccion
 
 @Composable
 fun PantallaGrabacion(
     nivelId: Int,
     onVolver: () -> Unit,
+    onEnviada: (Long) -> Unit = {},
     lecturaViewModel: LecturaViewModel = viewModel(),
     grabacionViewModel: GrabacionViewModel = viewModel()
 ) {
     ConPermisoMicrofono(onAhoraNo = onVolver) {
-        val lectura by lecturaViewModel.uiState.collectAsState()
-        val grabacion by grabacionViewModel.uiState.collectAsState()
+        val lectura by lecturaViewModel.uiState.collectAsStateWithLifecycle()
+        val grabacion by grabacionViewModel.uiState.collectAsStateWithLifecycle()
+        val reproduccion by grabacionViewModel.reproduccion.collectAsStateWithLifecycle()
+
+        // T-418: cuando el audio ya está en el servidor, pasa a la pantalla de espera
+        LaunchedEffect(grabacion) {
+            (grabacion as? GrabacionUiState.Enviada)?.let { onEnviada(it.evidenciaId) }
+        }
+
+        // T-410: si la app pasa a segundo plano, se pausa el audio
+        LifecycleEventEffect(Lifecycle.Event.ON_STOP) { grabacionViewModel.pausar() }
 
         LaunchedEffect(nivelId) {
             lecturaViewModel.cargar(nivelId)
             grabacionViewModel.revisarGuardada(nivelId)   // T-317: si ya grabó este nivel, se muestra
         }
 
+        val lecturaActual = (lectura as? LecturaUiState.Exito)?.lectura
         ContenidoGrabacion(
-            lectura = (lectura as? LecturaUiState.Exito)?.lectura,
+            lectura = lecturaActual,
             estado = grabacion,
             onVolver = onVolver,
             onGrabar = { grabacionViewModel.grabar(nivelId) },
             onTerminar = grabacionViewModel::terminar,
-            onGrabarOtraVez = grabacionViewModel::grabarOtraVez
+            onGrabarOtraVez = grabacionViewModel::grabarOtraVez,
+            reproduccion = reproduccion,
+            onEscuchar = grabacionViewModel::escuchar,
+            // T-417: sube el audio con el id de la lectura que tenía en pantalla
+            onEnviar = { lecturaActual?.let { grabacionViewModel.enviar(nivelId, it.lecturaId) } }
         )
     }
 }
@@ -82,7 +100,10 @@ fun ContenidoGrabacion(
     onVolver: () -> Unit,
     onGrabar: () -> Unit,
     onTerminar: () -> Unit,
-    onGrabarOtraVez: () -> Unit
+    onGrabarOtraVez: () -> Unit,
+    reproduccion: Reproduccion = Reproduccion(),
+    onEscuchar: () -> Unit = {},
+    onEnviar: () -> Unit = {}
 ) {
     Column(
         Modifier.fillMaxSize().background(ColoresAventura.Cielo).padding(24.dp),
@@ -91,7 +112,7 @@ fun ContenidoGrabacion(
         // Mientras graba no se puede volver: primero hay que terminar
         TextButton(
             onClick = onVolver,
-            enabled = estado !is GrabacionUiState.Grabando,
+            enabled = estado !is GrabacionUiState.Grabando && estado !is GrabacionUiState.Enviando,
             modifier = Modifier.align(Alignment.Start).testTag("boton_volver_grabacion")
         ) { Text("←  Volver", fontSize = 20.sp, color = ColoresAventura.TextoOscuro) }
 
@@ -113,16 +134,19 @@ fun ContenidoGrabacion(
             }
         }
         Spacer(Modifier.height(20.dp))
-        ControlesGrabacion(estado, onGrabar, onTerminar, onGrabarOtraVez, onVolver)
+        ControlesGrabacion(estado, reproduccion, onGrabar, onTerminar, onGrabarOtraVez, onEscuchar, onEnviar, onVolver)
     }
 }
 
 @Composable
 private fun ControlesGrabacion(
     estado: GrabacionUiState,
+    reproduccion: Reproduccion,
     onGrabar: () -> Unit,
     onTerminar: () -> Unit,
     onGrabarOtraVez: () -> Unit,
+    onEscuchar: () -> Unit,
+    onEnviar: () -> Unit,
     onVolver: () -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth()) {
@@ -184,11 +208,88 @@ private fun ControlesGrabacion(
                     modifier = Modifier.testTag("aviso_guardada")
                 )
                 Spacer(Modifier.height(12.dp))
+                ReproductorGrabacion(reproduccion, estado.grabacion.duracionMs, onEscuchar)
+                Spacer(Modifier.height(12.dp))
+                // T-408
                 OutlinedButton(
                     onClick = onGrabarOtraVez,
                     shape = RoundedCornerShape(32.dp),
                     modifier = Modifier.fillMaxWidth().height(64.dp).testTag("boton_grabar_otra_vez")
-                ) { Text("Grabar otra vez", fontSize = 22.sp, color = ColoresAventura.TextoOscuro) }
+                ) { Text("Volver a grabar", fontSize = 22.sp, color = ColoresAventura.TextoOscuro) }
+            }
+            is GrabacionUiState.Enviando -> EnviandoAudio(estado.progreso)
+            is GrabacionUiState.Enviada -> {
+                Text(
+                    "¡Enviamos tu lectura!",
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ColoresAventura.Turquesa,
+                    modifier = Modifier.testTag("lectura_enviada")
+                )
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onVolver,
+                    colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Turquesa),
+                    shape = RoundedCornerShape(36.dp),
+                    modifier = Modifier.fillMaxWidth().height(72.dp).testTag("boton_volver_mapa")
+                ) { Text("Volver al mapa", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+            }
+            // T-419: sin internet la grabación no se pierde; se envía sola después
+            is GrabacionUiState.EnCola -> {
+                Text(
+                    "No hay internet",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ColoresAventura.TextoOscuro,
+                    modifier = Modifier.testTag("titulo_en_cola")
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Tu lectura quedó guardada y se enviará sola cuando vuelva la conexión.",
+                    fontSize = 20.sp,
+                    textAlign = TextAlign.Center,
+                    color = ColoresAventura.TextoOscuro,
+                    modifier = Modifier.testTag("aviso_en_cola")
+                )
+                Spacer(Modifier.height(16.dp))
+                Button(
+                    onClick = onVolver,
+                    colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Turquesa),
+                    shape = RoundedCornerShape(36.dp),
+                    modifier = Modifier.fillMaxWidth().height(72.dp).testTag("boton_volver_en_cola")
+                ) { Text("Volver", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+                Spacer(Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = onEnviar,
+                    shape = RoundedCornerShape(32.dp),
+                    modifier = Modifier.fillMaxWidth().height(64.dp).testTag("boton_enviar_ahora")
+                ) { Text("Intentar ahora", fontSize = 22.sp, color = ColoresAventura.TextoOscuro) }
+            }
+            is GrabacionUiState.ErrorEnvio -> {
+                Text(
+                    estado.mensaje,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = ColoresAventura.TextoOscuro,
+                    modifier = Modifier.testTag("error_envio")
+                )
+                Spacer(Modifier.height(12.dp))
+                // Sin internet: se reintenta con la misma grabación, que sigue guardada en la tablet
+                if (estado.puedeReintentar) {
+                    Button(
+                        onClick = onEnviar,
+                        colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Turquesa),
+                        shape = RoundedCornerShape(36.dp),
+                        modifier = Modifier.fillMaxWidth().height(72.dp).testTag("boton_reintentar_envio")
+                    ) { Text("Intentar otra vez", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+                    Spacer(Modifier.height(12.dp))
+                }
+                OutlinedButton(
+                    onClick = onGrabarOtraVez,
+                    shape = RoundedCornerShape(32.dp),
+                    modifier = Modifier.fillMaxWidth().height(64.dp).testTag("boton_grabar_otra_vez")
+                ) { Text("Volver a grabar", fontSize = 22.sp, color = ColoresAventura.TextoOscuro) }
             }
             is GrabacionUiState.Error -> {
                 Text(
@@ -204,6 +305,83 @@ private fun ControlesGrabacion(
                     Text("Intentar otra vez", fontSize = 20.sp, color = ColoresAventura.TextoOscuro)
                 }
             }
+        }
+        // T-409: se ve antes de grabar y con la grabación lista; solo se activa cuando hay grabación
+        if (estado is GrabacionUiState.Lista || estado is GrabacionUiState.Grabada || estado is GrabacionUiState.Error) {
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onEnviar,
+                enabled = estado is GrabacionUiState.Grabada,
+                colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Turquesa),
+                shape = RoundedCornerShape(36.dp),
+                modifier = Modifier.fillMaxWidth().height(72.dp).testTag("boton_enviar_grabacion")
+            ) { Text("Enviar", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+        }
+    }
+}
+
+// T-417: barra de subida con el porcentaje
+@Composable
+private fun EnviandoAudio(progreso: Float) {
+    val porcentaje = (progreso.coerceIn(0f, 1f) * 100).toInt()
+    Text(
+        "Enviando tu lectura… $porcentaje %",
+        fontSize = 26.sp,
+        fontWeight = FontWeight.Bold,
+        color = ColoresAventura.Turquesa,
+        modifier = Modifier.testTag("texto_enviando")
+    )
+    Spacer(Modifier.height(12.dp))
+    LinearProgressIndicator(
+        progress = { progreso.coerceIn(0f, 1f) },
+        color = ColoresAventura.Turquesa,
+        trackColor = Color.White,
+        modifier = Modifier.fillMaxWidth().height(16.dp).clip(RoundedCornerShape(8.dp)).testTag("barra_envio")
+    )
+    Spacer(Modifier.height(8.dp))
+    Text("No cierres la app", fontSize = 18.sp, color = ColoresAventura.TextoOscuro)
+}
+
+// T-407: botón para escuchar o pausar, barra de avance y tiempo
+@Composable
+private fun ReproductorGrabacion(reproduccion: Reproduccion, duracionMs: Long, onEscuchar: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .testTag("reproductor_grabacion")
+    ) {
+        val descripcion = if (reproduccion.reproduciendo) "Pausar mi grabación" else "Escuchar mi grabación"
+        Button(
+            onClick = onEscuchar,
+            shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(containerColor = ColoresAventura.Turquesa),
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier.size(64.dp).semantics { contentDescription = descripcion }.testTag("boton_escuchar")
+        ) {
+            Icon(
+                painterResource(if (reproduccion.reproduciendo) R.drawable.ic_pausa else R.drawable.ic_play),
+                contentDescription = null, tint = Color.White, modifier = Modifier.size(36.dp)
+            )
+        }
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            LinearProgressIndicator(
+                progress = { if (duracionMs > 0) (reproduccion.posicionMs.toFloat() / duracionMs).coerceIn(0f, 1f) else 0f },
+                color = ColoresAventura.Turquesa,
+                trackColor = ColoresAventura.Cielo,
+                modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)).testTag("barra_reproduccion")
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                reproduccion.error ?: "${formatoTiempo(reproduccion.posicionMs)} / ${formatoTiempo(duracionMs)}",
+                fontSize = 18.sp,
+                color = ColoresAventura.TextoOscuro,
+                modifier = Modifier.testTag("tiempo_reproduccion")
+            )
         }
     }
 }
@@ -318,9 +496,31 @@ fun GrabacionGuardadaPreview() = GrabacionDePrueba(
     GrabacionUiState.Grabada(com.proyecto.movil.model.audio.Grabacion(java.io.File("nivel_1.wav"), 45_000), deAntes = true)
 )
 
+@Preview(name = "Grabación · escuchando", widthDp = 800, heightDp = 1280, showBackground = true)
 @Composable
-private fun GrabacionDePrueba(estado: GrabacionUiState) {
+fun GrabacionEscuchandoPreview() = GrabacionDePrueba(
+    GrabacionUiState.Grabada(com.proyecto.movil.model.audio.Grabacion(java.io.File("nivel_1.wav"), 45_000)),
+    Reproduccion(reproduciendo = true, posicionMs = 18_000)
+)
+
+@Preview(name = "Grabación · enviando", widthDp = 800, heightDp = 1280, showBackground = true)
+@Composable
+fun GrabacionEnviandoPreview() = GrabacionDePrueba(
+    GrabacionUiState.Enviando(com.proyecto.movil.model.audio.Grabacion(java.io.File("nivel_1.wav"), 45_000), 0.45f)
+)
+
+@Preview(name = "Grabación · sin internet", widthDp = 800, heightDp = 1280, showBackground = true)
+@Composable
+fun GrabacionErrorEnvioPreview() = GrabacionDePrueba(
+    GrabacionUiState.ErrorEnvio(
+        com.proyecto.movil.model.audio.Grabacion(java.io.File("nivel_1.wav"), 45_000),
+        GrabacionViewModel.MENSAJE_SIN_CONEXION, puedeReintentar = true
+    )
+)
+
+@Composable
+private fun GrabacionDePrueba(estado: GrabacionUiState, reproduccion: Reproduccion = Reproduccion()) {
     AppMovilTheme(dynamicColor = false) {
-        ContenidoGrabacion(LECTURA_PRUEBA, estado, onVolver = {}, onGrabar = {}, onTerminar = {}, onGrabarOtraVez = {})
+        ContenidoGrabacion(LECTURA_PRUEBA, estado, onVolver = {}, onGrabar = {}, onTerminar = {}, onGrabarOtraVez = {}, reproduccion = reproduccion)
     }
 }

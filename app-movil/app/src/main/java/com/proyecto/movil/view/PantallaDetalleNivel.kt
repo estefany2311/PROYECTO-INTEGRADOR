@@ -16,7 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +35,7 @@ import com.proyecto.movil.ui.theme.AppMovilTheme
 import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.viewmodel.DetalleNivelUiState
 import com.proyecto.movil.viewmodel.DetalleNivelViewModel
+import com.proyecto.movil.view.componentes.estiloDe
 
 @Composable
 fun PantallaDetalleNivel(
@@ -43,7 +44,7 @@ fun PantallaDetalleNivel(
     onComenzar: (NivelDetalle) -> Unit,
     viewModel: DetalleNivelViewModel = viewModel()
 ) {
-    val estado by viewModel.uiState.collectAsState()
+    val estado by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(nivelId) { viewModel.cargar(nivelId) }
 

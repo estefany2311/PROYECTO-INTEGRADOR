@@ -1,6 +1,9 @@
 package com.proyecto.movil.model.remote
 
+import com.proyecto.movil.model.AudioRecibido
 import com.proyecto.movil.model.CompletarNivelRequest
+import com.proyecto.movil.model.EstadoEvidencia
+import com.proyecto.movil.model.ResultadoEvaluacion
 import com.proyecto.movil.model.ConsignaNivel
 import com.proyecto.movil.model.InicioSesionRequest
 import com.proyecto.movil.model.LecturaNivel
@@ -10,11 +13,15 @@ import com.proyecto.movil.model.RespuestaOrtografia
 import com.proyecto.movil.model.ResultadoReto
 import com.proyecto.movil.model.SesionRespuesta
 import com.proyecto.movil.model.VerificarTextoRequest
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -52,4 +59,21 @@ interface ApiService {
         @Path("nivelId") nivelId: Int,
         @Body request: CompletarNivelRequest
     ): Response<ResultadoReto>
+
+    // T-417: sube la grabación de la lectura (T-413). Response<> para leer el mensaje de los 400/413/415
+    @Multipart
+    @POST("api/estudiante/niveles/{nivelId}/audio")
+    suspend fun subirAudio(
+        @Path("nivelId") nivelId: Int,
+        @Part("lecturaId") lecturaId: RequestBody,
+        @Part audio: MultipartBody.Part
+    ): Response<AudioRecibido>
+
+    // T-418: cómo va la transcripción de la lectura (T-416). Response<> para leer el 401 y el 404
+    @GET("api/estudiante/evidencias/{evidenciaId}/estado")
+    suspend fun estadoEvidencia(@Path("evidenciaId") evidenciaId: Long): Response<EstadoEvidencia>
+
+    // T-426: precisión, estrellas, puntos y nivel desbloqueado (T-425)
+    @GET("api/estudiante/evidencias/{evidenciaId}/resultado")
+    suspend fun resultadoLectura(@Path("evidenciaId") evidenciaId: Long): Response<ResultadoEvaluacion>
 }

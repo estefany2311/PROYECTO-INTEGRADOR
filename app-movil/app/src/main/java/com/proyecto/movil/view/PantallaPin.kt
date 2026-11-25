@@ -14,6 +14,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,7 +59,7 @@ fun PantallaPin(
     onSesionIniciada: (SesionRespuesta) -> Unit,
     viewModel: PinViewModel = viewModel()
 ) {
-    val estado by viewModel.uiState.collectAsState()
+    val estado by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(estudianteId) {
         viewModel.inicializar(estudianteId)

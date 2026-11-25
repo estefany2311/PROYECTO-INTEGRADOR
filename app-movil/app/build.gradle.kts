@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)   // collectAsStateWithLifecycle
     implementation(libs.androidx.ui.graphics)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit.ktx)
@@ -87,6 +88,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
 //Agregar la dependencia de navegación
     implementation("androidx.navigation:navigation-compose:2.8.0")
+// T-419: enviar las grabaciones pendientes cuando vuelva el internet
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }

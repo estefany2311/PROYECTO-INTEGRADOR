@@ -33,9 +33,11 @@ El sistema se divide en dos módulos independientes que comparten una sola base 
 
 **Importante:** `backend/usuario/` es un único proyecto Spring Boot compartido entre Noemi y Karla. Cada una trabaja solo dentro de su propia subcarpeta (`docente/` o `estudiante/`). Los archivos de configuración general (`pom.xml`, `application.properties`) se coordinan entre las dos antes de modificarlos.
 
-## Pendiente de confirmar con el profesor
+## Motor de IA (confirmado con el profesor, T-412)
 
-- Dónde queda el motor de IA (evaluación de voz y validación ortográfica, US-10 y US-11). No aparece en este diagrama.
+- **Voz a texto (US-13 y US-14):** Whisper (`faster-whisper`, en español) como servicio aparte en `backend/ia/voz/` (Python). Lo llama solo el backend estudiante; la tablet nunca habla con él.
+- **Validación ortográfica (US-19):** dentro del backend estudiante (`VerificadorOrtografico`), con la configuración que guarda el módulo Administración.
+- Los audios se guardan en una carpeta compartida (`estudiante.audios.carpeta`) que también lee el backend docente para que el profesor escuche la evidencia.
 
 ## Estrategia de ramas
 

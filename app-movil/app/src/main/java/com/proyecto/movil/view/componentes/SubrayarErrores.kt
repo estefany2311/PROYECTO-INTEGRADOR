@@ -1,4 +1,4 @@
-package com.proyecto.movil.view
+package com.proyecto.movil.view.componentes
 
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle

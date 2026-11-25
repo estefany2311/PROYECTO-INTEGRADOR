@@ -2,6 +2,9 @@ package com.proyecto.movil.view
 
 import androidx.compose.ui.text.AnnotatedString
 import com.proyecto.movil.model.ErrorOrtografico
+import com.proyecto.movil.view.componentes.ESTILO_ERROR
+import com.proyecto.movil.view.componentes.SubrayarErrores
+import com.proyecto.movil.view.componentes.marcarErrores
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

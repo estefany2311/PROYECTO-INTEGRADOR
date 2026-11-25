@@ -2,6 +2,8 @@ package com.proyecto.movil
 
 import android.content.Context
 import com.proyecto.movil.model.audio.AlmacenGrabaciones
+import com.proyecto.movil.model.audio.ColaEnviosWorkManager
+import com.proyecto.movil.model.audio.IColaEnvios
 import com.proyecto.movil.model.local.AlmacenBorradores
 import com.proyecto.movil.model.local.AlmacenSesionSeguro
 import com.proyecto.movil.model.local.IAlmacenSesion
@@ -27,6 +29,10 @@ object Dependencias {
     lateinit var monitorRed: IMonitorRed
         private set
 
+    // T-419: grabaciones que se envían solas cuando vuelve el internet
+    lateinit var colaEnvios: IColaEnvios
+        private set
+
     fun iniciar(context: Context) {
         if (::almacenSesion.isInitialized) return
         almacenSesion = AlmacenSesionSeguro(context.applicationContext)
@@ -36,6 +42,7 @@ object Dependencias {
         almacenBorradores = AlmacenBorradores(java.io.File(context.filesDir, "borradores"))
         almacenBorradores.limpiar()   // borra los de más de 30 días
         monitorRed = MonitorRed(context.applicationContext)
+        colaEnvios = ColaEnviosWorkManager(context.applicationContext)
         // T-314 grababa en la caché; esa carpeta ya no se usa
         java.io.File(context.cacheDir, "grabaciones").deleteRecursively()
         // Cada petición a la API lleva el token guardado (si hay sesión)

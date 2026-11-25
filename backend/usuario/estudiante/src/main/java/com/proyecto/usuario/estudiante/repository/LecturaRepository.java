@@ -51,4 +51,12 @@ public class LecturaRepository {
                 .query(LECTURA)
                 .optional();
     }
+
+    // T-413: la lectura que el alumno tenía en pantalla cuando grabó
+    public Optional<Lectura> porId(long lecturaId) {
+        return jdbc.sql("SELECT id, titulo, texto, tipo_reto, grado, dificultad FROM lecturas WHERE id = :id")
+                .param("id", lecturaId)
+                .query(LECTURA)
+                .optional();
+    }
 }
