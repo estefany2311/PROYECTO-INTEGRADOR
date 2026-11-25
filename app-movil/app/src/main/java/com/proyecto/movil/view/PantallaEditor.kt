@@ -21,7 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,11 +35,13 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -59,6 +63,7 @@ import com.proyecto.movil.view.componentes.SubrayarErrores
 import com.proyecto.movil.view.componentes.CabeceraEscritura
 import com.proyecto.movil.view.componentes.ErrorConsigna
 import com.proyecto.movil.view.componentes.Koala
+import com.proyecto.movil.view.componentes.MenuSugerencias
 
 //T-323 (US-18): el niño escribe su texto con letra grande. Se abre con "Empezar a escribir" (T-321)
  //Teclado en español y SIN autocorrector: lo que se evalúa es cómo escribe el niño, así que la tablet
@@ -116,7 +121,8 @@ fun ContenidoEditor(
     envio: EnvioTextoUiState = EnvioTextoUiState.Escribiendo,      // T-435
     onConfirmarEnvio: () -> Unit = {},
     onCancelarEnvio: () -> Unit = {},
-    onVolverAlMapa: () -> Unit = {}
+    onVolverAlMapa: () -> Unit = {},
+    onElegirSugerencia: (ErrorOrtografico, String) -> Unit = { _, _ -> }   // T-366; T-367 reemplaza la palabra
 ) {
     // T-435: antes de enviar se confirma, porque después ya no podrá cambiar su texto
     if (envio is EnvioTextoUiState.Confirmando) DialogoConfirmarEnvio(onConfirmarEnvio, onCancelarEnvio)
@@ -138,7 +144,7 @@ fun ContenidoEditor(
             }
             is ConsignaUiState.Exito -> when (envio) {
                 is EnvioTextoUiState.Enviado -> TextoEnviado(envio, onVolverAlMapa)
-                else -> Hoja(consigna.consigna, texto, guardado, errores, sinRevisar, envio, onEscribir, onEnviar)
+                else -> Hoja(consigna.consigna, texto, guardado, errores, sinRevisar, envio, onEscribir, onEnviar, onElegirSugerencia)
             }
         }
     }
@@ -153,8 +159,16 @@ private fun ColumnScope.Hoja(
     sinRevisar: Boolean,
     envio: EnvioTextoUiState,
     onEscribir: (String) -> Unit,
-    onEnviar: () -> Unit
+    onEnviar: () -> Unit,
+    onElegirSugerencia: (ErrorOrtografico, String) -> Unit
 ) {
+    // T-366: se guarda dónde está el cursor para saber qué palabra tocó el niño
+    var campo by remember { mutableStateOf(TextFieldValue(texto, TextRange(texto.length))) }
+    // Si el texto cambió desde afuera (borrador recuperado o sugerencia elegida), el cursor va al final
+    val valor = if (campo.text == texto) campo else TextFieldValue(texto, TextRange(texto.length))
+    var tocoUnaPalabra by remember { mutableStateOf(false) }
+    var cerradoPara by remember { mutableStateOf<ErrorOrtografico?>(null) }
+    val errorTocado = palabraTocada(valor, errores).takeIf { tocoUnaPalabra && it != cerradoPara }
     // Con poca altura (celular en horizontal o teclado abierto) la hoja tiene un alto fijo y todo se desliza
     BoxWithConstraints(
         Modifier
@@ -183,8 +197,17 @@ private fun ColumnScope.Hoja(
 
         // La hoja: letra grande, interlineado amplio y borde naranja como en el mockup
         BasicTextField(
-            value = texto,
-            onValueChange = onEscribir,
+            value = valor,
+            onValueChange = { nuevo ->
+                // Solo un toque (mismo texto, otro lugar del cursor) abre el menú; al escribir se cierra
+                if (nuevo.text != valor.text) tocoUnaPalabra = false
+                else if (nuevo.selection != valor.selection) {
+                    tocoUnaPalabra = true
+                    cerradoPara = null     // un toque nuevo vuelve a abrir el menú aunque lo haya cerrado
+                }
+                campo = nuevo
+                if (nuevo.text != texto) onEscribir(nuevo.text)
+            },
             textStyle = TextStyle(fontSize = 30.sp, lineHeight = 46.sp, color = ColoresAventura.TextoOscuro),
             cursorBrush = SolidColor(ColoresAventura.Naranja),
             // T-331: subraya en rojo las palabras con error
@@ -219,6 +242,18 @@ private fun ColumnScope.Hoja(
                 }
             }
         )
+        // T-366: al tocar una palabra subrayada aparecen sus sugerencias
+        errorTocado?.let { error ->
+            Spacer(Modifier.height(12.dp))
+            MenuSugerencias(
+                error = error,
+                onElegir = { sugerencia ->
+                    tocoUnaPalabra = false
+                    onElegirSugerencia(error, sugerencia)
+                },
+                onCerrar = { cerradoPara = error }
+            )
+        }
         Spacer(Modifier.height(16.dp))
         // T-331: cuántas palabras tiene que revisar
         val porRevisar = remember(texto, errores) {
@@ -287,6 +322,16 @@ private fun ColumnScope.Hoja(
             }
         }
     }
+    }
+}
+
+// T-366: el error subrayado donde está el cursor (solo si la palabra sigue en ese lugar)
+internal fun palabraTocada(valor: TextFieldValue, errores: List<ErrorOrtografico>): ErrorOrtografico? {
+    if (!valor.selection.collapsed) return null
+    val cursor = valor.selection.start
+    val texto = valor.text
+    return errores.firstOrNull { e ->
+        cursor in e.inicio..e.fin && e.fin <= texto.length && texto.substring(e.inicio, e.fin) == e.palabra
     }
 }
 

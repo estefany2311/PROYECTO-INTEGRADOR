@@ -9,8 +9,13 @@ data class ErrorOrtografico(
     val inicio: Int,
     val fin: Int,
     val tipo: String,            // "ortografia", "tilde" o "mayuscula"
-    val sugerencia: String?
-)
+    val sugerencia: String?,
+    val sugerencias: List<String>? = null   // US-20 (T-364): hasta 3, de la más parecida a la menos
+) {
+    // T-366: lo que muestra el menú; si el backend no manda la lista, se usa la única sugerencia
+    fun opciones(): List<String> =
+        sugerencias?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() } ?: listOfNotNull(sugerencia)
+}
 
 data class RespuestaOrtografia(
     val errores: List<ErrorOrtografico>,
