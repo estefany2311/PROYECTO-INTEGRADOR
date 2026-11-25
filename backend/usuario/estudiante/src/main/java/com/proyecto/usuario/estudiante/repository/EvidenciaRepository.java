@@ -3,6 +3,7 @@ package com.proyecto.usuario.estudiante.repository;
 import com.proyecto.usuario.estudiante.dto.EstadoEvidenciaResponse;
 import com.proyecto.usuario.estudiante.dto.ResultadoLecturaResponse;
 import com.proyecto.usuario.estudiante.model.DatosLectura;
+import com.proyecto.usuario.estudiante.model.MejorIntento;
 import com.proyecto.usuario.estudiante.model.PalabraAlineada;
 import com.proyecto.usuario.estudiante.model.PendienteVoz;
 import com.proyecto.usuario.estudiante.model.ResultadoPrecision;
@@ -159,6 +160,23 @@ public class EvidenciaRepository {
                         rs.getObject("nivel_desbloqueado", Integer.class), rs.getString("nivel_nombre"),
                         rs.getObject("asignacion_id", Long.class), List.of()))
                 .optional();
+    }
+
+    // T-432 (US-16): el mejor de sus intentos anteriores en el mismo nivel (solo los ya calificados).
+    // El mejor puntaje del nivel ya se guarda en progreso (T-310); aquí se compara la precisión
+    public MejorIntento mejorAnterior(long evidenciaId) {
+        return jdbc.sql("""
+                        SELECT count(*) AS intentos, max(el.precision_pct) AS mejor_precision,
+                               max(el.estrellas) AS mejor_estrellas
+                        FROM evidencia actual
+                        JOIN evidencia e ON e.estudiante_id = actual.estudiante_id AND e.nivel_id = actual.nivel_id
+                        JOIN evidencia_lectura el ON el.evidencia_id = e.id
+                        WHERE actual.id = :id AND e.id < actual.id AND el.estado_ia = 'listo'
+                        """)
+                .param("id", evidenciaId)
+                .query((rs, n) -> new MejorIntento(rs.getInt("intentos"),
+                        rs.getObject("mejor_precision", Integer.class), rs.getObject("mejor_estrellas", Integer.class)))
+                .single();
     }
 
     // T-428: el texto que leyó y el tipo de cada palabra del texto, para marcar las que debe mejorar
