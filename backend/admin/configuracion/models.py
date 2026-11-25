@@ -212,3 +212,54 @@ class ReglaPuntuacion(models.Model):
     def __str__(self):
         return (f'{self.get_tipo_reto_display()} · {self.puntos} pts · '
 f'★{self.umbral_1_estrella} ★★{self.umbral_2_estrellas} ★★★{self.umbral_3_estrellas}')
+
+
+
+class ReglaDesbloqueo(models.Model):
+    """US-54: qué necesita el alumno en un nivel del mapa para desbloquear el siguiente.
+
+    La tabla `nivel` la crea Spring Boot (portal docente, Flyway V7), por eso aquí
+    se guarda solo su id, sin llave foránea. Si un nivel no tiene regla, la app
+    del estudiante usa 1 estrella.
+    """
+
+    nivel_id = models.PositiveSmallIntegerField(
+        unique=True,
+        help_text='Id del nivel en la tabla nivel (una regla por nivel).',
+    )
+    estrellas_minimas = models.PositiveSmallIntegerField(
+        default=1,
+        db_default=1,
+        validators=[MinValueValidator(0), MaxValueValidator(3)],
+        help_text='Estrellas que debe obtener en este nivel para desbloquear el siguiente (0 a 3).',
+    )
+    puntaje_minimo = models.PositiveSmallIntegerField(
+        default=0,
+        db_default=0,
+        help_text='Puntos que debe obtener en este nivel para desbloquear el siguiente.',
+    )
+    actualizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reglas_desbloqueo',
+    )
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        # Nombre claro para que la app del estudiante (Spring Boot) la pueda leer
+        db_table = 'reglas_desbloqueo'
+        ordering = ['nivel_id']
+        verbose_name = 'Regla de desbloqueo'
+        verbose_name_plural = 'Reglas de desbloqueo'
+        constraints = [
+            # También en la base, por si otra app escribe en la tabla
+            models.CheckConstraint(
+                condition=models.Q(estrellas_minimas__lte=3),
+                name='regla_desbloqueo_estrellas_0_a_3',
+            ),
+        ]
+
+    def __str__(self):
+        return f'Nivel {self.nivel_id} · ★{self.estrellas_minimas} · {self.puntaje_minimo} pts'

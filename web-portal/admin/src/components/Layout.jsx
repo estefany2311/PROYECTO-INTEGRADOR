@@ -31,12 +31,16 @@ const SECCIONES = [
       { id: "configuracion", icono: "bi-mic", texto: "Evaluación de voz", disponible: true },
       { id: "ortografia", modulo: "configuracion", icono: "bi-spellcheck", texto: "Ortografía", disponible: true },
       { id: "puntuacion", modulo: "configuracion", icono: "bi-star", texto: "Puntos y estrellas", disponible: true },
+      { id: "desbloqueo", modulo: "configuracion", icono: "bi-unlock", texto: "Desbloqueo de niveles", disponible: true },
     ],
   },
-  {
+{
     titulo: "Análisis",
-    enlaces: [{ id: "reportes", icono: "bi-bar-chart", texto: "Reportes", disponible: true }],
-  },
+      enlaces: [
+      { id: "reportes", icono: "bi-bar-chart", texto: "Reportes", disponible: true },
+      { id: "mapacalor", modulo: "reportes", icono: "bi-grid-3x3-gap", texto: "Mapa de calor", disponible: true },
+    ],
+   }  
 ];
 
 const iniciales = (texto) =>

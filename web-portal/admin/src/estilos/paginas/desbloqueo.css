@@ -1,0 +1,45 @@
+/* =====================================================================
+   PESTAÑA: CONFIGURACIÓN IA · DESBLOQUEO DE NIVELES (US-54)
+   Todo lo que cambies aquí afecta SOLO a esta pestaña.
+   ===================================================================== */
+
+/* 1) PANEL DE COLORES: cambia el valor y guarda (Ctrl + S) */
+.main.pagina-desbloqueo {
+  --fondo: #DCECE8;                    /* fondo de la pestaña */
+  --titulo: #22303C;                   /* color del título grande */
+  --titulo-tamano: 22px;               /* tamaño del título grande */
+  --subtitulo: #5E6B73;                /* texto debajo del título (ruta) */
+  --tarjeta-fondo: #F6FBFA;            /* fondo de las tarjetas de nivel */
+  --tarjeta-borde: #C9DFDA;            /* borde de las tarjetas */
+  --tarjeta-radio: 12px;               /* qué tan redondas son las esquinas */
+  --boton: #0A8378;                    /* botones principales */
+  --boton-hover: #08665E;              /* botones principales al pasar el mouse */
+  --nota: #5E6B73;                     /* textos pequeños grises */
+  --fila-cambios: #FFF8E7;             /* tarjeta con cambios sin guardar */
+  --estrella: #E0A100;                 /* estrellas del selector */
+  --opcion-elegida: #0A8378;           /* opción de estrellas elegida */
+}
+
+/* 2) REGLAS SOLO DE ESTA PESTAÑA (empieza siempre con .pagina-desbloqueo) */
+.pagina-desbloqueo .tarjeta-nivel.con-cambios { background: var(--fila-cambios); }
+.pagina-desbloqueo .tarjeta-nivel.inactivo { opacity: .6; }
+
+.pagina-desbloqueo .numero-nivel {
+  width: 36px; height: 36px; border-radius: 50%; display: inline-grid; place-items: center;
+  color: #fff; font-weight: 800; flex: none;
+}
+.pagina-desbloqueo .reto-lectura { background: #0A8378; }
+.pagina-desbloqueo .reto-escritura { background: #4F7CAC; }
+.pagina-desbloqueo .reto-oralidad { background: #D9822B; }
+
+.pagina-desbloqueo .selector-estrellas { display: flex; gap: 6px; }
+.pagina-desbloqueo .opcion-estrella {
+  flex: 1; border: 1px solid var(--tarjeta-borde); background: #fff; border-radius: 8px;
+  padding: 5px 0; font-weight: 800; color: var(--estrella); line-height: 1.2;
+}
+.pagina-desbloqueo .opcion-estrella:first-child { color: var(--nota); }
+.pagina-desbloqueo .opcion-estrella.elegida {
+  border-color: var(--opcion-elegida); box-shadow: inset 0 0 0 1px var(--opcion-elegida); background: #E3F2F0;
+}
+.pagina-desbloqueo .opcion-estrella:disabled { opacity: .6; }
+.pagina-desbloqueo .input-group { max-width: 220px; }

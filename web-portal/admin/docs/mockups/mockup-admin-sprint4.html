@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Admin Sprint 4 (T-369)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* Mockup T-369 · Sprint 4 · misma paleta Yalliq del portal (App.css) */
+  :root{
+    --primary:#0A8378; --primary-dark:#08665E; --primary-soft:#E3F2F0;
+    --body:#DCECE8; --card:#F6FBFA; --border:#C9DFDA; --text:#22303C; --muted:#5E6B73;
+    --sidebar:#0E9F92; --sidebar-fin:#08665E; --lapiz:#FFD36B;
+    --encabezado:#FFF8E7; --margen:#F2B8B5;
+    --ok:#1F8A4C; --ok-fondo:#E3F4EA; --warn:#9A6200; --warn-fondo:#FFF1D6; --off:#B3261E; --off-fondo:#FBE4E2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Nunito,system-ui,sans-serif;color:var(--text);background:var(--body);font-size:14.5px}
+  .app{display:flex;min-height:100vh}
+
+  /* Menú lateral (igual al portal) */
+  .sidebar{width:240px;flex:none;background:linear-gradient(180deg,var(--sidebar),var(--sidebar-fin));color:#fff;padding:18px 12px}
+  .marca{display:flex;align-items:center;gap:10px;padding:0 8px 16px;border-bottom:1px solid rgba(255,255,255,.15)}
+  .marca .logo{width:46px;height:46px;border-radius:50%;background:#fff;display:grid;place-items:center;color:var(--primary);font-weight:900;font-size:20px}
+  .marca b{font-size:22px;font-weight:900;display:block;line-height:1}
+  .marca small{font-size:10px;letter-spacing:.06em;font-weight:800;opacity:.85}
+  .seccion{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.75;padding:14px 10px 6px}
+  .link{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;font-weight:700;color:#fff;text-decoration:none;cursor:pointer}
+  .link:hover{background:rgba(255,255,255,.12);color:#fff}
+  .link.activo{background:var(--card);color:var(--primary-dark);box-shadow:inset 3px 0 0 var(--lapiz)}
+
+  .main{flex:1;min-width:0;padding:22px 28px;background-image:radial-gradient(rgba(10,131,120,.10) 1px,transparent 1px);background-size:22px 22px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .buscar{background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;width:340px;color:var(--muted)}
+
+  /* Encabezado tipo hoja de cuaderno */
+  .page-title{background:var(--encabezado);border:1px solid #F1E3C2;border-radius:12px;padding:14px 20px 14px 66px;position:relative;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .page-title::before{content:"";position:absolute;left:46px;top:0;bottom:0;width:2px;background:var(--margen)}
+  .page-title h1{font-size:22px;font-weight:800;margin:0}
+  .page-title .ruta{font-size:12px;color:var(--muted)}
+
+  .tarjeta{background:var(--card);border:1px solid var(--border);border-radius:12px}
+  .btn-prim{background:var(--primary);color:#fff;border:0;border-radius:10px;font-weight:800;padding:8px 14px}
+  .btn-prim:hover{background:var(--primary-dark);color:#fff}
+  .btn-sec{background:#fff;color:var(--text);border:1px solid var(--border);border-radius:10px;font-weight:700;padding:8px 14px}
+  .badge-soft{font-size:11.5px;font-weight:800;border-radius:6px;padding:3px 8px;display:inline-block}
+  .bs-ok{background:var(--ok-fondo);color:var(--ok)} .bs-warn{background:var(--warn-fondo);color:var(--warn)} .bs-off{background:var(--off-fondo);color:var(--off)}
+  .note{font-size:12.5px;color:var(--muted)}
+  table.t{width:100%;border-collapse:collapse}
+  table.t th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:800;padding:10px 14px;border-bottom:1px solid var(--border);background:#EEF6F4;text-align:left}
+  table.t td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+
+  /* Pestañas del mockup */
+  .pestanas{display:flex;gap:8px;margin-bottom:16px}
+  .pestanas button{border:1px solid var(--border);background:#fff;border-radius:10px;padding:7px 14px;font-weight:800;color:var(--muted)}
+  .pestanas button.activa{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .pantalla{display:none}.pantalla.activa{display:block}
+
+  /* ── US-42 · Recursos de una lectura ── */
+  .fondo-modal{background:rgba(34,48,60,.45);border-radius:14px;padding:30px 0}
+  .modal-falso{width:720px;max-width:94%;margin:auto;background:#fff;border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.2);overflow:hidden}
+  .modal-falso .cab{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border)}
+  .modal-falso .cab h5{margin:0;font-weight:800;font-size:17px}
+  .modal-falso .cuerpo{padding:18px 20px}
+  .modal-falso .pie{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--border);background:#FAFCFC}
+  .subir{border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;background:var(--primary-soft)}
+  .subir i{font-size:28px;color:var(--primary)}
+  .recursos{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+  .recurso{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff}
+  .recurso .vista{height:110px;display:grid;place-items:center;background:#EEF6F4}
+  .recurso .vista.img{background:linear-gradient(135deg,#BFE3DC,#F7E7B5)}
+  .recurso .datos{padding:9px 10px;font-size:12.5px}
+  .recurso .datos b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .recurso .acc{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+  .icon-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:#fff;display:inline-grid;place-items:center;color:var(--muted)}
+  .icon-btn.peligro{color:var(--off)}
+  .audio{display:flex;align-items:center;gap:8px;width:88%}
+  .audio .play{width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;flex:none}
+  .audio .barra{flex:1;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--primary) 35%,var(--border) 35%)}
+  .error-subida{background:var(--off-fondo);color:var(--off);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;margin-top:12px}
+
+  /* ── US-48 · Mapa de calor ── */
+  .filtros{display:flex;flex-wrap:wrap;gap:10px;align-items:end;padding:14px 16px;border-bottom:1px solid var(--border)}
+  .filtros label{font-size:12px;font-weight:800;color:var(--muted);display:block;margin-bottom:4px}
+  .campo{background:#fff;border:1px solid var(--border);border-radius:10px;padding:7px 12px;min-width:150px}
+  .calor{display:grid;grid-template-columns:200px repeat(3,1fr) 110px;gap:6px;padding:16px}
+  .calor .cab{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:center;padding:6px 0}
+  .calor .cab.izq{text-align:left}
+  .calor .zona{display:flex;flex-direction:column;justify-content:center;font-weight:800;padding:0 6px}
+  .calor .zona small{font-weight:600;color:var(--muted);font-size:12px}
+  .celda{border-radius:10px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;font-size:19px;position:relative}
+  .celda small{font-size:11px;font-weight:700;opacity:.85}
+  .celda.sel{outline:3px solid var(--text);outline-offset:2px}
+  /* escala de 5 tonos (de bajo a alto) + número dentro: no depende solo del color */
+  .n1{background:#F4C7C3;color:#7A1C14} .n2{background:#F9DDB4;color:#7A4B00} .n3{background:#F3EDB8;color:#5E5600}
+  .n4{background:#BFE5CF;color:#155B33} .n5{background:#7FCBA3;color:#0B3F22}
+  .prom{display:flex;align-items:center;justify-content:center;font-weight:900}
+  .leyenda{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:0 16px 16px}
+  .leyenda .paso{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700}
+  .leyenda .cuadro{width:22px;height:16px;border-radius:4px}
+  .detalle{padding:16px}
+  .detalle h6{font-weight:800}
+  .anot{background:#22303C;color:#fff;font-size:12px;border-radius:8px;padding:6px 10px;display:inline-block;margin:4px 0}
+  .nota-mockup{border-left:4px solid var(--lapiz);background:#fff;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="marca"><span class="logo">Y</span><div><b>Yalliq</b><small>PANEL DE ADMINISTRACIÓN</small></div></div>
+    <div class="seccion">General</div>
+    <a class="link"><i class="bi bi-house"></i> Inicio</a>
+    <div class="seccion">Instituciones</div>
+    <a class="link"><i class="bi bi-building"></i> Colegios</a>
+    <a class="link"><i class="bi bi-person-badge"></i> Docentes</a>
+    <div class="seccion">Contenido</div>
+    <a class="link" id="menu-catalogo"><i class="bi bi-journal-text"></i> Catálogo</a>
+    <div class="seccion">Configuración IA</div>
+    <a class="link"><i class="bi bi-mic"></i> Evaluación de voz</a>
+    <a class="link"><i class="bi bi-spellcheck"></i> Ortografía</a>
+    <a class="link"><i class="bi bi-star"></i> Puntos y estrellas</a>
+    <div class="seccion">Análisis</div>
+    <a class="link" id="menu-reportes"><i class="bi bi-bar-chart"></i> Reportes</a>
+  </aside>
+
+  <main class="main">
+    <div class="topbar"><div class="buscar"><i class="bi bi-search"></i> Buscar...</div><b>Hola, Daniela</b></div>
+
+    <div class="pestanas">
+      <button class="activa" data-p="recursos">US-42 · Recursos de una lectura</button>
+      <button data-p="calor">US-48 · Mapa de calor</button>
+    </div>
+
+    <!-- ═════════ US-42 · Recursos de una lectura ═════════ -->
+    <section class="pantalla activa" id="recursos">
+      <div class="page-title">
+        <div><h1>Catálogo de lecturas</h1><div class="ruta">Contenido / Catálogo</div></div>
+        <button class="btn-prim"><i class="bi bi-plus-lg"></i> Agregar manual</button>
+      </div>
+
+      <div class="tarjeta mb-3">
+        <table class="t">
+          <thead><tr><th>Título</th><th>Tipo</th><th>Grado</th><th>Recursos</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead>
+          <tbody>
+            <tr><td><b>El zorro y el cóndor</b></td><td>Lectura</td><td>2.°</td><td><span class="badge-soft bs-ok"><i class="bi bi-image"></i> 2 · <i class="bi bi-music-note"></i> 1</span></td><td><span class="badge-soft bs-ok">Activa</span></td>
+              <td style="text-align:right"><span class="icon-btn" style="color:var(--primary);border-color:var(--primary)" title="Recursos"><i class="bi bi-paperclip"></i></span> <span class="icon-btn"><i class="bi bi-pencil"></i></span> <span class="icon-btn"><i class="bi bi-slash-circle"></i></span></td></tr>
+            <tr><td><b>La chacra de mi abuela</b></td><td>Escritura</td><td>3.°</td><td><span class="note">Sin recursos</span></td><td><span class="badge-soft bs-ok">Activa</span></td>
+              <td style="text-align:right"><span class="icon-btn"><i class="bi bi-paperclip"></i></span> <span class="icon-btn"><i class="bi bi-pencil"></i></span> <span class="icon-btn"><i class="bi bi-slash-circle"></i></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <span class="anot"><i class="bi bi-arrow-down"></i> Al presionar el clip de una fila se abre esta ventana</span>
+
+      <div class="fondo-modal mt-2">
+        <div class="modal-falso">
+          <div class="cab"><h5>Recursos · El zorro y el cóndor</h5><i class="bi bi-x-lg"></i></div>
+          <div class="cuerpo">
+            <div class="subir">
+              <i class="bi bi-cloud-arrow-up"></i>
+              <div class="fw-bold mt-1">Arrastra una imagen o un audio, o <span style="color:var(--primary);text-decoration:underline">elige un archivo</span></div>
+              <div class="note">Imágenes JPG o PNG hasta 2 MB · Audios MP3 hasta 5 MB · Máximo 6 recursos por lectura</div>
+            </div>
+
+            <div class="error-subida"><i class="bi bi-exclamation-circle"></i> «video-cuento.mp4»: tipo de archivo no permitido. Solo imágenes (JPG, PNG) o audios (MP3).</div>
+
+            <div class="recursos">
+              <div class="recurso">
+                <div class="vista img"><i class="bi bi-image" style="font-size:34px;color:#fff"></i></div>
+                <div class="datos"><b>zorro-andino.png</b><span class="note">Imagen · 840 KB</span>
+                  <div class="acc"><span class="badge-soft bs-ok">Portada</span><span class="icon-btn peligro" title="Eliminar"><i class="bi bi-trash"></i></span></div></div>
+              </div>
+              <div class="recurso">
+                <div class="vista img" style="background:linear-gradient(135deg,#C9DDF2,#E7D8F3)"><i class="bi bi-image" style="font-size:34px;color:#fff"></i></div>
+                <div class="datos"><b>condor-volando.jpg</b><span class="note">Imagen · 1,3 MB</span>
+                  <div class="acc"><span class="note">Ilustración</span><span class="icon-btn peligro" title="Eliminar"><i class="bi bi-trash"></i></span></div></div>
+              </div>
+              <div class="recurso">
+                <div class="vista"><div class="audio"><span class="play"><i class="bi bi-play-fill"></i></span><span class="barra"></span><span class="note">0:42</span></div></div>
+                <div class="datos"><b>narracion-docente.mp3</b><span class="note">Audio · 3,1 MB</span>
+                  <div class="acc"><span class="note">Narración</span><span class="icon-btn peligro" title="Eliminar"><i class="bi bi-trash"></i></span></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="pie"><span class="note me-auto align-self-center">3 de 6 recursos</span><button class="btn-sec">Cerrar</button></div>
+        </div>
+      </div>
+
+      <div class="nota-mockup"><b>Notas.</b> Al presionar el tacho se pide confirmación (<i>«¿Eliminar zorro-andino.png de la lectura?»</i>). La vista previa usa la imagen real y un reproductor de audio. Los archivos se guardan en la carpeta <code>media/</code> del backend (T-344).</div>
+    </section>
+
+    <!-- ═════════ US-48 · Mapa de calor ═════════ -->
+    <section class="pantalla" id="calor">
+      <div class="page-title">
+        <div><h1>Mapa de calor del desempeño</h1><div class="ruta">Análisis / Reportes / Mapa de calor</div></div>
+        <div class="d-flex gap-2"><button class="btn-sec"><i class="bi bi-file-earmark-excel"></i> Excel</button><button class="btn-sec"><i class="bi bi-file-earmark-pdf"></i> PDF</button></div>
+      </div>
+
+      <div class="tarjeta">
+        <div class="filtros">
+          <div><label>Desde</label><div class="campo">01/09/2026</div></div>
+          <div><label>Hasta</label><div class="campo">27/11/2026</div></div>
+          <div><label>Grado</label><div class="campo">Todos los grados <i class="bi bi-chevron-down float-end"></i></div></div>
+          <div><label>Agrupar por</label><div class="campo">Región <i class="bi bi-chevron-down float-end"></i></div></div>
+          <span class="note ms-auto">Promedio de 0 a 100 · 412 evaluaciones</span>
+        </div>
+
+        <div class="calor">
+          <div class="cab izq">Zona</div><div class="cab">Lectura</div><div class="cab">Escritura</div><div class="cab">Oralidad</div><div class="cab">Promedio</div>
+
+          <div class="zona">Cusco<small>3 colegios · 168 alumnos</small></div>
+          <div class="celda n4">78<small>Bien</small></div><div class="celda n3">63<small>Regular</small></div><div class="celda n4">74<small>Bien</small></div><div class="prom">72</div>
+
+          <div class="zona">Apurímac<small>2 colegios · 96 alumnos</small></div>
+          <div class="celda n3">61<small>Regular</small></div><div class="celda n1 sel">38<small>Necesita apoyo</small></div><div class="celda n2">52<small>En proceso</small></div><div class="prom">50</div>
+
+          <div class="zona">Puno<small>1 colegio · 54 alumnos</small></div>
+          <div class="celda n5">86<small>Muy bien</small></div><div class="celda n4">76<small>Bien</small></div><div class="celda n3">65<small>Regular</small></div><div class="prom">76</div>
+
+          <div class="zona">Ayacucho<small>1 colegio · 47 alumnos</small></div>
+          <div class="celda n2">49<small>En proceso</small></div><div class="celda n2">55<small>En proceso</small></div><div class="celda n1">41<small>Necesita apoyo</small></div><div class="prom">48</div>
+        </div>
+
+        <div class="leyenda">
+          <b class="note me-1">Escala:</b>
+          <span class="paso"><span class="cuadro n1"></span> 0–44 Necesita apoyo</span>
+          <span class="paso"><span class="cuadro n2"></span> 45–59 En proceso</span>
+          <span class="paso"><span class="cuadro n3"></span> 60–69 Regular</span>
+          <span class="paso"><span class="cuadro n4"></span> 70–84 Bien</span>
+          <span class="paso"><span class="cuadro n5"></span> 85–100 Muy bien</span>
+        </div>
+      </div>
+
+      <div class="tarjeta mt-3 detalle">
+        <h6>Apurímac · Escritura <span class="badge-soft bs-off ms-1">38 · Necesita apoyo</span></h6>
+        <div class="note mb-2">Al hacer clic en una celda se ven los colegios de esa zona en esa competencia.</div>
+        <table class="t">
+          <thead><tr><th>Colegio</th><th>Alumnos</th><th>Escritura</th></tr></thead>
+          <tbody>
+            <tr><td>IE N° 54210 Huaccana</td><td>58</td><td><span class="badge-soft bs-off">34</span></td></tr>
+            <tr><td>IE N° 54187 Ongoy</td><td>38</td><td><span class="badge-soft bs-warn">45</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="nota-mockup"><b>Notas.</b> Cada celda muestra el número y una palabra, no solo el color (accesible para daltonismo, T-352). Las zonas salen de la región del colegio (T-348). Los filtros de fechas y grado y los botones Excel y PDF son de las US-49 y US-50.</div>
+    </section>
+  </main>
+</div>
+
+<script>
+  // Cambiar de pantalla en el mockup
+  document.querySelectorAll('.pestanas button').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('.pestanas button').forEach((x) => x.classList.toggle('activa', x === b));
+    document.querySelectorAll('.pantalla').forEach((p) => p.classList.toggle('activa', p.id === b.dataset.p));
+    document.getElementById('menu-catalogo').classList.toggle('activo', b.dataset.p === 'recursos');
+    document.getElementById('menu-reportes').classList.toggle('activo', b.dataset.p === 'calor');
+  }));
+  document.getElementById('menu-catalogo').classList.add('activo');
+</script>
+</body>
+</html>

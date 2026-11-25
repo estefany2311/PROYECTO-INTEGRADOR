@@ -4,9 +4,9 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from usuarios.models import Rol, Usuario
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
 from .models import (ConfiguracionEvaluacion, ConfiguracionOrtografia, HistorialConfiguracion,
-                PalabraPermitida, ReglaPuntuacion)
+                PalabraPermitida, ReglaDesbloqueo, ReglaPuntuacion)
 
 
 class ConfiguracionEvaluacionTests(TestCase):
@@ -476,3 +476,156 @@ class ReglaPuntuacionAPITests(APITestCase):
         regla = ReglaPuntuacion.objects.get(tipo_reto='oralidad')  # 55 / 75 / 90
         casos = {0: 0, 54: 0, 55: 1, 74: 1, 75: 2, 89: 2, 90: 3, 100: 3}
         self.assertEqual({p: regla.estrellas_para(p) for p in casos}, casos)
+        
+
+# =====================================================================
+# US-54 · Reglas de desbloqueo de niveles (T-341)
+# =====================================================================
+
+# Los 6 niveles del mapa (tabla `nivel` de Spring Boot, Flyway V7 del portal docente)
+NIVELES = [
+    (1, 1, 'Primeros pasos', 'lectura'),
+    (2, 2, 'Palabras nuevas', 'escritura'),
+    (3, 3, 'Cuento corto', 'oralidad'),
+    (4, 4, 'Idea principal', 'lectura'),
+    (5, 5, 'Mi relato', 'escritura'),
+    (6, 6, 'Mi exposición', 'oralidad'),
+]
+
+
+def crear_tabla_nivel():
+    """La tabla `nivel` no existe en la base de pruebas: se crea con los 6 niveles.
+    Cada prueba corre en una transacción, así que se borra sola al terminar."""
+    with connection.cursor() as cursor:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS nivel (
+                id INTEGER PRIMARY KEY,
+                orden INTEGER NOT NULL,
+                nombre VARCHAR(80) NOT NULL,
+                tipo_reto VARCHAR(20) NOT NULL,
+                descripcion VARCHAR(255),
+                activo BOOLEAN NOT NULL DEFAULT TRUE
+            )''')
+        cursor.executemany(
+            'INSERT INTO nivel (id, orden, nombre, tipo_reto) VALUES (%s, %s, %s, %s)', NIVELES)
+
+
+class ReglaDesbloqueoModelTests(TestCase):
+    """T-336: el modelo y sus valores por defecto."""
+
+    def test_valores_por_defecto_1_estrella_y_0_puntos(self):
+        regla = ReglaDesbloqueo.objects.create(nivel_id=1)
+        self.assertEqual((regla.estrellas_minimas, regla.puntaje_minimo), (1, 0))
+
+    def test_solo_hay_una_regla_por_nivel(self):
+        ReglaDesbloqueo.objects.create(nivel_id=2)
+        with self.assertRaises(IntegrityError):
+            ReglaDesbloqueo.objects.create(nivel_id=2)
+
+    def test_mas_de_3_estrellas_no_es_valido(self):
+        regla = ReglaDesbloqueo(nivel_id=3, estrellas_minimas=4)
+        with self.assertRaises(ValidationError):
+            regla.full_clean()
+
+    def test_str_muestra_nivel_estrellas_y_puntos(self):
+        regla = ReglaDesbloqueo(nivel_id=4, estrellas_minimas=2, puntaje_minimo=8)
+        self.assertEqual(str(regla), 'Nivel 4 · ★2 · 8 pts')
+
+
+class ReglaDesbloqueoAPITests(APITestCase):
+    """T-337 y T-338: consultar, actualizar y validar las reglas (solo administrador)."""
+    URL = '/api/configuracion/desbloqueo/'
+
+    def setUp(self):
+        crear_tabla_nivel()
+        rol_admin, _ = Rol.objects.get_or_create(nombre='ADMIN')
+        rol_docente, _ = Rol.objects.get_or_create(nombre='DOCENTE')
+        self.admin = Usuario.objects.create_user(
+            username='admin', email='admin@test.pe', password='clave-segura-1', rol=rol_admin)
+        self.docente = Usuario.objects.create_user(
+            username='rquispe', email='rquispe@test.pe', password='clave-segura-1', rol=rol_docente)
+        self.client.force_authenticate(self.admin)
+
+    # --- T-337: consultar ---
+    def test_lista_los_6_niveles_en_orden_con_la_regla_por_defecto(self):
+        resp = self.client.get(self.URL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual([n['nivel_id'] for n in resp.data], [1, 2, 3, 4, 5, 6])
+        primero = resp.data[0]
+        self.assertEqual(primero['nombre'], 'Primeros pasos')
+        self.assertEqual((primero['estrellas_minimas'], primero['puntaje_minimo']), (1, 0))
+        self.assertFalse(primero['personalizada'])
+
+    def test_consulta_un_nivel(self):
+        resp = self.client.get(f'{self.URL}3/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual((resp.data['nombre'], resp.data['tipo_reto']), ('Cuento corto', 'oralidad'))
+
+    def test_nivel_que_no_existe_devuelve_404(self):
+        resp = self.client.get(f'{self.URL}99/')
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(str(resp.data['detail']), 'El nivel no existe.')
+
+    # --- T-337: actualizar ---
+    def test_guardar_crea_la_regla_y_registra_quien(self):
+        resp = self.client.patch(f'{self.URL}1/', {'estrellas_minimas': 2, 'puntaje_minimo': 5}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertTrue(resp.data['personalizada'])
+        regla = ReglaDesbloqueo.objects.get(nivel_id=1)
+        self.assertEqual((regla.estrellas_minimas, regla.puntaje_minimo, regla.actualizado_por),
+                         (2, 5, self.admin))
+
+    def test_guardar_dos_veces_actualiza_la_misma_regla(self):
+        self.client.patch(f'{self.URL}2/', {'estrellas_minimas': 2}, format='json')
+        resp = self.client.patch(f'{self.URL}2/', {'estrellas_minimas': 3}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(ReglaDesbloqueo.objects.filter(nivel_id=2).count(), 1)
+        self.assertEqual(ReglaDesbloqueo.objects.get(nivel_id=2).estrellas_minimas, 3)
+
+    def test_cero_estrellas_y_cero_puntos_es_valido(self):
+        resp = self.client.patch(f'{self.URL}1/', {'estrellas_minimas': 0, 'puntaje_minimo': 0}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_mas_de_3_estrellas_devuelve_400(self):
+        resp = self.client.patch(f'{self.URL}1/', {'estrellas_minimas': 5}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['estrellas_minimas'][0]), 'Debe estar entre 0 y 3 estrellas.')
+
+    def test_docente_no_puede_ver_ni_editar(self):
+        self.client.force_authenticate(self.docente)
+        self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_403_FORBIDDEN)
+        resp = self.client.patch(f'{self.URL}1/', {'estrellas_minimas': 0}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    # --- T-338: ningún nivel imposible de desbloquear ---
+    def test_puntaje_mayor_que_los_puntos_del_reto_devuelve_400(self):
+        # El nivel 1 es de lectura y la lectura da 10 puntos
+        resp = self.client.patch(f'{self.URL}1/', {'puntaje_minimo': 15}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['puntaje_minimo'][0]),
+                         'Un reto de lectura da como máximo 10 puntos: el puntaje mínimo no puede ser mayor.')
+        self.assertFalse(ReglaDesbloqueo.objects.filter(nivel_id=1).exists())
+
+    def test_puntaje_igual_a_los_puntos_del_reto_es_valido(self):
+        resp = self.client.patch(f'{self.URL}1/', {'puntaje_minimo': 10}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_nivel_desactivado_no_se_puede_configurar(self):
+        with connection.cursor() as cursor:
+            cursor.execute('UPDATE nivel SET activo = FALSE WHERE id = 4')
+        resp = self.client.patch(f'{self.URL}4/', {'estrellas_minimas': 2}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('desactivado', str(resp.data['detail'][0]))
+
+    def test_no_se_pueden_bajar_los_puntos_por_debajo_de_lo_que_pide_un_nivel(self):
+        ReglaDesbloqueo.objects.create(nivel_id=1, puntaje_minimo=8)   # Primeros pasos (lectura)
+        resp = self.client.patch('/api/configuracion/reglas/lectura/', {'puntos': 5}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Primeros pasos', str(resp.data['puntos'][0]))
+        self.assertEqual(ReglaPuntuacion.objects.get(tipo_reto='lectura').puntos, 10)
+
+    def test_bajar_los_puntos_sin_dejar_niveles_imposibles_es_valido(self):
+        ReglaDesbloqueo.objects.create(nivel_id=1, puntaje_minimo=8)
+        resp = self.client.patch('/api/configuracion/reglas/lectura/', {'puntos': 8}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+    

@@ -1,0 +1,72 @@
+/* =====================================================================
+   PESTAÑA: ANÁLISIS · MAPA DE CALOR (US-48)
+   Todo lo que cambies aquí afecta SOLO a esta pestaña.
+   ===================================================================== */
+
+/* 1) PANEL DE COLORES: cambia el valor y guarda (Ctrl + S) */
+.main.pagina-mapacalor {
+  --fondo: #DCECE8;                    /* fondo de la pestaña */
+  --titulo: #22303C;                   /* color del título grande */
+  --titulo-tamano: 22px;               /* tamaño del título grande */
+  --subtitulo: #5E6B73;                /* texto debajo del título (ruta) */
+  --tarjeta-fondo: #F6FBFA;            /* fondo de las tarjetas */
+  --tarjeta-borde: #C9DFDA;            /* borde de las tarjetas */
+  --tarjeta-radio: 12px;               /* qué tan redondas son las esquinas */
+  --boton: #0A8378;                    /* botones principales */
+  --boton-hover: #08665E;              /* botones al pasar el mouse */
+  --nota: #5E6B73;                     /* textos pequeños grises */
+  /* Escala de 5 tonos (T-352): fondo claro + texto oscuro del mismo tono = buen contraste */
+  --calor-1: #F4C7C3; --calor-1-texto: #7A1C14;   /* 0–44   Necesita apoyo */
+  --calor-2: #F9DDB4; --calor-2-texto: #7A4B00;   /* 45–59  En proceso */
+  --calor-3: #F3EDB8; --calor-3-texto: #5E5600;   /* 60–69  Regular */
+  --calor-4: #BFE5CF; --calor-4-texto: #155B33;   /* 70–84  Bien */
+  --calor-5: #7FCBA3; --calor-5-texto: #0B3F22;   /* 85–100 Muy bien */
+  --calor-0: #E6ECEB; --calor-0-texto: #5E6B73;   /* Sin datos */
+}
+
+/* 2) REGLAS SOLO DE ESTA PESTAÑA (empieza siempre con .pagina-mapacalor) */
+.pagina-mapacalor .filtros-calor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--tarjeta-borde);
+}
+.pagina-mapacalor .filtros-calor .form-select { min-width: 170px; }
+
+.pagina-mapacalor .matriz-calor { width: 100%; border-collapse: separate; border-spacing: 6px; }
+.pagina-mapacalor .matriz-calor thead th {
+  font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--nota); text-align: center; padding: 4px 0;
+}
+.pagina-mapacalor .matriz-calor .col-zona { text-align: left; min-width: 190px; font-weight: normal; }
+
+.pagina-mapacalor .celda-calor {
+  width: 100%; height: 60px; border: 0; border-radius: 10px;
+  font-size: 19px; font-weight: 900; cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+}
+.pagina-mapacalor .celda-calor:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0, 0, 0, .12); }
+.pagina-mapacalor .celda-calor.elegida { outline: 3px solid var(--titulo); outline-offset: 2px; }
+
+.pagina-mapacalor .n1 { background: var(--calor-1); color: var(--calor-1-texto); }
+.pagina-mapacalor .n2 { background: var(--calor-2); color: var(--calor-2-texto); }
+.pagina-mapacalor .n3 { background: var(--calor-3); color: var(--calor-3-texto); }
+.pagina-mapacalor .n4 { background: var(--calor-4); color: var(--calor-4-texto); }
+.pagina-mapacalor .n5 { background: var(--calor-5); color: var(--calor-5-texto); }
+.pagina-mapacalor .n0 { background: var(--calor-0); color: var(--calor-0-texto); }
+
+/* El número grande y la palabra debajo */
+.pagina-mapacalor .celda-calor { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.pagina-mapacalor .celda-calor small { font-size: 11px; font-weight: 700; opacity: .9; }
+
+/* Leyenda (T-352) */
+.pagina-mapacalor .leyenda-calor {
+  display: flex; flex-wrap: wrap; gap: 8px 16px; list-style: none; padding: 0; margin: 12px 0 0;
+  font-size: 13px; color: var(--titulo);
+}
+.pagina-mapacalor .leyenda-calor li { display: flex; align-items: center; gap: 6px; }
+.pagina-mapacalor .leyenda-calor .cuadro { width: 22px; height: 16px; border-radius: 4px; }
+.pagina-mapacalor .etiqueta-calor {
+  display: inline-block; font-size: 12px; font-weight: 800; border-radius: 6px; padding: 3px 8px; margin-left: 6px;
+}

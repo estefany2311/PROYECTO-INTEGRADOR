@@ -95,3 +95,50 @@
   font-size: 13px;
   flex: none;
 }
+
+
+/* Recursos de una lectura: imágenes y audios (US-42, T-345) */
+.pagina-catalogo .zona-subir {
+  border: 2px dashed var(--tarjeta-borde, #C9DFDA);
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  background: #E3F2F0;
+  transition: background .15s, border-color .15s;
+}
+.pagina-catalogo .zona-subir i { font-size: 28px; color: var(--boton, #0A8378); }
+.pagina-catalogo .zona-subir.arrastrando { background: #CDEBE6; border-color: var(--boton, #0A8378); }
+.pagina-catalogo .zona-subir.deshabilitada { opacity: .6; }
+.pagina-catalogo .grilla-recursos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+.pagina-catalogo .tarjeta-recurso {
+  border: 1px solid var(--tarjeta-borde, #C9DFDA);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+.pagina-catalogo .tarjeta-recurso .vista {
+  height: 120px;
+  display: grid;
+  place-items: center;
+  background: #EEF6F4;
+}
+.pagina-catalogo .tarjeta-recurso .vista img { width: 100%; height: 100%; object-fit: cover; }
+.pagina-catalogo .tarjeta-recurso .vista audio { width: 92%; }
+.pagina-catalogo .tarjeta-recurso .datos { padding: 8px 10px; font-size: 13px; }
+.pagina-catalogo .tarjeta-recurso .datos b {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pagina-catalogo .tarjeta-recurso .acciones-recurso {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+}

@@ -31,6 +31,20 @@ def color_semaforo(promedio):
         return 'amarillo'
     return 'rojo'
 
+def _periodo(desde=None, hasta=None):
+    """US-49 · T-354: condición extra para las evaluaciones del periodo (fechas incluidas).
+
+    Devuelve (sql, parametros); el sql empieza con ' AND ' para pegarlo en un ON o un WHERE.
+    'hasta' incluye todo ese día: se compara con el inicio del día siguiente.
+    """
+    sql, parametros = '', []
+    if desde is not None:
+        sql += ' AND ev.evaluado_en >= %s'
+        parametros.append(desde)
+    if hasta is not None:
+        sql += " AND ev.evaluado_en < %s::date + INTERVAL '1 day'"
+        parametros.append(hasta)
+    return sql, parametros
 
 def _filtros(colegio_id=None, aula_id=None, grado=None):
     """Arma el WHERE con los filtros opcionales (siempre solo alumnos activos)."""
@@ -47,13 +61,16 @@ def _filtros(colegio_id=None, aula_id=None, grado=None):
     return ' AND '.join(condiciones), parametros
 
 
-def promedio_por_competencia(colegio_id=None, aula_id=None, grado=None):
+def promedio_por_competencia(colegio_id=None, aula_id=None, grado=None, desde=None, hasta=None):
     """Promedio de puntaje por competencia. Siempre devuelve las 3 competencias."""
     resultado = {c: {'competencia': c, 'promedio': None, 'evaluaciones': 0, 'alumnos': 0} for c in COMPETENCIAS}
     if not tablas_disponibles():
         return list(resultado.values())
 
     where, parametros = _filtros(colegio_id, aula_id, grado)
+    sql_periodo, parametros_periodo = _periodo(desde, hasta)
+    where += sql_periodo
+    parametros += parametros_periodo
     sql = f"""
         SELECT ev.competencia,
                ROUND(AVG(ev.puntaje)::numeric, 1) AS promedio,
@@ -75,36 +92,34 @@ def promedio_por_competencia(colegio_id=None, aula_id=None, grado=None):
     return list(resultado.values())
 
 
-def alumnos_por_semaforo(colegio_id=None, aula_id=None, grado=None):
+def alumnos_por_semaforo(colegio_id=None, aula_id=None, grado=None, desde=None, hasta=None):
     """Cuántos alumnos activos hay en cada color, según el promedio de todas sus evaluaciones."""
     conteo = {'verde': 0, 'amarillo': 0, 'rojo': 0, 'sin_evaluar': 0}
     if not tablas_disponibles():
         return conteo
 
     where, parametros = _filtros(colegio_id, aula_id, grado)
+        # El periodo va en el ON: así los alumnos sin notas en esas fechas siguen contando (sin evaluar)
+    sql_periodo, parametros_periodo = _periodo(desde, hasta)
     sql = f"""
         SELECT e.id, AVG(ev.puntaje) AS promedio
         FROM estudiante e
         JOIN aula a ON a.id = e.aula_id
         LEFT JOIN colegio_docentes cd ON cd.docente_id = a.docente_id
-        LEFT JOIN evaluacion ev ON ev.estudiante_id = e.id
+        LEFT JOIN evaluacion ev ON ev.estudiante_id = e.id{sql_periodo}
         WHERE {where}
         GROUP BY e.id
     """
     with connection.cursor() as cursor:
-        cursor.execute(sql, parametros)
+        cursor.execute(sql, parametros_periodo + parametros)
         for _, promedio in cursor.fetchall():
             conteo[color_semaforo(None if promedio is None else float(promedio))] += 1
     return conteo
 
-
-
-
 def _numero(valor):
     return None if valor is None else float(valor)
 
-
-def rendimiento_por_colegio(colegio_id=None):
+def rendimiento_por_colegio(colegio_id=None, grado=None, desde=None, hasta=None):
     """T-266: una fila por colegio activo con alumnos, promedios por competencia y semáforo.
 
     Un alumno pertenece al colegio del docente de su aula (colegio_docentes).
@@ -126,18 +141,20 @@ def rendimiento_por_colegio(colegio_id=None):
     if not resultado or not tablas_disponibles():
         return list(resultado.values())
 
-    sql = """
+    sql_grado = ' AND e.grado_id = %s' if grado is not None else ''
+    sql_periodo, parametros_periodo = _periodo(desde, hasta)
+    sql = f"""
         WITH alumnos AS (
             SELECT e.id AS estudiante_id, cd.colegio_id
             FROM estudiante e
             JOIN aula a ON a.id = e.aula_id
             JOIN colegio_docentes cd ON cd.docente_id = a.docente_id
-            WHERE e.activo AND cd.colegio_id = ANY(%s)
+            WHERE e.activo AND cd.colegio_id = ANY(%s){sql_grado}
         ),
         promedio_alumno AS (
             SELECT al.colegio_id, al.estudiante_id, AVG(ev.puntaje) AS promedio
             FROM alumnos al
-            LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id
+            LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id{sql_periodo}
             GROUP BY al.colegio_id, al.estudiante_id
         ),
         por_competencia AS (
@@ -148,7 +165,7 @@ def rendimiento_por_colegio(colegio_id=None):
                    ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'escritura'))::numeric, 1) AS escritura,
                    ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'oralidad'))::numeric, 1) AS oralidad
             FROM alumnos al
-            LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id
+            LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id{sql_periodo}
             GROUP BY al.colegio_id
         ),
         semaforo AS (
@@ -166,7 +183,13 @@ def rendimiento_por_colegio(colegio_id=None):
         FROM semaforo s
         JOIN por_competencia p ON p.colegio_id = s.colegio_id
     """
-    parametros = [list(resultado), UMBRAL_VERDE, UMBRAL_AMARILLO, UMBRAL_VERDE, UMBRAL_AMARILLO]
+
+    # Orden de los %s: colegios, grado, periodo (promedio_alumno), periodo (por_competencia), umbrales
+    parametros = [list(resultado)]
+    if grado is not None:
+        parametros.append(grado)
+    parametros += parametros_periodo * 2
+    parametros += [UMBRAL_VERDE, UMBRAL_AMARILLO, UMBRAL_VERDE, UMBRAL_AMARILLO]
     with connection.cursor() as cursor:
         cursor.execute(sql, parametros)
         for (cid, alumnos, evaluaciones, general, lectura, escritura, oralidad,
@@ -183,13 +206,14 @@ def rendimiento_por_colegio(colegio_id=None):
 
 
 
-
-def rendimiento_por_aula(colegio_id):
+def rendimiento_por_aula(colegio_id, grado=None, desde=None, hasta=None):
     """T-268: una fila por aula del colegio, con alumnos, promedios por competencia y semáforo."""
     if not tablas_disponibles():
         return []
 
-    sql = """
+    sql_grado = ' AND e.grado_id = %s' if grado is not None else ''
+    sql_periodo, parametros_periodo = _periodo(desde, hasta)
+    sql = f"""
         WITH aulas AS (
             SELECT a.id, a.nombre, a.docente_id
             FROM aula a
@@ -200,12 +224,12 @@ def rendimiento_por_aula(colegio_id):
             SELECT e.id AS estudiante_id, e.aula_id
             FROM estudiante e
             JOIN aulas au ON au.id = e.aula_id
-            WHERE e.activo
+            WHERE e.activo{sql_grado}
         ),
         promedio_alumno AS (
             SELECT al.aula_id, al.estudiante_id, AVG(ev.puntaje) AS promedio
             FROM alumnos al
-            LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id
+            LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id{sql_periodo}
             GROUP BY al.aula_id, al.estudiante_id
         ),
         por_competencia AS (
@@ -216,7 +240,7 @@ def rendimiento_por_aula(colegio_id):
                    ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'escritura'))::numeric, 1) AS escritura,
                    ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'oralidad'))::numeric, 1) AS oralidad
             FROM alumnos al
-            LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id
+            LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id{sql_periodo}
             GROUP BY al.aula_id
         ),
         semaforo AS (
@@ -239,7 +263,9 @@ def rendimiento_por_aula(colegio_id):
         ORDER BY au.nombre
     """
     with connection.cursor() as cursor:
-        cursor.execute(sql, [colegio_id, UMBRAL_VERDE, UMBRAL_AMARILLO, UMBRAL_VERDE, UMBRAL_AMARILLO])
+        # Orden de los %s: colegio, grado, periodo (promedio_alumno), periodo (por_competencia), umbrales
+        parametros = [colegio_id] + ([grado] if grado is not None else []) + parametros_periodo * 2
+        cursor.execute(sql, parametros + [UMBRAL_VERDE, UMBRAL_AMARILLO, UMBRAL_VERDE, UMBRAL_AMARILLO])
         filas = cursor.fetchall()
 
     # Nombres de los docentes (tabla usuarios de Django)
@@ -262,3 +288,91 @@ def rendimiento_por_aula(colegio_id):
         for (aula_id, nombre, docente_id, alumnos, evaluaciones, general, lectura, escritura, oralidad,
              verde, amarillo, rojo, sin_evaluar) in filas
     ]
+
+
+
+# =====================================================================
+# US-48 · Mapa de calor: desempeño por zona y competencia (T-349)
+# =====================================================================
+AGRUPACIONES = ('region', 'provincia')
+SIN_PROVINCIA = 'Sin provincia'
+
+
+def _zona_de(colegio, agrupar):
+    """Nombre de la zona de un colegio: 'Cusco' o 'Cusco / Quispicanchi'."""
+    if agrupar == 'region':
+        return colegio.region
+    return f'{colegio.region} / {colegio.provincia or SIN_PROVINCIA}'
+
+
+def desempeno_por_zona(agrupar='region', grado=None, desde=None, hasta=None):
+    """T-349: promedio de cada competencia por zona (región o provincia) de los colegios activos.
+
+    Un alumno pertenece al colegio del docente de su aula (colegio_docentes).
+    Las zonas con colegios pero sin evaluaciones aparecen con los promedios en None.
+    """
+    if agrupar not in AGRUPACIONES:
+        raise ValueError(f'agrupar debe ser una de {AGRUPACIONES}')
+
+    from instituciones.models import Colegio
+
+    # 1) Todas las zonas con al menos un colegio activo (aunque no tengan evaluaciones)
+    resultado = {}
+    for colegio in Colegio.objects.filter(activo=True):
+        zona = _zona_de(colegio, agrupar)
+        fila = resultado.setdefault(zona, {
+            'zona': zona, 'region': colegio.region, 'colegios': 0, 'alumnos': 0, 'evaluaciones': 0,
+            'promedio_general': None, 'promedios': {c: None for c in COMPETENCIAS},
+        })
+        fila['colegios'] += 1
+
+    if not resultado or not tablas_disponibles():
+        return sorted(resultado.values(), key=lambda f: f['zona'])
+
+    # 2) Promedios por zona, calculados en la base de datos
+    if agrupar == 'region':
+        campo_zona = 'c.region'
+    else:
+        campo_zona = "c.region || ' / ' || COALESCE(NULLIF(c.provincia, ''), %s)"
+
+    condiciones, parametros = ['e.activo', 'c.activo'], []
+    if agrupar == 'provincia':
+        parametros.append(SIN_PROVINCIA)
+    if grado is not None:
+        condiciones.append('e.grado_id = %s')
+        parametros.append(grado)
+
+    sql_periodo, parametros_periodo = _periodo(desde, hasta)
+    parametros += parametros_periodo
+    sql = f"""
+        WITH alumnos AS (
+            SELECT DISTINCT e.id AS estudiante_id, {campo_zona} AS zona
+            FROM estudiante e
+            JOIN aula a ON a.id = e.aula_id
+            JOIN colegio_docentes cd ON cd.docente_id = a.docente_id
+            JOIN colegios c ON c.id = cd.colegio_id
+            WHERE {' AND '.join(condiciones)}
+        )
+        SELECT al.zona,
+               COUNT(DISTINCT al.estudiante_id) AS alumnos,
+               COUNT(ev.id) AS evaluaciones,
+               ROUND(AVG(ev.puntaje)::numeric, 1) AS general,
+               ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'lectura'))::numeric, 1) AS lectura,
+               ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'escritura'))::numeric, 1) AS escritura,
+               ROUND((AVG(ev.puntaje) FILTER (WHERE ev.competencia = 'oralidad'))::numeric, 1) AS oralidad
+        FROM alumnos al
+        LEFT JOIN evaluacion ev ON ev.estudiante_id = al.estudiante_id{sql_periodo}
+        GROUP BY al.zona
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(sql, parametros)
+        for zona, alumnos, evaluaciones, general, lectura, escritura, oralidad in cursor.fetchall():
+            if zona in resultado:
+                resultado[zona].update(
+                    alumnos=alumnos,
+                    evaluaciones=evaluaciones,
+                    promedio_general=_numero(general),
+                    promedios={'lectura': _numero(lectura), 'escritura': _numero(escritura),
+                               'oralidad': _numero(oralidad)},
+                )
+    return sorted(resultado.values(), key=lambda f: f['zona'])

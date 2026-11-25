@@ -170,3 +170,8 @@
 .pagina-reportes .dona-leyenda li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #D5E6E2; }
 .pagina-reportes .dona-leyenda li:last-child { border-bottom: 0; }
 .pagina-reportes .dona-leyenda .porcentaje { width: 42px; text-align: right; }
+
+/* Barra de filtros (US-49, T-356) */
+.pagina-reportes .barra-filtros .form-select,
+.pagina-reportes .barra-filtros .form-control { min-width: 170px; }
+.pagina-reportes .barra-filtros .botones-filtros { display: flex; gap: 8px; align-self: flex-end; }

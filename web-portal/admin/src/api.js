@@ -18,7 +18,8 @@ export const sesion = {
 };
 
 async function pedir(ruta, opciones = {}) {
-  const headers = { "Content-Type": "application/json" };
+    // Si se envía un archivo (FormData), el navegador pone solo el Content-Type correcto
+  const headers = opciones.body instanceof FormData ? {} : { "Content-Type": "application/json" };
   if (sesion.token) headers.Authorization = `Bearer ${sesion.token}`;
 
   let resp;
@@ -93,6 +94,20 @@ export const eliminarLectura = (id) =>
 export const actualizarLectura = (id, datos) =>
   pedir(`/lecturas/${id}/`, { method: "PATCH", body: JSON.stringify(datos) });
 
+
+// US-42: imágenes y audios de una lectura
+export const listarRecursosLectura = (lecturaId) => pedir(`/lecturas/${lecturaId}/recursos/`);
+
+export const subirRecursoLectura = (lecturaId, archivo, descripcion = "") => {
+  const datos = new FormData();
+  datos.append("archivo", archivo);
+  datos.append("descripcion", descripcion);
+  return pedir(`/lecturas/${lecturaId}/recursos/`, { method: "POST", body: datos });
+};
+
+export const eliminarRecursoLectura = (lecturaId, recursoId) =>
+  pedir(`/lecturas/${lecturaId}/recursos/${recursoId}/`, { method: "DELETE" });
+
 export const cambiarEstadoUsuario = (id, isActive) =>
   pedir(`/usuarios/${id}/estado/`, { method: "PATCH", body: JSON.stringify({ is_active: isActive }) });
 
@@ -123,13 +138,48 @@ export const listarReglasPuntuacion = () => pedir("/configuracion/reglas/");
 export const actualizarReglaPuntuacion = (tipoReto, datos) =>
 pedir(`/configuracion/reglas/${tipoReto}/`, { method: "PATCH", body: JSON.stringify(datos) });
 
+export const listarReglasDesbloqueo = () => pedir("/configuracion/desbloqueo/");
 
-// US-47 · Reportes consolidados (T-267 y T-268)
-export const obtenerReporteColegios = (colegio = "") =>
-  pedir(`/reportes/colegios/${colegio ? `?${new URLSearchParams({ colegio })}` : ""}`);
+export const actualizarReglaDesbloqueo = (nivelId, datos) =>
+pedir(`/configuracion/desbloqueo/${nivelId}/`, { method: "PATCH", body: JSON.stringify(datos) });
 
-export const obtenerReporteAulas = (colegioId) => pedir(`/reportes/colegios/${colegioId}/aulas/`);
 
+// US-49 · T-356: arma ?grado=&desde=&hasta= solo con los filtros que tienen valor
+const parametrosReporte = (valores) => {
+  const params = new URLSearchParams();
+  Object.entries(valores).forEach(([clave, valor]) => { if (valor) params.set(clave, valor); });
+  const texto = params.toString();
+  return texto ? `?${texto}` : "";
+};
+
+export const obtenerReporteColegios = (colegio = "", filtros = {}) =>
+  pedir(`/reportes/colegios/${parametrosReporte({ colegio, ...filtros })}`);
+
+
+// US-50 · T-362: el Excel o el PDF del reporte, con los mismos filtros de la pantalla.
+// Un enlace <a> no puede mandar el token, por eso se pide con fetch y se devuelve como archivo (blob)
+export async function descargarReporte(formato, colegio = "", filtros = {}) {
+  let resp;
+  try {
+    resp = await fetch(`${API}/reportes/colegios/${formato}/${parametrosReporte({ colegio, ...filtros })}`, {
+      headers: sesion.token ? { Authorization: `Bearer ${sesion.token}` } : {},
+    });
+  } catch {
+    throw { estado: 0, mensaje: "No se pudo conectar con el servidor." };
+  }
+  if (!resp.ok) throw { estado: resp.status, datos: await resp.json().catch(() => null) };
+  return resp.blob();
+}
+
+export const obtenerReporteAulas = (colegioId, filtros = {}) =>
+  pedir(`/reportes/colegios/${colegioId}/aulas/${parametrosReporte(filtros)}`);
+
+// US-48 · Mapa de calor (T-350)
+export const obtenerMapaCalor = ({ agrupar = "region", grado = "" } = {}) => {
+  const params = new URLSearchParams({ agrupar });
+  if (grado) params.set("grado", grado);
+  return pedir(`/reportes/mapa-calor/?${params}`);
+};
 
 // US-39 · Libros oficiales de la Biblioteca Escolar Digital (T-443)
 export const listarRecursosOficiales = () => pedir("/recursos-oficiales/");

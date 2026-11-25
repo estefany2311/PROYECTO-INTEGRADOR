@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { obtenerReporteAulas, obtenerReporteColegios } from "../api";
 import BarraSemaforo from "../components/BarraSemaforo";
+import BarraFiltros from "../components/BarraFiltros";
+import BotonesDescarga from "../components/BotonesDescarga";
 import { GraficoCompetencias, GraficoSemaforo } from "../components/GraficosReporte";
 import Promedio from "../components/Promedio";
 
@@ -12,10 +14,14 @@ const COMPETENCIAS = [
   { clave: "oralidad", texto: "Oralidad" },
 ];
 
+const FILTROS_VACIOS = { grado: "", desde: "", hasta: "" };
+const fechaCorta = (iso) => iso.split("-").reverse().join("/");   // 2026-09-01 → 01/09/2026
+
 export default function Reportes({ onNoAutorizado }) {
   const [vista, setVista] = useState("colegios"); // "colegios" | "aulas"
   const [colegios, setColegios] = useState([]);   // para el selector (siempre todos)
   const [colegioId, setColegioId] = useState("");
+  const [filtros, setFiltros] = useState(FILTROS_VACIOS); // US-49: grado y periodo aplicados
   const [reporte, setReporte] = useState(null);   // { resumen, colegios }
   const [aulas, setAulas] = useState(null);       // { colegio, aulas }
   const [cargando, setCargando] = useState(true);
@@ -24,12 +30,14 @@ export default function Reportes({ onNoAutorizado }) {
   const manejarError = (err) => {
     if (err.estado === 401) return onNoAutorizado();
     if (err.estado === 403) return setError("No tienes permiso para ver los reportes.");
-    setError(err.datos?.detail ?? err.mensaje ?? "No se pudo cargar el reporte.");
+        // 400 de los filtros: { desde: ["..."], hasta: ["..."] } → se muestran todos los mensajes
+    const mensajes = err.estado === 400 && err.datos ? Object.values(err.datos).flat().join(" ") : null;
+    setError(mensajes || err.datos?.detail || err.mensaje || "No se pudo cargar el reporte.");
   };
 
   // Reporte por colegio (todos o uno). El "cargando" se activa al cambiar de colegio (elegirColegio)
   useEffect(() => {
-    obtenerReporteColegios(colegioId)
+    obtenerReporteColegios(colegioId, filtros)
       .then((datos) => {
         setReporte(datos);
         if (!colegioId) setColegios(datos.colegios);
@@ -37,14 +45,14 @@ export default function Reportes({ onNoAutorizado }) {
       .catch(manejarError)
       .finally(() => setCargando(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [colegioId]);
+  }, [colegioId, filtros]);
 
   // Aulas del colegio elegido
   useEffect(() => {
     if (vista !== "aulas" || !colegioId) return;
-    obtenerReporteAulas(colegioId).then(setAulas).catch(manejarError);
+    obtenerReporteAulas(colegioId, filtros).then(setAulas).catch(manejarError);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vista, colegioId]);
+  }, [vista, colegioId, filtros]);
 
   // Solo se muestran las aulas si son del colegio elegido (mientras llegan las nuevas, sale "Cargando…")
   const aulasDelColegio = aulas && String(aulas.colegio.id) === colegioId ? aulas : null;
@@ -61,6 +69,18 @@ export default function Reportes({ onNoAutorizado }) {
     setVista("aulas");
   };
 
+  
+  // T-356: la barra avisa con los filtros elegidos; si nada cambió, no se vuelve a pedir
+  const aplicarFiltros = ({ colegio, grado, desde, hasta }) => {
+    const nuevos = { grado, desde, hasta };
+    if (colegio === colegioId && JSON.stringify(nuevos) === JSON.stringify(filtros)) return;
+    setCargando(true);
+    setError("");
+    setAulas(null);
+    setColegioId(colegio);
+    setFiltros(nuevos);
+  };
+
   const resumen = reporte?.resumen;
   const filas = reporte?.colegios ?? [];
   // Promedio general: promedio de las competencias del resumen (los mismos alumnos que las otras tarjetas)
@@ -70,7 +90,14 @@ export default function Reportes({ onNoAutorizado }) {
     : null;
 
   const nombreColegio = colegios.find((c) => String(c.colegio_id) === colegioId)?.nombre;
-  const alcance = colegioId ? nombreColegio ?? "Colegio elegido" : "Todos los colegios";
+  const periodo = filtros.desde && filtros.hasta ? `del ${fechaCorta(filtros.desde)} al ${fechaCorta(filtros.hasta)}`
+    : filtros.desde ? `desde el ${fechaCorta(filtros.desde)}`
+    : filtros.hasta ? `hasta el ${fechaCorta(filtros.hasta)}` : "";
+  const alcance = [
+    colegioId ? nombreColegio ?? "Colegio elegido" : "Todos los colegios",
+    filtros.grado ? `${filtros.grado}.° grado` : "",
+    periodo,
+  ].filter(Boolean).join(" · ");
 
   const tarjetas = [
     { titulo: "Alumnos activos", valor: resumen?.alumnos ?? 0, icono: "bi-people", tono: "verde-marca" },
@@ -81,23 +108,21 @@ export default function Reportes({ onNoAutorizado }) {
 
   return (
     <section>
-      <div className="page-title d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
+            <div className="page-title d-flex flex-wrap justify-content-between align-items-end gap-2 mb-4">
         <div>
           <h1>Reportes consolidados</h1>
           <div className="breadcrumb text-secondary">Análisis / Reportes</div>
         </div>
-        <select
-          className="form-select selector-colegio"
-          value={colegioId}
-          onChange={(e) => elegirColegio(e.target.value)}
-          aria-label="Elegir colegio"
-        >
-          <option value="">Todos los colegios</option>
-          {colegios.map((c) => (
-            <option key={c.colegio_id} value={c.colegio_id}>{c.nombre}</option>
-          ))}
-        </select>
+        <BotonesDescarga colegio={colegioId} filtros={filtros} onNoAutorizado={onNoAutorizado} />
       </div>
+
+      <BarraFiltros
+        key={`${colegioId}|${filtros.grado}|${filtros.desde}|${filtros.hasta}`}
+        colegios={colegios}
+        valores={{ colegio: colegioId, ...filtros }}
+        onAplicar={aplicarFiltros}
+      />
+      <p className="note mb-3"><i className="bi bi-info-circle me-1"></i>Mostrando: {alcance}</p>
 
       {error && <div className="alert alert-danger py-2 small">{error}</div>}
 

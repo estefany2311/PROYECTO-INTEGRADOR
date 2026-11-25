@@ -1,7 +1,11 @@
 from unittest import mock
-
+from datetime import date, timedelta
 from django.db import connection
 from io import StringIO
+from io import BytesIO
+
+import openpyxl
+from pypdf import PdfReader
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -13,6 +17,7 @@ from rest_framework.test import APITestCase
 from instituciones.models import AsignacionDocente, Colegio
 from usuarios.models import Rol, Usuario
 from . import consultas
+from . import exportar
 
 TABLAS = [
     'CREATE TABLE IF NOT EXISTS aula (id BIGINT PRIMARY KEY, nombre VARCHAR(100), docente_id BIGINT)',
@@ -357,3 +362,368 @@ class CalculosAgregacionTests(TestCase):
         vacia = next(a for a in consultas.rendimiento_por_aula(self.colegio_a.id) if a['nombre'] == 'Aula vacía')
         self.assertEqual((vacia['alumnos'], vacia['evaluaciones'], vacia['promedio_general']), (0, 0, None))
         self.assertEqual(vacia['semaforo'], {'verde': 0, 'amarillo': 0, 'rojo': 0, 'sin_evaluar': 0})
+
+
+
+
+
+# =====================================================================
+# US-48 · Mapa de calor: desempeño por zona y competencia (T-353)
+# =====================================================================
+
+class DesempenoPorZonaTests(TestCase):
+    """T-349: consulta de desempeño por zona (región o provincia) y competencia."""
+
+    def setUp(self):
+        ConsultasAgregacionTests.setUp(self)   # mismos datos de T-264
+        self.colegio_a.provincia = 'Quispicanchi'
+        self.colegio_a.save()
+
+    def por_zona(self, **filtros):
+        return {z['zona']: z for z in consultas.desempeno_por_zona(**filtros)}
+
+    def test_por_region_calcula_los_promedios_de_cada_competencia(self):
+        cusco = self.por_zona()['Cusco']
+        self.assertEqual((cusco['colegios'], cusco['alumnos'], cusco['evaluaciones']), (1, 2, 4))
+        self.assertEqual(cusco['promedios'], {'lectura': 70.0, 'escritura': 70.0, 'oralidad': 40.0})
+        self.assertEqual(cusco['promedio_general'], 62.5)     # (80 + 70 + 60 + 40) / 4
+
+    def test_competencia_sin_notas_queda_en_none(self):
+        apurimac = self.por_zona()['Apurímac']
+        self.assertEqual(apurimac['promedios'], {'lectura': 30.0, 'escritura': None, 'oralidad': None})
+        self.assertEqual(apurimac['alumnos'], 2)               # Rosa y Juan (Juan sin notas)
+
+    def test_las_zonas_salen_ordenadas_por_nombre(self):
+        self.assertEqual([z['zona'] for z in consultas.desempeno_por_zona()], ['Apurímac', 'Cusco'])
+
+    def test_por_provincia_y_sin_provincia(self):
+        zonas = self.por_zona(agrupar='provincia')
+        self.assertEqual(set(zonas), {'Cusco / Quispicanchi', 'Apurímac / Sin provincia'})
+        self.assertEqual(zonas['Cusco / Quispicanchi']['promedios']['lectura'], 70.0)
+
+    def test_dos_colegios_de_la_misma_zona_se_juntan(self):
+        Colegio.objects.create(codigo_modular='5555555', nombre='IE Ccatca', region='Cusco')
+        cusco = self.por_zona()['Cusco']
+        self.assertEqual(cusco['colegios'], 2)
+        self.assertEqual(cusco['promedios']['lectura'], 70.0)  # el colegio nuevo no tiene alumnos
+
+    def test_zona_con_colegios_pero_sin_evaluaciones_sale_vacia(self):
+        Colegio.objects.create(codigo_modular='6666666', nombre='IE Puno', region='Puno')
+        puno = self.por_zona()['Puno']
+        self.assertEqual((puno['colegios'], puno['alumnos'], puno['promedio_general']), (1, 0, None))
+
+    def test_colegio_inactivo_no_cuenta(self):
+        Colegio.objects.create(codigo_modular='7777777', nombre='IE Cerrada', region='Tacna', activo=False)
+        self.assertNotIn('Tacna', self.por_zona())
+
+    def test_filtro_por_grado(self):
+        zonas = self.por_zona(grado=4)          # solo Rosa y Juan (Apurímac)
+        self.assertEqual(zonas['Apurímac']['promedios']['lectura'], 30.0)
+        self.assertEqual(zonas['Cusco']['alumnos'], 0)
+        self.assertIsNone(zonas['Cusco']['promedio_general'])
+
+    def test_agrupar_invalido_lanza_error(self):
+        with self.assertRaises(ValueError):
+            consultas.desempeno_por_zona(agrupar='distrito')
+
+    @mock.patch('reportes.consultas.tablas_disponibles', return_value=False)
+    def test_sin_tablas_de_spring_devuelve_las_zonas_vacias(self, _tablas):
+        zonas = self.por_zona()
+        self.assertEqual(set(zonas), {'Cusco', 'Apurímac'})
+        self.assertTrue(all(z['promedio_general'] is None for z in zonas.values()))
+
+
+class ReporteMapaCalorAPITests(APITestCase):
+    """T-350: endpoint de datos del mapa de calor (solo administrador)."""
+    URL = '/api/reportes/mapa-calor/'
+
+    def setUp(self):
+        ConsultasAgregacionTests.setUp(self)   # mismos datos de T-264
+        rol_admin, _ = Rol.objects.get_or_create(nombre='ADMIN')
+        self.admin = Usuario.objects.create_user(
+            username='admin', email='admin@test.pe', password='clave-segura-1', rol=rol_admin)
+        self.client.force_authenticate(self.admin)
+
+    def test_por_defecto_agrupa_por_region(self):
+        resp = self.client.get(self.URL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual((resp.data['agrupar'], resp.data['grado']), ('region', None))
+        self.assertEqual(resp.data['competencias'], ['lectura', 'escritura', 'oralidad'])
+        self.assertEqual([z['zona'] for z in resp.data['zonas']], ['Apurímac', 'Cusco'])
+
+    def test_agrupar_por_provincia(self):
+        resp = self.client.get(self.URL, {'agrupar': 'provincia'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn('Cusco / Sin provincia', [z['zona'] for z in resp.data['zonas']])
+
+    def test_filtro_por_grado(self):
+        resp = self.client.get(self.URL, {'grado': 2})
+        cusco = next(z for z in resp.data['zonas'] if z['zona'] == 'Cusco')
+        self.assertEqual((resp.data['grado'], cusco['promedios']['lectura']), (2, 70.0))
+
+    def test_agrupar_invalido_devuelve_400(self):
+        resp = self.client.get(self.URL, {'agrupar': 'distrito'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['agrupar']), 'agrupar debe ser region o provincia.')
+
+    def test_grado_fuera_de_rango_devuelve_400(self):
+        resp = self.client.get(self.URL, {'grado': 9})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['grado']), 'El grado debe estar entre 1 y 6.')
+
+    def test_grado_que_no_es_numero_devuelve_400(self):
+        resp = self.client.get(self.URL, {'grado': 'tres'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_sin_sesion_devuelve_401(self):
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_docente_no_puede_ver_el_mapa(self):
+        self.client.force_authenticate(Usuario.objects.get(username='doc_a'))
+        self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_403_FORBIDDEN)
+
+
+
+
+# =====================================================================
+# US-49 · Filtros de reportes: periodo, colegio y grado (T-357)
+# =====================================================================
+FECHAS = [
+    # (alumno, competencia, fecha de la evaluación)
+    (1, 'lectura', '2026-09-15 10:00'),     # Ana     80
+    (3, 'lectura', '2026-09-20 12:00'),     # Rosa    30
+    (5, 'lectura', '2026-10-01 08:00'),     # Inés   100 (inactiva)
+    (1, 'escritura', '2026-10-20 09:00'),   # Ana     70
+    (2, 'lectura', '2026-10-31 23:59'),     # Luis    60 → último minuto de octubre
+    (2, 'oralidad', '2026-11-02 08:00'),    # Luis    40
+]
+
+
+def poner_fechas():
+    """Cada evaluación de los datos de T-264 recibe una fecha fija."""
+    with connection.cursor() as c:
+        for estudiante_id, competencia, fecha in FECHAS:
+            c.execute('UPDATE evaluacion SET evaluado_en = %s WHERE estudiante_id = %s AND competencia = %s',
+                      [fecha, estudiante_id, competencia])
+
+
+class FiltrosConsultasTests(TestCase):
+    """T-354: las consultas respetan el periodo y el grado."""
+    OCTUBRE = {'desde': date(2026, 10, 1), 'hasta': date(2026, 10, 31)}
+
+    def setUp(self):
+        ConsultasAgregacionTests.setUp(self)   # mismos datos de T-264
+        poner_fechas()
+
+    def por_competencia(self, **filtros):
+        return {r['competencia']: r['promedio'] for r in consultas.promedio_por_competencia(**filtros)}
+
+    def test_periodo_de_octubre(self):
+        self.assertEqual(self.por_competencia(**self.OCTUBRE),
+                         {'lectura': 60.0, 'escritura': 70.0, 'oralidad': None})
+
+    def test_hasta_incluye_todo_el_ultimo_dia(self):
+        self.assertEqual(self.por_competencia(hasta=date(2026, 10, 31))['lectura'], 56.7)   # (80 + 30 + 60) / 3
+        self.assertEqual(self.por_competencia(hasta=date(2026, 10, 30))['lectura'], 55.0)   # sin el 60 de Luis
+
+    def test_solo_desde(self):
+        self.assertEqual(self.por_competencia(desde=date(2026, 11, 1)),
+                         {'lectura': None, 'escritura': None, 'oralidad': 40.0})
+
+    def test_sin_filtros_da_lo_mismo_que_antes(self):
+        self.assertEqual(self.por_competencia(), {'lectura': 56.7, 'escritura': 70.0, 'oralidad': 40.0})
+
+    def test_semaforo_del_periodo_cuenta_a_los_que_no_tienen_notas(self):
+        self.assertEqual(consultas.alumnos_por_semaforo(**self.OCTUBRE),
+                         {'verde': 0, 'amarillo': 2, 'rojo': 0, 'sin_evaluar': 2})   # Ana 70, Luis 60
+
+    def test_rendimiento_por_colegio_con_grado(self):
+        filas = {f['nombre']: f for f in consultas.rendimiento_por_colegio(grado=4)}
+        self.assertEqual(filas['IE Ccollpa']['alumnos'], 0)                  # sus alumnos son de 2.°
+        self.assertEqual((filas['IE Huaccana']['alumnos'], filas['IE Huaccana']['promedios']['lectura']), (2, 30.0))
+
+    def test_rendimiento_por_aula_con_periodo(self):
+        aula = consultas.rendimiento_por_aula(self.colegio_a.id, desde=date(2026, 9, 1), hasta=date(2026, 9, 30))[0]
+        self.assertEqual((aula['evaluaciones'], aula['promedios']['lectura']), (1, 80.0))   # solo Ana
+        self.assertEqual(aula['semaforo'], {'verde': 1, 'amarillo': 0, 'rojo': 0, 'sin_evaluar': 1})
+
+    def test_mapa_de_calor_con_periodo(self):
+        zonas = {z['zona']: z for z in consultas.desempeno_por_zona(desde=date(2026, 9, 1), hasta=date(2026, 9, 30))}
+        self.assertEqual(zonas['Cusco']['promedios']['lectura'], 80.0)
+        self.assertEqual(zonas['Apurímac']['promedios']['lectura'], 30.0)
+
+
+class FiltrosReportesAPITests(APITestCase):
+    """T-354 y T-355: parámetros ?grado=&desde=&hasta= y validación del rango de fechas."""
+    URL = '/api/reportes/colegios/'
+
+    def setUp(self):
+        ConsultasAgregacionTests.setUp(self)
+        poner_fechas()
+        rol_admin, _ = Rol.objects.get_or_create(nombre='ADMIN')
+        self.admin = Usuario.objects.create_user(
+            username='admin', email='admin@test.pe', password='clave-segura-1', rol=rol_admin)
+        self.client.force_authenticate(self.admin)
+
+    # --- T-354: los filtros llegan a las consultas ---
+    def test_reporte_de_colegios_con_grado_y_periodo(self):
+        resp = self.client.get(self.URL, {'grado': 2, 'desde': '2026-10-01', 'hasta': '2026-10-31'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        datos = resp.json()
+        self.assertEqual(datos['filtros'], {'colegio': None, 'grado': 2, 'desde': '2026-10-01', 'hasta': '2026-10-31'})
+        self.assertEqual(datos['resumen']['promedios'], {'lectura': 60.0, 'escritura': 70.0, 'oralidad': None})
+        self.assertEqual(datos['resumen']['alumnos'], 2)                     # solo Ana y Luis (2.°)
+
+    def test_reporte_de_aulas_con_periodo(self):
+        resp = self.client.get(f'/api/reportes/colegios/{self.colegio_a.id}/aulas/',
+                               {'desde': '2026-09-01', 'hasta': '2026-09-30'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()['aulas'][0]['promedios']['lectura'], 80.0)
+
+    def test_mapa_de_calor_con_periodo(self):
+        resp = self.client.get('/api/reportes/mapa-calor/', {'desde': '2026-09-01', 'hasta': '2026-09-30'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual((resp.json()['desde'], resp.json()['hasta']), ('2026-09-01', '2026-09-30'))
+
+    def test_un_solo_dia_es_valido(self):
+        resp = self.client.get(self.URL, {'desde': '2026-10-31', 'hasta': '2026-10-31'})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.json()['resumen']['promedios']['lectura'], 60.0)   # la de las 23:59
+
+    # --- T-355: validación del rango ---
+    def test_formato_de_fecha_invalido_devuelve_400(self):
+        resp = self.client.get(self.URL, {'desde': '31/10/2026'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['desde']), 'La fecha desde debe tener el formato AAAA-MM-DD.')
+
+    def test_desde_despues_de_hasta_devuelve_400(self):
+        resp = self.client.get(self.URL, {'desde': '2026-11-30', 'hasta': '2026-09-01'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['hasta']), 'La fecha hasta no puede ser anterior a la fecha desde.')
+
+    def test_fecha_futura_devuelve_400(self):
+        manana = (date.today() + timedelta(days=1)).isoformat()
+        resp = self.client.get(self.URL, {'desde': manana})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['desde']), 'La fecha desde no puede ser posterior a hoy.')
+
+    def test_las_dos_fechas_futuras_muestran_los_dos_errores(self):
+        manana = (date.today() + timedelta(days=1)).isoformat()
+        resp = self.client.get(self.URL, {'desde': manana, 'hasta': manana})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(set(resp.data), {'desde', 'hasta'})
+
+    def test_grado_invalido_en_el_reporte_de_colegios(self):
+        resp = self.client.get(self.URL, {'grado': 7})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(resp.data['grado']), 'El grado debe estar entre 1 y 6.')
+
+
+
+
+# =====================================================================
+# US-50 · Exportar el reporte a Excel y PDF (T-363)
+# =====================================================================
+
+class DescribirFiltrosTests(TestCase):
+    """T-360: texto de los filtros del encabezado."""
+
+    def test_sin_filtros(self):
+        self.assertEqual(exportar.describir_filtros(), 'Todos los colegios · Todos los grados · Todo el periodo')
+
+    def test_con_todos_los_filtros(self):
+        texto = exportar.describir_filtros(
+            {'colegio': 'IE Ccollpa', 'grado': 2, 'desde': date(2026, 9, 1), 'hasta': date(2026, 11, 21)})
+        self.assertEqual(texto, 'IE Ccollpa · 2.° grado · del 01/09/2026 al 21/11/2026')
+
+    def test_solo_una_fecha(self):
+        self.assertTrue(exportar.describir_filtros({'desde': date(2026, 9, 1)}).endswith('desde el 01/09/2026'))
+        self.assertTrue(exportar.describir_filtros({'hasta': date(2026, 10, 31)}).endswith('hasta el 31/10/2026'))
+
+
+class ExportarReporteAPITests(APITestCase):
+    """T-358 a T-361: los archivos se descargan, tienen el encabezado y respetan los filtros."""
+    EXCEL = '/api/reportes/colegios/excel/'
+    PDF = '/api/reportes/colegios/pdf/'
+
+    def setUp(self):
+        ConsultasAgregacionTests.setUp(self)   # mismos datos de T-264 (IE Ccollpa y IE Huaccana)
+        rol_admin, _ = Rol.objects.get_or_create(nombre='ADMIN')
+        self.admin = Usuario.objects.create_user(
+            username='admin', email='admin@test.pe', password='clave-segura-1', rol=rol_admin)
+        self.client.force_authenticate(self.admin)
+
+    def hoja(self, resp):
+        """Abre el Excel de la respuesta y devuelve sus filas como listas."""
+        libro = openpyxl.load_workbook(BytesIO(resp.content))
+        return [list(fila) for fila in libro.active.iter_rows(values_only=True)]
+
+    def texto_pdf(self, resp):
+        return '\n'.join(pagina.extract_text() for pagina in PdfReader(BytesIO(resp.content)).pages)
+
+    # --- T-358: Excel ---
+    def test_descarga_el_excel_con_su_nombre(self):
+        resp = self.client.get(self.EXCEL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp['Content-Type'],
+                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        self.assertIn(f'reporte-colegios-{date.today():%Y-%m-%d}.xlsx', resp['Content-Disposition'])
+
+    def test_el_excel_tiene_encabezado_titulos_y_una_fila_por_colegio(self):
+        filas = self.hoja(self.client.get(self.EXCEL))
+        self.assertEqual(filas[0][0], 'Reporte de rendimiento por colegio · Yalliq')
+        self.assertTrue(filas[1][0].startswith('Generado el '))
+        self.assertEqual(filas[2][0], 'Filtros: Todos los colegios · Todos los grados · Todo el periodo')
+        self.assertEqual(filas[4][:3], ['Código modular', 'Colegio', 'Región'])
+        self.assertEqual(filas[5], ['1111111', 'IE Ccollpa', 'Cusco', 2, 4, 70, 70, 40, 62.5, 1, 1, 0, 0])
+        self.assertEqual(len(filas), 7)                       # 4 de encabezado + títulos + 2 colegios
+
+    def test_promedio_sin_datos_queda_vacio_en_el_excel(self):
+        huaccana = self.hoja(self.client.get(self.EXCEL))[6]
+        self.assertEqual(huaccana[1], 'IE Huaccana')
+        self.assertEqual((huaccana[6], huaccana[7]), (None, None))   # escritura y oralidad sin notas
+
+    # --- T-359: PDF ---
+    def test_descarga_el_pdf(self):
+        resp = self.client.get(self.PDF)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp['Content-Type'], 'application/pdf')
+        self.assertTrue(resp.content.startswith(b'%PDF'))
+        self.assertIn(f'reporte-colegios-{date.today():%Y-%m-%d}.pdf', resp['Content-Disposition'])
+
+    def test_el_pdf_tiene_el_encabezado_y_los_colegios(self):
+        texto = self.texto_pdf(self.client.get(self.PDF))
+        self.assertIn('Reporte de rendimiento por colegio', texto)
+        self.assertIn('Generado el', texto)
+        self.assertIn('Todos los colegios', texto)
+        self.assertIn('IE Ccollpa', texto)
+        self.assertIn('IE Huaccana', texto)
+
+    # --- T-361: respeta los filtros ---
+    def test_el_excel_respeta_colegio_y_grado(self):
+        filas = self.hoja(self.client.get(self.EXCEL, {'colegio': self.colegio_a.id, 'grado': 2}))
+        self.assertEqual(filas[2][0], 'Filtros: IE Ccollpa · 2.° grado · Todo el periodo')
+        self.assertEqual([f[1] for f in filas[5:]], ['IE Ccollpa'])   # solo el colegio elegido
+
+    def test_el_pdf_respeta_el_colegio(self):
+        texto = self.texto_pdf(self.client.get(self.PDF, {'colegio': self.colegio_b.id}))
+        self.assertIn('IE Huaccana', texto)
+        self.assertNotIn('IE Ccollpa', texto)
+
+    def test_el_periodo_aparece_en_el_encabezado(self):
+        filas = self.hoja(self.client.get(self.EXCEL, {'desde': '2026-09-01', 'hasta': '2026-10-31'}))
+        self.assertTrue(filas[2][0].endswith('del 01/09/2026 al 31/10/2026'))
+
+    def test_fechas_al_reves_devuelven_400(self):
+        resp = self.client.get(self.PDF, {'desde': '2026-11-30', 'hasta': '2026-09-01'})
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_colegio_que_no_existe_devuelve_404(self):
+        self.assertEqual(self.client.get(self.EXCEL, {'colegio': 9999}).status_code, status.HTTP_404_NOT_FOUND)
+
+    # --- Permisos ---
+    def test_docente_no_puede_exportar(self):
+        self.client.force_authenticate(Usuario.objects.get(username='doc_a'))
+        self.assertEqual(self.client.get(self.EXCEL).status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(self.client.get(self.PDF).status_code, status.HTTP_403_FORBIDDEN)

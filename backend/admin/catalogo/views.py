@@ -3,16 +3,19 @@ import io
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.db import transaction
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 
 from usuarios.permissions import TienePermiso
 from . import biblioteca
 from .models import Lectura, RecursoOficial
 from .serializers import (ImportarLecturaSerializer, LecturaSerializer, RangoPaginasSerializer,
-                          RecursoOficialSerializer)
+                          RecursoLecturaSerializer, RecursoOficialSerializer)
 from .servicios import lectura_esta_asignada
 
 
@@ -67,6 +70,43 @@ class LecturaViewSet(viewsets.ModelViewSet):
         lectura.activo = False
         lectura.save(update_fields=['activo'])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # T-370: para Swagger, esta acción usa el serializer de recursos (no el de lecturas)
+    @extend_schema(methods=['GET'], tags=['Recursos de una lectura'], summary='Imágenes y audios de una lectura',
+                   responses=RecursoLecturaSerializer(many=True))
+    @extend_schema(methods=['POST'], tags=['Recursos de una lectura'], summary='Subir una imagen (JPG, PNG) o un audio (MP3)',
+                   request={'multipart/form-data': RecursoLecturaSerializer}, responses={201: RecursoLecturaSerializer})
+    
+    @action(detail=True, methods=['get', 'post'], parser_classes=[MultiPartParser, FormParser])
+    
+    def recursos(self, request, pk=None):
+        """US-42: GET lista los recursos de la lectura; POST sube una imagen o un audio (T-343)."""
+        lectura = self.get_object()
+        if request.method == 'GET':
+            recursos = lectura.recursos.select_related('subido_por')
+            return Response(RecursoLecturaSerializer(recursos, many=True, context={'request': request}).data)
+
+        serializer = RecursoLecturaSerializer(data=request.data, context={'request': request, 'lectura': lectura})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(lectura=lectura, subido_por=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    @extend_schema(tags=['Recursos de una lectura'], summary='Quitar un recurso de la lectura y borrar su archivo',
+                   parameters=[OpenApiParameter('recurso_id', OpenApiTypes.INT, OpenApiParameter.PATH)],
+                   request=None, responses={204: None, 404: OpenApiTypes.OBJECT})
+    
+    @action(detail=True, methods=['delete'], url_path=r'recursos/(?P<recurso_id>\d+)')
+    
+    def eliminar_recurso(self, request, pk=None, recurso_id=None):
+        """US-42 (T-346): quita un recurso de la lectura y borra su archivo de la carpeta media."""
+        lectura = self.get_object()
+        recurso = lectura.recursos.filter(pk=recurso_id).first()
+        if recurso is None:
+            return Response({'detail': 'El recurso ya no existe.'}, status=status.HTTP_404_NOT_FOUND)
+        recurso.archivo.delete(save=False)   # borra el archivo del disco
+        recurso.delete()                     # borra la fila de la tabla
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 
 class RecursoOficialViewSet(viewsets.ReadOnlyModelViewSet):
