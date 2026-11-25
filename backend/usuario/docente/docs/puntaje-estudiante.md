@@ -132,13 +132,52 @@ T-305 cierra las pruebas de la historia: la regla de puntuación, la tabla real
 contra PostgreSQL y los límites del servicio (puntajes 0 y 100). El contador
 visual sigue en la rama `movil-karla` de Karla (sección 6).
 
-## 8. Pruebas
+## 8. Recálculo cuando el docente cambia la nota (T-379)
+
+El docente puede **aprobar o corregir la calificación de la IA** desde el módulo Docente
+(US-33, sección 11 de `evidencias.md`). Cuando la nota final cambia, el acumulado del
+alumno se ajusta para que las estrellas sigan correspondiendo a la nota vigente.
+
+`service/PuntajeService.java` expone
+`recalcularPorCambioDeNota(estudianteId, tipoReto, notaAnterior, notaNueva)`:
+
+1. Valida el tipo de reto y las dos notas (0 a 100), igual que la suma normal.
+2. Calcula la diferencia de estrellas entre la nota nueva y la anterior con los mismos
+   umbrales de la tabla de la sección 4.
+3. Si la diferencia es `0` (las dos notas caen en el mismo tramo) no escribe nada.
+4. Si el alumno todavía no tiene fila en `puntaje_estudiante`, tampoco escribe: el reto
+   no se había contado y no hay acumulado que corregir.
+5. Si la fila existe, suma la diferencia a `estrellas` y la acota a `0` para no violar el
+   `CHECK (estrellas >= 0)`.
+
+**Los puntos no cambian.** Se ganan al completar el reto (100 por reto) sin importar el
+puntaje, así que una nota distinta solo mueve las estrellas.
+
+### Qué nota cuenta como anterior
+
+- Si la evidencia ya tenía `calificacionFinal`, esa es la nota anterior (por ejemplo, una
+  corrección previa).
+- Si no, se usa `puntajeIa` (la nota original de la IA).
+- Si no hay ninguna de las dos, no se recalcula nada.
+
+### Integración con aprobar y corregir
+
+`EvidenciaService` inyecta `PuntajeService` y llama al recálculo dentro de la misma
+transacción, después de guardar la nota:
+
+| Acción | Nota anterior | Nota nueva |
+|---|---|---|
+| Corregir una evidencia pendiente (IA 85) a 70 | 85 (`puntajeIa`) | 70 |
+| Aprobar una evidencia corregida antes a 70 (IA 85) | 70 (`calificacionFinal`) | 85 (`puntajeIa`) |
+
+## 9. Pruebas
 
 | Prueba | Cobertura |
 |---|---|
 | `MigracionPuntajeEstudianteTest` | Tabla, una fila por alumno, acumulados desde cero, valores no negativos, fecha de actualización y cascada (T-301). |
-| `PuntajeServiceTest` | Acumulado nuevo y existente, umbrales de 0 a 3 estrellas, puntajes límite 0 y 100, normalización del tipo, tipo y puntaje inválidos y alumno inexistente (T-302, T-305). |
+| `PuntajeServiceTest` | Acumulado nuevo y existente, umbrales de 0 a 3 estrellas, puntajes límite 0 y 100, normalización del tipo, tipo y puntaje inválidos, alumno inexistente (T-302, T-305); subida y bajada de estrellas por cambio de nota, tope en 0, sin fila de acumulado y sin cambio de tramo (T-379). |
 | `ReglaPuntuacionTest` | Estrellas en cada umbral, umbrales crecientes y puntos no negativos (T-305). |
 | `PuntajeEstudianteRepositoryTest` | Acumulado por alumno con el alumno cargado, fila nueva en cero, único por alumno y cascada al borrar al alumno (T-305). |
 | `MapaEstudianteServiceTest` | Niveles y estados, acumulado de puntos y estrellas, respaldo del progreso cuando no hay fila y alumno inexistente (T-197, T-303). |
 | `MapaEstudianteControllerTest` | Respuesta del mapa con puntos y estrellas, y 404 del alumno inexistente (T-197, T-303). |
+| `EvidenciaServiceTest` | Al corregir y al aprobar se llama al recálculo con las notas correctas; sin evaluación de la IA no se recalcula (T-379). |

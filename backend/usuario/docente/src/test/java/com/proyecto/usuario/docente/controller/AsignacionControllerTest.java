@@ -49,7 +49,7 @@ class AsignacionControllerTest {
     void crearAsignacionDevuelve201() throws Exception {
         when(service.asignar(eq(1L), eq(10L), any(AsignarLecturaRequest.class)))
                 .thenReturn(new AsignacionResponse(1L, 7L, 5L,
-                        LocalDateTime.of(2026, 10, 28, 10, 15)));
+                        LocalDateTime.of(2026, 10, 28, 10, 15), null, "pendiente"));
 
         mvc.perform(post("/api/docente/aulas/10/asignaciones")
                         .header("X-Docente-Id", 1)

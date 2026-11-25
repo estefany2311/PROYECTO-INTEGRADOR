@@ -77,11 +77,14 @@ describe("Pantalla de evidencias pendientes (T-299)", () => {
     expect(within(audio).getByText(/Primeros pasos/)).toBeInTheDocument();
     expect(within(audio).getByText(/Lee con claridad y buen ritmo/)).toBeInTheDocument();
     expect(
-      within(audio).getByRole("link", { name: "Escuchar audio" })
-    ).toHaveAttribute("href", "https://cdn.ejemplo.pe/evidencias/minji-nivel1.mp3");
+      within(audio).getByRole("button", { name: "Escuchar audio" })
+    ).toBeInTheDocument();
     expect(
       within(audio).getByRole("link", { name: "Ver detalle del alumno" })
     ).toHaveAttribute("href", "/dashboard/aulas/10/estudiantes/1");
+    expect(
+      within(audio).getByRole("link", { name: "Revisar evidencia" })
+    ).toHaveAttribute("href", "/evidencias/10/30");
 
     const texto = await tarjetaDe("Breysi Zavala");
     expect(within(texto).getByText("Texto")).toBeInTheDocument();
@@ -90,7 +93,7 @@ describe("Pantalla de evidencias pendientes (T-299)", () => {
       within(texto).getByText("Mi mamá prepara sopa. Yo pongo la mesa.")
     ).toBeInTheDocument();
     expect(
-      within(texto).queryByRole("link", { name: "Escuchar audio" })
+      within(texto).queryByRole("button", { name: "Escuchar audio" })
     ).not.toBeInTheDocument();
 
     expect(screen.getByText(/2 evidencias pendientes/)).toBeInTheDocument();

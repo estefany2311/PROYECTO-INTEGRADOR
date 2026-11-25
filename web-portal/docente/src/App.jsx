@@ -4,8 +4,10 @@ import Alumnos from "./pages/Alumnos";
 import Catalogo from "./pages/Catalogo";
 import Dashboard from "./pages/Dashboard";
 import DetalleEstudiante from "./pages/DetalleEstudiante";
+import DetalleEvidencia from "./pages/DetalleEvidencia";
 import Evidencias from "./pages/Evidencias";
 import Grupos from "./pages/Grupos";
+import Tareas from "./pages/Tareas";
 import FormularioAula from "./FormularioAula";
 
 export default function App() {
@@ -16,9 +18,14 @@ export default function App() {
         <Route path="/aulas" element={<FormularioAula />} />
         <Route path="/alumnos" element={<Alumnos />} />
         <Route path="/grupos" element={<Grupos />} />
+        <Route path="/tareas" element={<Tareas />} />
         <Route path="/catalogo" element={<Catalogo />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/evidencias" element={<Evidencias />} />
+        <Route
+          path="/evidencias/:aulaId/:evidenciaId"
+          element={<DetalleEvidencia />}
+        />
         <Route
           path="/dashboard/aulas/:aulaId/estudiantes/:estudianteId"
           element={<DetalleEstudiante />}

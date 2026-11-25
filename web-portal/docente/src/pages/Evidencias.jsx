@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listarAulas, listarEvidenciasPendientes } from "../api";
 import { obtenerAulaSeleccionada, seleccionarAula } from "../aulaSeleccionada";
+import ReproductorAudio from "../components/ReproductorAudio";
 
 // T-299 (US-31): lista de evidencias pendientes de revisión con filtro por tipo.
 // Consume el endpoint de T-298, que ya devuelve el alumno, su grado, el nivel y
@@ -336,15 +337,11 @@ function TarjetaEvidencia({ evidencia, aulaId }) {
         </div>
 
         {tipo.clave === "audio" ? (
-          <a
-            className="evidencia-audio"
-            href={evidencia.audioUrl || "#"}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <i className="bi bi-play-circle-fill" aria-hidden="true" />
-            Escuchar audio
-          </a>
+          <ReproductorAudio
+            aulaId={aulaId}
+            evidenciaId={evidencia.id}
+            nombre={nombre}
+          />
         ) : (
           <blockquote className="evidencia-texto">
             {evidencia.texto || "Sin texto registrado."}
@@ -364,13 +361,22 @@ function TarjetaEvidencia({ evidencia, aulaId }) {
             <i className="bi bi-clock" aria-hidden="true" />
             {formatearFecha(evidencia.creadoEn)}
           </span>
-          <Link
-            className="evidencia-detalle"
-            to={`/dashboard/aulas/${aulaId}/estudiantes/${evidencia.estudianteId}`}
-          >
-            Ver detalle del alumno
-            <i className="bi bi-arrow-right" aria-hidden="true" />
-          </Link>
+          <div className="evidencia-enlaces">
+            <Link
+              className="evidencia-revisar"
+              to={`/evidencias/${aulaId}/${evidencia.id}`}
+            >
+              <i className="bi bi-clipboard-check" aria-hidden="true" />
+              Revisar evidencia
+            </Link>
+            <Link
+              className="evidencia-detalle"
+              to={`/dashboard/aulas/${aulaId}/estudiantes/${evidencia.estudianteId}`}
+            >
+              Ver detalle del alumno
+              <i className="bi bi-arrow-right" aria-hidden="true" />
+            </Link>
+          </div>
         </div>
       </article>
     </li>

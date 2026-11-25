@@ -3,10 +3,10 @@ package com.proyecto.usuario.docente.model;
 /**
  * T-302 (US-09): regla de puntuación de un tipo de reto, alineada con la US-53.
  *
- * <p>Define cuántos puntos entrega completar un reto y los umbrales de puntaje
- * para ganar 1, 2 o 3 estrellas. Los valores iniciales viven en
- * {@code PuntajeService} y se podrán leer del módulo Admin cuando la US-53
- * exponga su endpoint (T-260).</p>
+ * <p>Define los puntos máximos de un reto y los umbrales de nota para ganar 1, 2
+ * o 3 estrellas. Salen de la tabla {@code reglas_puntuacion} del administrador
+ * (ver {@code ReglaPuntuacionRepository}); si no hay fila se usa
+ * {@link #porDefecto(String)}.</p>
  */
 public record ReglaPuntuacion(
         String tipoReto,
@@ -16,6 +16,11 @@ public record ReglaPuntuacion(
         int umbral3
 ) {
 
+    /** Regla de respaldo cuando el administrador no configuró el tipo de reto. */
+    public static ReglaPuntuacion porDefecto(String tipoReto) {
+        return new ReglaPuntuacion(tipoReto, 100, 60, 80, 95);
+    }
+
     public ReglaPuntuacion {
         if (puntos < 0) {
             throw new IllegalArgumentException("Los puntos del reto no pueden ser negativos");
@@ -23,6 +28,14 @@ public record ReglaPuntuacion(
         if (!(umbral1 < umbral2 && umbral2 < umbral3)) {
             throw new IllegalArgumentException("Los umbrales de estrellas deben ser crecientes");
         }
+    }
+
+    /**
+     * Puntos ganados con una nota de 0 a 100: los puntos máximos del reto por la
+     * nota, redondeado.
+     */
+    public int puntosPara(int nota) {
+        return (int) Math.round(puntos * nota / 100.0);
     }
 
     /**

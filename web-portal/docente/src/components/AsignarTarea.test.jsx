@@ -99,3 +99,37 @@ describe("Modal de asignación (T-193)", () => {
     expect(screen.getByRole("button", { name: "Asignar tarea" })).toBeDisabled();
   });
 });
+
+describe("Fecha límite de la tarea (T-390)", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it("envía la fecha límite cuando la docente la elige", async () => {
+    api.asignarLectura.mockResolvedValue({ id: 1 });
+    const { onAsignada } = abrir();
+
+    await userEvent.selectOptions(screen.getByLabelText("Alumno"), "1");
+    await userEvent.type(screen.getByLabelText(/Fecha límite/), "2099-12-31");
+    await userEvent.click(screen.getByRole("button", { name: "Asignar tarea" }));
+
+    await waitFor(() => expect(onAsignada).toHaveBeenCalled());
+    expect(api.asignarLectura).toHaveBeenCalledWith("10", {
+      lecturaId: 5,
+      estudianteId: 1,
+      fechaLimite: "2099-12-31",
+    });
+  });
+
+  it("no envía fecha cuando la deja vacía", async () => {
+    api.asignarLectura.mockResolvedValue({ id: 1 });
+    const { onAsignada } = abrir();
+
+    await userEvent.selectOptions(screen.getByLabelText("Alumno"), "1");
+    await userEvent.click(screen.getByRole("button", { name: "Asignar tarea" }));
+
+    await waitFor(() => expect(onAsignada).toHaveBeenCalled());
+    const datos = api.asignarLectura.mock.calls[0][1];
+    expect(datos).not.toHaveProperty("fechaLimite");
+  });
+});

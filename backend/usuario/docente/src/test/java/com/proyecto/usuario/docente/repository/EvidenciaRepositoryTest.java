@@ -12,6 +12,7 @@ import javax.sql.DataSource;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * T-298 (US-31): prueba las consultas REALES de evidencias pendientes contra
@@ -63,6 +64,38 @@ class EvidenciaRepositoryTest {
                 """, id, nivelId, tipo, tipo, tipo, estado, diasAtras);
     }
 
+    // T-377 (US-33): la evidencia guarda la nota final y el estado corregida
+    @Test
+    void guardaLaCalificacionFinalYElEstadoCorregida() {
+        jdbc.update("""
+                UPDATE evidencia
+                SET estado_revision = 'corregida',
+                    calificacion_final = 90,
+                    motivo_correccion = 'El audio tiene ruido de fondo.'
+                WHERE id = -5003
+                """);
+
+        Evidencia corregida = evidenciaRepository.findById(-5003L).orElseThrow();
+
+        assertEquals(Evidencia.CORREGIDA, corregida.getEstadoRevision());
+        assertEquals((short) 90, corregida.getCalificacionFinal());
+        assertEquals("El audio tiene ruido de fondo.", corregida.getMotivoCorreccion());
+    }
+
+    // T-383 (US-34): la evidencia guarda el comentario de retroalimentación
+    @Test
+    void guardaElComentarioDeRetroalimentacion() {
+        jdbc.update("""
+                UPDATE evidencia
+                SET comentario = 'Muy bien leído; practica las pausas.'
+                WHERE id = -5003
+                """);
+
+        Evidencia revisada = evidenciaRepository.findById(-5003L).orElseThrow();
+
+        assertEquals("Muy bien leído; practica las pausas.", revisada.getComentario());
+    }
+
     @Test
     void devuelveSoloLasPendientesDeLaMasRecienteALaMasAntigua() {
         List<Evidencia> pendientes = evidenciaRepository
@@ -91,5 +124,25 @@ class EvidenciaRepositoryTest {
         assertEquals(-5001L, audio.get(0).getId());
         assertEquals(1, texto.size());
         assertEquals(-5002L, texto.get(0).getId());
+    }
+
+    // T-371 (US-32): el detalle busca la evidencia por id y aula
+    @Test
+    void encuentraUnaEvidenciaDelAulaSinImportarSuEstado() {
+        Evidencia encontrada = evidenciaRepository
+                .findByIdAndEstudianteAulaId(-5003L, -2002L)
+                .orElseThrow();
+
+        assertEquals(-5003L, encontrada.getId());
+        assertEquals(Evidencia.APROBADA, encontrada.getEstadoRevision());
+        assertEquals("Minji", encontrada.getEstudiante().getNombres());
+        assertEquals("Nivel audio T-298", encontrada.getNivel().getNombre());
+    }
+
+    @Test
+    void noEncuentraUnaEvidenciaDeOtraAula() {
+        assertTrue(evidenciaRepository
+                .findByIdAndEstudianteAulaId(-5001L, -9999L)
+                .isEmpty());
     }
 }

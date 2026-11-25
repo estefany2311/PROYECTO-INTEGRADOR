@@ -34,4 +34,7 @@ build/
 
 *src/main/resources/application-local.properties
 
+# T-372: audios de las evidencias (no se versionan)
+evidencias/
+
 

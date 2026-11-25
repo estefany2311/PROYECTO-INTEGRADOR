@@ -17,6 +17,7 @@ public class ConfiguracionWeb implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(interceptorTokenEstudiante)
-                .addPathPatterns("/api/estudiante/mapa");
+                .addPathPatterns("/api/estudiante/mapa", "/api/estudiante/evidencias/**",
+                        "/api/estudiante/asignaciones/**");
     }
 }

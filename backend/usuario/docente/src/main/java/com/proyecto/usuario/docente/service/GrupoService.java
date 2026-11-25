@@ -114,7 +114,7 @@ public class GrupoService {
                     alumno.getId(), req.lecturaId())) {
                 yaTenían++;
             } else {
-                nuevas.add(new Asignacion(req.lecturaId(), alumno));
+                nuevas.add(new Asignacion(req.lecturaId(), alumno, req.fechaLimite()));
             }
         }
 

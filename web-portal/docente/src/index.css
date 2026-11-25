@@ -2584,23 +2584,52 @@ legend {
   color: #1D4ED8;
 }
 
-.evidencia-audio {
+.evidencia-audio-caja {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.evidencia-boton-audio {
   display: inline-flex;
   align-self: start;
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
+  border: 0;
   border-radius: 10px;
   background: #F5F3FF;
   color: #6D28D9;
+  font-family: inherit;
   font-size: 0.8rem;
   font-weight: 800;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.evidencia-audio:hover,
-.evidencia-audio:focus-visible {
+.evidencia-boton-audio:hover,
+.evidencia-boton-audio:focus-visible {
   background: #EDE9FE;
+}
+
+.evidencia-boton-audio:disabled {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+.evidencia-reproductor {
+  width: 100%;
+  height: 40px;
+}
+
+.evidencia-audio-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: #B91C1C;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .evidencia-texto {
@@ -2676,5 +2705,456 @@ legend {
 
   .evidencia-tipo {
     margin-left: 0;
+  }
+}
+
+/* T-374 (US-32): detalle de la evidencia lado a lado */
+
+.evidencia-enlaces {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.evidencia-revisar {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: #FFF7ED;
+  color: #C2410C;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.evidencia-revisar:hover,
+.evidencia-revisar:focus-visible {
+  background: #FFEDD5;
+}
+
+.detalle-evidencia-acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detalle-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.detalle-estado.pendiente {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.detalle-estado.aprobada {
+  background: #D1FAE5;
+  color: #047857;
+}
+
+.detalle-estado.rechazada {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+/* T-381 (US-33): la docente cambió la nota de la IA */
+.detalle-estado.corregida {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
+.detalle-tipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #EDE9FE;
+  color: #6D28D9;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.detalle-tipo.texto {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
+.detalle-tipo.ia {
+  background: #E0F2FE;
+  color: #0369A1;
+}
+
+.detalle-evidencia-comparacion {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.detalle-evidencia-columna {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detalle-evidencia-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.detalle-evidencia-texto {
+  margin: 0;
+  padding: 14px 16px;
+  border-left: 3px solid #8B5CF6;
+  border-radius: 10px;
+  background: #FAF5FF;
+  color: #374151;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.detalle-evidencia-texto.ia {
+  border-left-color: #0EA5E9;
+  background: #F0F9FF;
+}
+
+/* T-375 (US-32): palabras que la IA marcó para revisar */
+.detalle-palabra-marcada {
+  padding: 0 2px;
+  border-radius: 4px;
+  background: #FEF08A;
+  color: inherit;
+  font-weight: 800;
+}
+
+.detalle-marcadas-aviso {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: #92400E;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.detalle-marcadas-aviso i {
+  color: #D97706;
+}
+
+.detalle-evidencia-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #F8FAFC;
+  color: #64748B;
+  font-size: 0.84rem;
+}
+
+.detalle-evidencia-ia {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detalle-evidencia-ia-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.detalle-puntaje-ia {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: #0F172A;
+}
+
+.detalle-puntaje-ia b {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.detalle-puntaje-ia span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.detalle-puntaje-barra {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #E2E8F0;
+}
+
+.detalle-puntaje-barra span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #F59E0B, #F97316);
+}
+
+.detalle-evidencia-resultado {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #F0F9FF;
+  color: #0C4A6E;
+  font-size: 0.88rem;
+}
+
+.detalle-evidencia-resultado i {
+  margin-top: 2px;
+  color: #0284C7;
+}
+
+.detalle-evidencia-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.detalle-evidencia-meta dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.detalle-evidencia-meta dd {
+  margin: 4px 0 0;
+  color: #111827;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* T-381 (US-33): aprobar la nota de la IA o corregirla con un motivo */
+.detalle-evidencia-revision {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detalle-revision-nota {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: #0F172A;
+}
+
+.detalle-revision-nota b {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.detalle-revision-nota span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.detalle-revision-motivo {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #EFF6FF;
+  color: #1E3A8A;
+  font-size: 0.86rem;
+}
+
+.detalle-revision-motivo i {
+  margin-top: 2px;
+  color: #2563EB;
+}
+
+.detalle-revision-acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detalle-revision-acciones .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.detalle-revision-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #E2E8F0;
+}
+
+.detalle-revision-campo .form-label {
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.detalle-revision-contador {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.detalle-revision-error {
+  margin: 0;
+  color: #B91C1C;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .detalle-evidencia-comparacion,
+  .detalle-evidencia-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* T-390 (US-38): seguimiento de tareas, con un color por estado */
+.tareas-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.tareas-resumen-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tareas-resumen-item b {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.tareas-resumen-item.activo {
+  border-color: currentColor;
+}
+
+.tareas-resumen-item.vencida,
+.tarea-estado.vencida {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+.tareas-resumen-item.pendiente,
+.tarea-estado.pendiente {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.tareas-resumen-item.entregada,
+.tarea-estado.entregada {
+  background: #D1FAE5;
+  color: #047857;
+}
+
+.tareas-lista {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tarea-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--borde);
+  border-left-width: 5px;
+  border-radius: 14px;
+  background: var(--tarjeta);
+}
+
+.tarea-card.tarea-vencida {
+  border-left-color: #F43F5E;
+}
+
+.tarea-card.tarea-pendiente {
+  border-left-color: #F59E0B;
+}
+
+.tarea-card.tarea-entregada {
+  border-left-color: #10B981;
+}
+
+.tarea-datos {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tarea-titulo {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.tarea-alumno,
+.tarea-fecha {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.tarea-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .tareas-resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .tarea-card {
+    flex-wrap: wrap;
   }
 }
