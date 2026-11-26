@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from usuarios.permissions import TienePermiso
 from . import biblioteca
 from .models import Lectura, RecursoOficial
-from .serializers import (ImportarLecturaSerializer, LecturaSerializer, RangoPaginasSerializer,
+from .serializers import (EstadoLibroSerializer, ImportarLecturaSerializer, LecturaSerializer, RangoPaginasSerializer,
                           RecursoLecturaSerializer, RecursoOficialSerializer)
 from .servicios import lectura_esta_asignada
 
@@ -109,24 +109,48 @@ class LecturaViewSet(viewsets.ModelViewSet):
 
 
 
+def es_docente(usuario):
+    return getattr(getattr(usuario, 'rol', None), 'nombre', None) == 'DOCENTE'
+
+
 class RecursoOficialViewSet(viewsets.ReadOnlyModelViewSet):
-    """T-443: libros oficiales (sincronizados en T-441) e importación de lecturas desde su PDF."""
+    """Libros oficiales: el admin los activa o desactiva; el docente saca lecturas de los activos."""
     permission_classes = [TienePermiso]
     modulo = 'catalogo'
     serializer_class = RecursoOficialSerializer
-    acciones_personalizadas = {'sincronizar': 'editar'}
+    # importar solo pide 'ver': dentro se comprueba que sea un docente
+    acciones_personalizadas = {'sincronizar': 'editar', 'estado': 'desactivar', 'importar': 'ver'}
 
     def get_queryset(self):
         queryset = RecursoOficial.objects.all()
+        if es_docente(self.request.user):
+            queryset = queryset.filter(activo=True)   # el docente solo ve los libros que el admin activó
         params = self.request.query_params
         if params.get('nuevos', '').strip().lower() == 'true':
             queryset = queryset.filter(lectura__isnull=True)
+        activo = params.get('activo', '').strip().lower()
+        if activo:
+            if activo not in ('true', 'false'):
+                raise ValidationError({'activo': 'El filtro activo debe ser true o false.'})
+            queryset = queryset.filter(activo=(activo == 'true'))
         grado = params.get('grado', '').strip()
         if grado:
             if not grado.isdigit() or not 1 <= int(grado) <= 6:
                 raise ValidationError({'grado': 'El filtro de grado debe ser un número entre 1 y 6.'})
             queryset = queryset.filter(grado=int(grado))
         return queryset
+
+    @extend_schema(tags=['Libros oficiales'], summary='Activar o desactivar un libro para los docentes',
+                   request=EstadoLibroSerializer, responses=RecursoOficialSerializer)
+    @action(detail=True, methods=['patch'])
+    def estado(self, request, pk=None):
+        """PATCH /recursos-oficiales/{id}/estado/  {"activo": false} → el docente ya no ve el libro."""
+        libro = self.get_object()
+        datos = EstadoLibroSerializer(data=request.data)
+        datos.is_valid(raise_exception=True)
+        libro.activo = datos.validated_data['activo']
+        libro.save(update_fields=['activo'])
+        return Response(RecursoOficialSerializer(libro).data)
 
     @action(detail=True, methods=['get'])
     def texto(self, request, pk=None):
@@ -150,8 +174,11 @@ class RecursoOficialViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=['post'])
     def importar(self, request, pk=None):
-        """POST /recursos-oficiales/{id}/importar/  → crea la lectura con fuente oficial."""
-        recurso = self.get_object()
+        """POST /recursos-oficiales/{id}/importar/  → el docente guarda una lectura sacada del libro."""
+        if not es_docente(request.user):
+            return Response({'detail': 'Las lecturas las sacan los docentes de los libros activos.'},
+                            status=status.HTTP_403_FORBIDDEN)
+        recurso = self.get_object()   # si el libro está desactivado, el docente no lo encuentra (404)
         datos = ImportarLecturaSerializer(data=request.data)
         datos.is_valid(raise_exception=True)
         grado = recurso.grado or datos.validated_data.get('grado')
@@ -167,6 +194,7 @@ class RecursoOficialViewSet(viewsets.ReadOnlyModelViewSet):
                 fuente='oficial',
                 url_recurso=recurso.url_recurso,
                 creado_por=request.user,
+                docente_id=request.user.id,   # la lectura es de este docente
             )
             if recurso.lectura_id is None:   # marca el libro como importado
                 recurso.lectura = lectura

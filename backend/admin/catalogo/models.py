@@ -34,6 +34,9 @@ class Lectura(models.Model):
         # T-442: de dónde viene la lectura (manual o importada de un recurso oficial)
     fuente = models.CharField(max_length=10, choices=FUENTES, default='manual', db_default='manual')
     url_recurso = models.URLField(max_length=500, blank=True, default='', db_default='')
+    # El docente que sacó esta lectura de un libro (id de su cuenta en la tabla usuarios).
+    # Vacío = lectura antigua del admin, la ven todos los docentes del grado.
+    docente_id = models.BigIntegerField(null=True, blank=True, db_index=True)
     creado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -73,6 +76,8 @@ class RecursoOficial(models.Model):
     temas = models.JSONField(default=list, blank=True)
     url_recurso = models.URLField(max_length=500)
     url_pdf = models.URLField(max_length=500, blank=True)
+    # El admin decide qué libros puede usar el docente: desactivado = el docente no lo ve
+    activo = models.BooleanField(default=True, db_default=True)
     lectura = models.ForeignKey(
         Lectura, on_delete=models.SET_NULL, null=True, blank=True, related_name='recursos_oficiales')
     sincronizado_en = models.DateTimeField(auto_now=True)
@@ -138,4 +143,4 @@ class RecursoLectura(models.Model):
         verbose_name_plural = 'Recursos de lectura'
 
     def __str__(self):
-        return f'{self.get_tipo_display()} · {self.nombre_original} ({self.lectura.titulo})'
+        return f'{self.get_tipo_display()} · {self.nombre_original} ({self.lectura.titulo})'

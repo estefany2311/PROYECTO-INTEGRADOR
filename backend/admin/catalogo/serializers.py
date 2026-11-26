@@ -29,8 +29,8 @@ class LecturaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lectura
         fields = ['id', 'titulo', 'texto', 'tipo_reto', 'grado', 'dificultad', 'activo', 'fuente', 'url_recurso',
-                  'asignada', 'creado_por', 'creado_en']
-        read_only_fields = ['id', 'activo', 'fuente', 'url_recurso', 'creado_por', 'creado_en']
+                  'asignada', 'creado_por', 'docente_id', 'creado_en']
+        read_only_fields = ['id', 'activo', 'fuente', 'url_recurso', 'creado_por', 'docente_id', 'creado_en']
     def get_asignada(self, obj):
         return lectura_esta_asignada(obj.id)
 
@@ -55,7 +55,7 @@ class RecursoOficialSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RecursoOficial
-        fields = ['id', 'titulo', 'descripcion', 'grado', 'competencia', 'url_recurso', 'url_pdf',
+        fields = ['id', 'titulo', 'descripcion', 'grado', 'competencia', 'url_recurso', 'url_pdf', 'activo',
                   'importado', 'lecturas_importadas', 'fuente', 'sincronizado_en']
 
     def get_lecturas_importadas(self, obj):
@@ -63,6 +63,12 @@ class RecursoOficialSerializer(serializers.ModelSerializer):
 
     def get_fuente(self, obj):
         return RecursoOficial.FUENTE
+
+
+class EstadoLibroSerializer(serializers.Serializer):
+    activo = serializers.BooleanField(error_messages={
+        'required': 'Indica si el libro queda activo (true) o desactivado (false).',
+        'invalid': 'El campo activo debe ser true o false.'})
 
 
 class RangoPaginasSerializer(serializers.Serializer):

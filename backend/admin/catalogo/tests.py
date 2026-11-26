@@ -478,6 +478,7 @@ class RecursoOficialAPITests(APITestCase):
         self.assertEqual(resp.data[0]['fuente'], RecursoOficial.FUENTE)
 
     def test_nuevos_solo_muestra_los_no_importados(self):
+        self.client.force_authenticate(self.docente)
         self.client.post(self.url(self.libro, 'importar'), self.datos(), format='json')
         resp = self.client.get(self.URL, {'nuevos': 'true'})
         self.assertEqual([r['id'] for r in resp.data], [self.sin_grado.id])
@@ -528,16 +529,19 @@ class RecursoOficialAPITests(APITestCase):
 
     # --- Importar ---
     def test_importar_crea_una_lectura_oficial_del_grado_del_libro(self):
+        self.client.force_authenticate(self.docente)
         resp = self.client.post(self.url(self.libro, 'importar'), self.datos(dificultad='intermedia'), format='json')
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         lectura = Lectura.objects.get(id=resp.data['id'])
         self.assertEqual((lectura.fuente, lectura.grado, lectura.dificultad), ('oficial', 2, 'intermedia'))
         self.assertEqual(lectura.url_recurso, self.libro.url_recurso)
-        self.assertEqual(lectura.creado_por, self.admin)
+        self.assertEqual(lectura.creado_por, self.docente)
+        self.assertEqual(lectura.docente_id, self.docente.id)   # la lectura es de ese docente
         self.libro.refresh_from_db()
         self.assertEqual(self.libro.lectura, lectura)      # el libro queda marcado como importado
 
     def test_de_un_libro_salen_varias_lecturas(self):
+        self.client.force_authenticate(self.docente)
         primera = self.client.post(self.url(self.libro, 'importar'), self.datos(), format='json').data
         self.client.post(self.url(self.libro, 'importar'), self.datos(titulo='Otra lectura', tipo_reto='oralidad'), format='json')
         self.libro.refresh_from_db()
@@ -547,10 +551,12 @@ class RecursoOficialAPITests(APITestCase):
         self.assertEqual(libro['lecturas_importadas'], 2)
 
     def test_el_grado_del_libro_no_se_puede_cambiar(self):
+        self.client.force_authenticate(self.docente)
         resp = self.client.post(self.url(self.libro, 'importar'), self.datos(grado=5), format='json')
         self.assertEqual(resp.data['grado'], 2)
 
     def test_recurso_sin_grado_pide_el_grado(self):
+        self.client.force_authenticate(self.docente)
         resp = self.client.post(self.url(self.sin_grado, 'importar'), self.datos(), format='json')
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('grado', resp.data)
@@ -559,6 +565,7 @@ class RecursoOficialAPITests(APITestCase):
         self.assertEqual(resp.data['grado'], 4)
 
     def test_importar_con_datos_invalidos_devuelve_400(self):
+        self.client.force_authenticate(self.docente)
         casos = {'tipo_reto': self.datos(tipo_reto='canto'), 'texto': self.datos(texto='corto'),
                  'titulo': self.datos(titulo='   '), 'dificultad': self.datos(dificultad='facil')}
         for campo, datos in casos.items():
@@ -582,11 +589,65 @@ class RecursoOficialAPITests(APITestCase):
         resp = self.client.post(f'{self.URL}sincronizar/')
         self.assertEqual(resp.status_code, status.HTTP_502_BAD_GATEWAY)
 
-    # --- Permisos ---
-    def test_docente_no_puede_importar_ni_sincronizar(self):
+    # --- Activar / desactivar libros ---
+    def test_un_libro_nuevo_esta_activo(self):
+        resp = self.client.get(self.URL)
+        self.assertTrue(all(r['activo'] for r in resp.data))
+
+    def test_admin_desactiva_y_reactiva_un_libro(self):
+        resp = self.client.patch(self.url(self.libro, 'estado'), {'activo': False}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertFalse(resp.data['activo'])
+        self.libro.refresh_from_db()
+        self.assertFalse(self.libro.activo)
+        self.client.patch(self.url(self.libro, 'estado'), {'activo': True}, format='json')
+        self.libro.refresh_from_db()
+        self.assertTrue(self.libro.activo)
+
+    def test_filtrar_libros_activos(self):
+        self.client.patch(self.url(self.libro, 'estado'), {'activo': False}, format='json')
+        resp = self.client.get(self.URL, {'activo': 'true'})
+        self.assertEqual([r['id'] for r in resp.data], [self.sin_grado.id])
+
+    def test_estado_sin_activo_devuelve_400(self):
+        resp = self.client.patch(self.url(self.libro, 'estado'), {}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_docente_no_puede_desactivar_un_libro(self):
         self.client.force_authenticate(self.docente)
-        self.assertEqual(self.client.post(self.url(self.libro, 'importar'), self.datos(), format='json').status_code,
-                         status.HTTP_403_FORBIDDEN)
+        resp = self.client.patch(self.url(self.libro, 'estado'), {'activo': False}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    # --- El docente saca las lecturas; el admin solo entrega los libros ---
+    def test_admin_no_puede_importar(self):
+        resp = self.client.post(self.url(self.libro, 'importar'), self.datos(), format='json')
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(Lectura.objects.count(), 0)
+
+    def test_docente_solo_ve_los_libros_activos(self):
+        self.client.patch(self.url(self.libro, 'estado'), {'activo': False}, format='json')
+        self.client.force_authenticate(self.docente)
+        resp = self.client.get(self.URL)
+        self.assertEqual([r['id'] for r in resp.data], [self.sin_grado.id])
+
+    def test_docente_no_importa_de_un_libro_desactivado(self):
+        self.client.patch(self.url(self.libro, 'estado'), {'activo': False}, format='json')
+        self.client.force_authenticate(self.docente)
+        resp = self.client.post(self.url(self.libro, 'importar'), self.datos(), format='json')
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(Lectura.objects.count(), 0)
+
+    @mock.patch('catalogo.biblioteca.extraer_texto', return_value=('Había una vez un zorro.', 82))
+    @mock.patch('catalogo.biblioteca.descargar_pdf', return_value='x.pdf')
+    def test_docente_saca_el_texto_de_un_libro_activo(self, _descargar, _extraer):
+        self.client.force_authenticate(self.docente)
+        resp = self.client.get(self.url(self.libro, 'texto'), {'desde': 10, 'hasta': 11})
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['texto'], 'Había una vez un zorro.')
+
+    # --- Permisos ---
+    def test_docente_no_puede_sincronizar(self):
+        self.client.force_authenticate(self.docente)
         self.assertEqual(self.client.post(f'{self.URL}sincronizar/').status_code, status.HTTP_403_FORBIDDEN)
 
     def test_sin_token_devuelve_401(self):
