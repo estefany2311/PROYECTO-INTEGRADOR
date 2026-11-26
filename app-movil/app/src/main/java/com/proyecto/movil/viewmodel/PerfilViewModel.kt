@@ -29,7 +29,7 @@ class PerfilViewModel(
         viewModelScope.launch {
             repository.obtenerPerfiles(codigoAula)
                 .onSuccess { _uiState.value = PerfilesUiState.Exito(it) }
-                .onFailure { _uiState.value = PerfilesUiState.Error(it.message ?: "Error de conexión") }
+                .onFailure { _uiState.value = PerfilesUiState.Error(it.message ?: PerfilRepository.ERROR_SERVIDOR) }
         }
     }
 }

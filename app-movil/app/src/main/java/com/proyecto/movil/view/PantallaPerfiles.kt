@@ -27,6 +27,7 @@ import com.proyecto.movil.viewmodel.PerfilesUiState
 fun PantallaPerfiles(
     codigoAula: String,
     onPerfilElegido: (Perfil) -> Unit,
+    onCambiarCodigo: () -> Unit = {},
     viewModel: PerfilViewModel = viewModel()
 ) {
     val estado by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,11 +61,22 @@ fun PantallaPerfiles(
                             color = TextoOscuro
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+                        // Dice qué pasó: aula que no existe, sin internet o error del servidor
                         Text(
-                            text = "Pídele ayuda a tu profesor.",
+                            text = s.mensaje,
                             fontSize = 18.sp,
-                            color = TextoOscuro
+                            color = TextoOscuro,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedButton(onClick = onCambiarCodigo, modifier = Modifier.height(56.dp)) {
+                                Text("Cambiar código", fontSize = 18.sp)
+                            }
+                            Button(onClick = { viewModel.cargarPerfiles(codigoAula) }, modifier = Modifier.height(56.dp)) {
+                                Text("Intentar otra vez", fontSize = 18.sp)
+                            }
+                        }
                     }
                 }
             }

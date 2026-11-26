@@ -50,7 +50,9 @@ fun NavegacionApp(almacen: IAlmacenSesion = Dependencias.almacenSesion) {
         composable(Rutas.PERFILES) { entrada ->
             PantallaPerfiles(
                 codigoAula = entrada.arguments?.getString(Rutas.ARG_CODIGO_AULA) ?: "",
-                onPerfilElegido = { perfil -> nav.navigate(Rutas.pin(perfil.id, perfil.nombre, perfil.avatarUrl)) }
+                onPerfilElegido = { perfil -> nav.navigate(Rutas.pin(perfil.id, perfil.nombre, perfil.avatarUrl)) },
+                // Si el código no sirve, vuelve a la pantalla para escribir otro
+                onCambiarCodigo = { if (!nav.popBackStack()) nav.irSinVolver(Rutas.CODIGO_AULA) }
             )
         }
         composable(
