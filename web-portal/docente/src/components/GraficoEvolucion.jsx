@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { COLORES_COMPETENCIA } from "../theme/colores";
 
 // T-293 (US-29): gráfico de evolución de los puntajes del estudiante.
 // Reutiliza las últimas evaluaciones del detalle (T-290) y las ordena de la
@@ -8,12 +9,6 @@ const COMPETENCIAS = [
   { clave: "escritura", texto: "Escritura" },
   { clave: "oralidad", texto: "Oralidad" },
 ];
-
-const COLORES_COMPETENCIA = {
-  lectura: "#8B5CF6",
-  escritura: "#F59E0B",
-  oralidad: "#EC4899",
-};
 
 const MARCAS_Y = [0, 20, 40, 60, 80, 100];
 const ANCHO = 640;
@@ -145,9 +140,9 @@ export default function GraficoEvolucion({ evidencias = [], nombre = "" }) {
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
-          <linearGradient id={gradienteId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.02" />
+          <linearGradient id={gradienteId} x1="0" y1="0" x2="0" y2="1" className="grafico-degradado">
+            <stop offset="0%" stopOpacity="0.22" />
+            <stop offset="100%" stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
@@ -156,7 +151,7 @@ export default function GraficoEvolucion({ evidencias = [], nombre = "" }) {
           y={yDe(100)}
           width={ANCHO_UTIL}
           height={yDe(80) - yDe(100)}
-          fill="#22C55E"
+          className="grafico-zona-verde"
           opacity="0.06"
         />
         <rect
@@ -164,7 +159,7 @@ export default function GraficoEvolucion({ evidencias = [], nombre = "" }) {
           y={yDe(80)}
           width={ANCHO_UTIL}
           height={yDe(60) - yDe(80)}
-          fill="#F59E0B"
+          className="grafico-zona-amarilla"
           opacity="0.06"
         />
         <rect
@@ -172,7 +167,7 @@ export default function GraficoEvolucion({ evidencias = [], nombre = "" }) {
           y={yDe(60)}
           width={ANCHO_UTIL}
           height={yDe(0) - yDe(60)}
-          fill="#F43F5E"
+          className="grafico-zona-roja"
           opacity="0.05"
         />
 
@@ -183,7 +178,7 @@ export default function GraficoEvolucion({ evidencias = [], nombre = "" }) {
               x2={ANCHO - MARGEN.derecho}
               y1={yDe(marca)}
               y2={yDe(marca)}
-              stroke="#EAE6DC"
+              className="grafico-eje-linea"
               strokeWidth="1"
               strokeDasharray={marca === 0 ? "0" : "4 4"}
             />
@@ -216,7 +211,7 @@ export default function GraficoEvolucion({ evidencias = [], nombre = "" }) {
             <path
               d={linea}
               fill="none"
-              stroke="#8B5CF6"
+              className="grafico-linea"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -231,8 +226,8 @@ export default function GraficoEvolucion({ evidencias = [], nombre = "" }) {
             cx={punto.cx}
             cy={punto.cy}
             r="5"
-            fill={COLORES_COMPETENCIA[punto.competencia] || "#6B7280"}
-            stroke="#fff"
+            fill={COLORES_COMPETENCIA[punto.competencia] || "var(--color-text-muted)"}
+            stroke="var(--color-white)"
             strokeWidth="2"
             data-puntaje={punto.puntaje}
             data-competencia={punto.competencia}

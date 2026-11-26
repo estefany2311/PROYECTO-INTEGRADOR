@@ -1,0 +1,33 @@
+/* Base: reset mínimo, tipografía y fondo global. */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background-color: var(--fondo);
+  background-image:
+    linear-gradient(var(--shadow-xs) 1px, transparent 1px),
+    linear-gradient(90deg, var(--shadow-xs) 1px, transparent 1px);
+  background-size: 28px 28px;
+  color: var(--texto);
+  font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Outfit", "Segoe UI", Arial, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.text-secondary {
+  color: var(--muted) !important;
+}

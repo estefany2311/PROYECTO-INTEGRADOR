@@ -6,8 +6,10 @@ import {
 } from "../api";
 import AccesoAlumno from "../components/AccesoAlumno";
 import AsignarTarea from "../components/AsignarTarea";
+import Avatar from "../components/Avatar";
+import StatCard from "../components/StatCard";
+import { COLORES_INICIALES } from "../theme/colores";
 
-const COLORES = ["#9B22E1", "#2FC5F6", "#F59E0B", "#F51E38", "#22C55E", "#6366F1"];
 const FORM_VACIO = { nombres: "", apellidos: "", gradoId: "" };
 
 export default function Alumnos() {
@@ -215,28 +217,28 @@ export default function Alumnos() {
         <>
           <div className="row g-3 mb-4">
             <div className="col-md-4">
-              <div className="panel stat">
-                <span className="stat-ico" style={{ background: "rgba(155,34,225,.12)", color: "#9B22E1" }}>
-                  <i className="bi bi-people" />
-                </span>
-                <div><b>{alumnos.length}</b><span>Total de alumnos</span></div>
-              </div>
+              <StatCard
+                icono="bi-people"
+                tono="morado"
+                valor={alumnos.length}
+                etiqueta="Total de alumnos"
+              />
             </div>
             <div className="col-md-4">
-              <div className="panel stat">
-                <span className="stat-ico" style={{ background: "rgba(47,197,246,.16)", color: "#0B7FA6" }}>
-                  <i className="bi bi-person-check" />
-                </span>
-                <div><b>{activos}</b><span>Alumnos activos</span></div>
-              </div>
+              <StatCard
+                icono="bi-person-check"
+                tono="celeste"
+                valor={activos}
+                etiqueta="Alumnos activos"
+              />
             </div>
             <div className="col-md-4">
-              <div className="panel stat">
-                <span className="stat-ico" style={{ background: "rgba(245,30,56,.12)", color: "#C0152B" }}>
-                  <i className="bi bi-person-x" />
-                </span>
-                <div><b>{alumnos.length - activos}</b><span>Alumnos inactivos</span></div>
-              </div>
+              <StatCard
+                icono="bi-person-x"
+                tono="rojo"
+                valor={alumnos.length - activos}
+                etiqueta="Alumnos inactivos"
+              />
             </div>
           </div>
 
@@ -266,9 +268,12 @@ export default function Alumnos() {
                     <tr key={a.id}>
                       <td>
                         <div className="d-flex align-items-center gap-3">
-                          <span className="inicial" style={{ background: COLORES[i % COLORES.length] }}>
-                            {a.nombres[0]}{a.apellidos[0]}
-                          </span>
+                          <Avatar
+                            className="inicial"
+                            nombres={a.nombres}
+                            apellidos={a.apellidos}
+                            color={COLORES_INICIALES[i % COLORES_INICIALES.length]}
+                          />
                           <span className="fw-semibold">{a.nombres} {a.apellidos}</span>
                         </div>
                       </td>

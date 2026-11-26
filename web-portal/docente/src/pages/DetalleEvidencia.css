@@ -1,0 +1,335 @@
+/* Detalle de la evidencia y revisión del docente. */
+
+/* T-374 (US-32): detalle de la evidencia lado a lado */
+
+.evidencia-enlaces {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.evidencia-revisar {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: var(--color-orange-50);
+  color: var(--color-orange-700);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.evidencia-revisar:hover,
+.evidencia-revisar:focus-visible {
+  background: var(--color-orange-100);
+}
+
+.detalle-evidencia-acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detalle-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.detalle-estado.pendiente {
+  background: var(--color-amber-100);
+  color: var(--color-amber-800);
+}
+
+.detalle-estado.aprobada {
+  background: var(--color-emerald-100);
+  color: var(--color-success-strong);
+}
+
+.detalle-estado.rechazada {
+  background: var(--color-red-100);
+  color: var(--color-red-700);
+}
+
+/* T-381 (US-33): la docente cambió la nota de la IA */
+.detalle-estado.corregida {
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+}
+
+.detalle-tipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--color-violet-100);
+  color: var(--color-violet-700);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.detalle-tipo.texto {
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+}
+
+.detalle-tipo.ia {
+  background: var(--color-sky-100);
+  color: var(--color-sky-700);
+}
+
+.detalle-evidencia-comparacion {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.detalle-evidencia-columna {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detalle-evidencia-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.detalle-evidencia-texto {
+  margin: 0;
+  padding: 14px 16px;
+  border-left: 3px solid var(--color-violet);
+  border-radius: 10px;
+  background: var(--color-purple-50);
+  color: var(--color-text-strong);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.detalle-evidencia-texto.ia {
+  border-left-color: var(--color-sky-500);
+  background: var(--color-sky-50);
+}
+
+/* T-375 (US-32): palabras que la IA marcó para revisar */
+.detalle-palabra-marcada {
+  padding: 0 2px;
+  border-radius: 4px;
+  background: var(--color-yellow-200);
+  color: inherit;
+  font-weight: 800;
+}
+
+.detalle-marcadas-aviso {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--color-amber-800);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.detalle-marcadas-aviso i {
+  color: var(--color-primary-strong);
+}
+
+.detalle-evidencia-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--color-slate-50);
+  color: var(--color-slate-500);
+  font-size: 0.84rem;
+}
+
+.detalle-evidencia-ia {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detalle-evidencia-ia-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.detalle-puntaje-ia {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--color-slate-900);
+}
+
+.detalle-puntaje-ia b {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.detalle-puntaje-ia span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.detalle-puntaje-barra {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-slate-200);
+}
+
+.detalle-puntaje-barra span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-orange-500));
+}
+
+.detalle-evidencia-resultado {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--color-sky-50);
+  color: var(--color-sky-900);
+  font-size: 0.88rem;
+}
+
+.detalle-evidencia-resultado i {
+  margin-top: 2px;
+  color: var(--color-sky-600);
+}
+
+.detalle-evidencia-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.detalle-evidencia-meta dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.detalle-evidencia-meta dd {
+  margin: 4px 0 0;
+  color: var(--color-gray-900);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* T-381 (US-33): aprobar la nota de la IA o corregirla con un motivo */
+.detalle-evidencia-revision {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detalle-revision-nota {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--color-slate-900);
+}
+
+.detalle-revision-nota b {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.detalle-revision-nota span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.detalle-revision-motivo {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--color-blue-50);
+  color: var(--color-blue-900);
+  font-size: 0.86rem;
+}
+
+.detalle-revision-motivo i {
+  margin-top: 2px;
+  color: var(--color-blue-600);
+}
+
+.detalle-revision-acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detalle-revision-acciones .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.detalle-revision-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-slate-200);
+}
+
+.detalle-revision-campo .form-label {
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.detalle-revision-contador {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.detalle-revision-error {
+  margin: 0;
+  color: var(--color-red-700);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .detalle-evidencia-comparacion,
+  .detalle-evidencia-meta {
+    grid-template-columns: 1fr;
+  }
+}
+

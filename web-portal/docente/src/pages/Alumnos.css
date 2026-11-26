@@ -1,0 +1,16 @@
+/* Alumnos: tarjetas de estadísticas del aula. */
+
+.stat-ico-morado {
+  background: var(--stat-morado-bg);
+  color: var(--stat-morado-fg);
+}
+
+.stat-ico-celeste {
+  background: var(--stat-celeste-bg);
+  color: var(--stat-celeste-fg);
+}
+
+.stat-ico-rojo {
+  background: var(--stat-rojo-bg);
+  color: var(--stat-rojo-fg);
+}

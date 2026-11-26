@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { listarAulas, listarSeguimientoTareas } from "../api";
 import { obtenerAulaSeleccionada, seleccionarAula } from "../aulaSeleccionada";
 import { formatearFechaLimite } from "../fechaLimite";
+import Avatar from "../components/Avatar";
+import BadgeEstado from "../components/BadgeEstado";
 
 // T-390 (US-38): seguimiento de las tareas asignadas del aula. Consume el
 // endpoint de T-389, que ya calcula el estado (pendiente, entregada o vencida),
@@ -13,16 +15,8 @@ const ESTADOS = [
   { clave: "entregada", texto: "Entregada", plural: "Entregadas", icono: "bi-check-circle-fill" },
 ];
 
-const COLORES_AVATAR = ["#8B5CF6", "#2FC5F6", "#F59E0B", "#EC4899", "#10B981", "#6366F1"];
-
 const estadoDe = (clave) =>
   ESTADOS.find((estado) => estado.clave === clave) || ESTADOS[1];
-
-const iniciales = (nombres = "", apellidos = "") =>
-  `${nombres.trim().charAt(0)}${apellidos.trim().charAt(0)}`.toUpperCase() || "?";
-
-const colorAvatar = (id) =>
-  COLORES_AVATAR[Number(id || 0) % COLORES_AVATAR.length];
 
 const formatearEntrega = (valor) => {
   if (!valor) return "";
@@ -284,13 +278,12 @@ function TarjetaTarea({ tarea }) {
         className={`tarea-card tarea-${estado.clave}`}
         aria-label={`Tarea de ${nombre || "estudiante"}: ${tarea.lecturaTitulo}`}
       >
-        <span
+        <Avatar
           className="evidencia-avatar"
-          style={{ background: colorAvatar(tarea.estudianteId) }}
-          aria-hidden="true"
-        >
-          {iniciales(tarea.nombres, tarea.apellidos)}
-        </span>
+          nombres={tarea.nombres}
+          apellidos={tarea.apellidos}
+          colorId={tarea.estudianteId}
+        />
 
         <div className="tarea-datos">
           <h3 className="tarea-titulo">{tarea.lecturaTitulo}</h3>
@@ -311,10 +304,12 @@ function TarjetaTarea({ tarea }) {
           </span>
         </div>
 
-        <span className={`tarea-estado ${estado.clave}`}>
-          <i className={`bi ${estado.icono}`} aria-hidden="true" />
-          {estado.texto}
-        </span>
+        <BadgeEstado
+          className="tarea-estado"
+          variante={estado.clave}
+          icono={estado.icono}
+          texto={estado.texto}
+        />
       </article>
     </li>
   );

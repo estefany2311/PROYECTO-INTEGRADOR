@@ -1,0 +1,55 @@
+/* Catálogo: distintivo oficial, insignias de grado y texto de las lecturas. */
+
+/* Catálogo: distintivo de las lecturas que vienen del Ministerio de Educación */
+.tag-oficial {
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+}
+
+.insignia {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  background: var(--color-orange-50);
+  border: 1px solid var(--color-amber-200);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.insignia.g0 {
+  color: var(--color-blue-700);
+  background: var(--color-blue-50);
+  border-color: var(--color-blue-200);
+}
+
+.insignia.g1 {
+  color: var(--color-success-strong);
+  background: var(--color-emerald-50);
+  border-color: var(--color-emerald-200);
+}
+
+.insignia.g2 {
+  color: var(--color-primary-dark);
+  background: var(--color-amber-50);
+  border-color: var(--color-amber-200);
+}
+
+.insignia.g3 {
+  color: var(--color-violet-700);
+  background: var(--color-violet-50);
+  border-color: var(--color-violet-200);
+}
+
+.lectura-texto {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.lectura-completa {
+  white-space: pre-wrap;
+}

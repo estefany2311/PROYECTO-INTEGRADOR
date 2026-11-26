@@ -10,6 +10,7 @@ import {
   guardarFiltrosDashboard,
   obtenerFiltrosDashboard,
 } from "../filtrosDashboard";
+import Avatar from "../components/Avatar";
 
 // T-279 (US-27): dashboard del aula con tarjetas por estudiante.
 // Consume el endpoint de T-278 y reutiliza la regla del semáforo de T-277.
@@ -47,21 +48,10 @@ const LEYENDA = ["verde", "amarillo", "rojo", "gris"].map((color) => ({
   ...SEMAFORO[color],
 }));
 
-const COLORES_AVATAR = ["#8B5CF6", "#2FC5F6", "#F59E0B", "#EC4899", "#10B981", "#6366F1"];
-
 const datosSemaforo = (color) => SEMAFORO[color] || SEMAFORO.gris;
 
 const textoEstudiantes = (n) => `${n} ${n === 1 ? "estudiante" : "estudiantes"}`;
 const textoAlumnos = (n) => `${n} ${n === 1 ? "alumno" : "alumnos"}`;
-
-const iniciales = (nombres = "", apellidos = "") => {
-  const primera = nombres.trim().charAt(0);
-  const segunda = apellidos.trim().charAt(0);
-  return `${primera}${segunda}`.toUpperCase() || "?";
-};
-
-const colorAvatar = (id) =>
-  COLORES_AVATAR[Number(id || 0) % COLORES_AVATAR.length];
 
 const nombreCompleto = (estudiante) =>
   [estudiante.nombres, estudiante.apellidos].filter(Boolean).join(" ").trim();
@@ -501,13 +491,12 @@ function TarjetaEstudiante({ estudiante, aulaId, aulaNombre, competencia }) {
         className="alumno-card-head alumno-card-link"
         aria-label={`Ver detalle de ${nombre}`}
       >
-        <span
+        <Avatar
           className="alumno-avatar"
-          style={{ background: colorAvatar(estudiante.id) }}
-          aria-hidden="true"
-        >
-          {iniciales(estudiante.nombres, estudiante.apellidos)}
-        </span>
+          nombres={estudiante.nombres}
+          apellidos={estudiante.apellidos}
+          colorId={estudiante.id}
+        />
         <div className="alumno-datos">
           <h2 className="alumno-nombre mb-0">{nombre}</h2>
           <div className="alumno-meta">

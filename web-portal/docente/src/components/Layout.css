@@ -1,0 +1,312 @@
+/* Layout: barra superior, menú lateral y contenedor de la app. */
+
+/* estructura general */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--surface-translucent-92);
+  border-bottom: 1px solid var(--borde);
+  backdrop-filter: blur(10px);
+}
+
+.topbar-inner {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.logo-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex: 0 0 auto;
+  box-shadow: 0 8px 18px var(--primary-soft-28);
+}
+
+.header-brand-text b {
+  display: block;
+  font-family: "Outfit", "Segoe UI", Arial, sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+
+.header-brand-text span {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 12px 4px 4px;
+  background: var(--color-white);
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  box-shadow: 0 2px 8px var(--shadow-sm);
+}
+
+.user-chip-text b {
+  display: block;
+  font-size: 0.8rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.user-chip-text span {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.circulo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex: 0 0 auto;
+  box-shadow: 0 0 0 2px var(--color-white), 0 0 0 4px var(--color-amber-200);
+}
+
+.app-body {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 24px 28px 40px;
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.sidebar {
+  width: 260px;
+  flex: 0 0 260px;
+  position: sticky;
+  top: 100px;
+  height: calc(100vh - 140px);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px 16px;
+  background: var(--tarjeta);
+  border: 1px solid var(--borde);
+  border-radius: 22px;
+  box-shadow: 0 12px 30px var(--shadow-lg);
+  overflow-y: auto;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 999px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 6px 14px;
+}
+
+.brand-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex: 0 0 auto;
+  box-shadow: 0 8px 18px var(--primary-soft-25);
+}
+
+.brand-text b {
+  display: block;
+  font-family: "Outfit", "Segoe UI", Arial, sans-serif;
+  font-size: 0.98rem;
+  line-height: 1.15;
+}
+
+.brand-text span {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.brand-bar {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-success), var(--color-violet));
+  margin: 0 6px 8px;
+}
+
+.menu-seccion {
+  margin: 20px 10px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--color-gray-400);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 10px;
+  margin-bottom: 3px;
+  border-radius: 12px;
+  color: var(--color-text-soft);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.menu-item:hover {
+  background: var(--color-surface-alt);
+  color: var(--texto);
+}
+
+.menu-texto {
+  flex: 1 1 auto;
+}
+
+.menu-contador {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: var(--color-white);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.menu-item:focus-visible {
+  outline: 2px solid var(--naranja);
+  outline-offset: 2px;
+}
+
+.menu-item.active {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: var(--color-white);
+  box-shadow: 0 8px 18px var(--primary-soft-28);
+}
+
+.menu-item.active .menu-ico {
+  background: var(--white-translucent-22);
+  color: var(--color-white);
+}
+
+.menu-item.active .menu-contador {
+  background: var(--color-white);
+  color: var(--color-danger-strong);
+}
+
+.menu-ico {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  flex: 0 0 auto;
+}
+
+.ico-azul {
+  background: var(--color-blue-100);
+  color: var(--color-blue-600);
+}
+
+.ico-verde {
+  background: var(--color-emerald-100);
+  color: var(--color-emerald-600);
+}
+
+.ico-morado {
+  background: var(--color-violet-100);
+  color: var(--color-violet-600);
+}
+
+.ico-rosa {
+  background: var(--color-pink-100);
+  color: var(--color-pink-600);
+}
+
+.ico-naranja {
+  background: var(--color-orange-100);
+  color: var(--color-orange-600);
+}
+
+.ico-teal {
+  background: var(--color-teal-100);
+  color: var(--color-teal-600);
+}
+
+.content-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+main {
+  min-width: 0;
+}

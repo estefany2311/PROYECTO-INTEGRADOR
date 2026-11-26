@@ -8,6 +8,8 @@ import {
 } from "../api";
 import { seleccionarAula } from "../aulaSeleccionada";
 import ReproductorAudio from "../components/ReproductorAudio";
+import Avatar from "../components/Avatar";
+import BadgeEstado from "../components/BadgeEstado";
 
 // T-374 (US-32): detalle de la evidencia con el contenido del alumno y la
 // transcripción de la IA lado a lado, más el puntaje y el resultado. Consume el
@@ -40,22 +42,11 @@ const TIPOS = {
   texto: { texto: "Texto", icono: "bi-pencil-fill" },
 };
 
-const COLORES_AVATAR = ["#8B5CF6", "#2FC5F6", "#F59E0B", "#EC4899", "#10B981", "#6366F1"];
-
 const estadoDe = (clave) => ESTADOS[clave] || ESTADOS.pendiente;
 const tipoDe = (clave) => TIPOS[clave] || { texto: clave || "Evidencia", icono: "bi-file-earmark-text-fill" };
 
 const nombreCompleto = (evidencia) =>
   [evidencia?.nombres, evidencia?.apellidos].filter(Boolean).join(" ").trim();
-
-const iniciales = (nombres = "", apellidos = "") => {
-  const primera = nombres.trim().charAt(0);
-  const segunda = apellidos.trim().charAt(0);
-  return `${primera}${segunda}`.toUpperCase() || "?";
-};
-
-const colorAvatar = (id) =>
-  COLORES_AVATAR[Number(id || 0) % COLORES_AVATAR.length];
 
 const formatearFecha = (valor) => {
   if (!valor) return "—";
@@ -284,13 +275,12 @@ export default function DetalleEvidencia() {
         aria-labelledby="titulo-evidencia"
       >
         <div className="detalle-hero-main">
-          <span
+          <Avatar
             className="detalle-avatar"
-            style={{ background: colorAvatar(detalle?.estudianteId || evidenciaId) }}
-            aria-hidden="true"
-          >
-            {detalle ? iniciales(detalle.nombres, detalle.apellidos) : "?"}
-          </span>
+            nombres={detalle?.nombres}
+            apellidos={detalle?.apellidos}
+            colorId={detalle?.estudianteId || evidenciaId}
+          />
           <div>
             <Link to="/evidencias" className="detalle-volver">
               <i className="bi bi-arrow-left" aria-hidden="true" />
@@ -310,10 +300,12 @@ export default function DetalleEvidencia() {
 
         <div className="detalle-evidencia-acciones">
           {detalle && (
-            <span className={`detalle-estado ${estado.clase}`}>
-              <i className={`bi ${estado.icono}`} aria-hidden="true" />
-              {estado.texto}
-            </span>
+            <BadgeEstado
+              className="detalle-estado"
+              variante={estado.clase}
+              icono={estado.icono}
+              texto={estado.texto}
+            />
           )}
           <button
             type="button"
@@ -483,9 +475,11 @@ export default function DetalleEvidencia() {
               <div>
                 <dt>Estado</dt>
                 <dd>
-                  <span className={`detalle-estado ${estado.clase}`}>
-                    {estado.texto}
-                  </span>
+                  <BadgeEstado
+                    className="detalle-estado"
+                    variante={estado.clase}
+                    texto={estado.texto}
+                  />
                 </dd>
               </div>
               <div>

@@ -1,0 +1,166 @@
+/* Mis aulas: formulario y lista de aulas. */
+
+/* estilos del formulario de aulas (US-23) */
+.app {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.tarjeta {
+  background: var(--tarjeta);
+  border: 1px solid var(--borde);
+  border-top: 4px solid var(--naranja);
+  border-radius: 18px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 8px 24px var(--shadow-md);
+}
+
+.tarjeta h2 {
+  margin: 0 0 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--borde);
+  font-size: 1.15rem;
+  color: var(--texto);
+}
+
+label.campo {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+label.campo input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+  color: var(--texto);
+}
+
+label.campo input:focus {
+  outline: none;
+  border-color: var(--naranja);
+  box-shadow: 0 0 0 0.2rem var(--primary-soft-18);
+}
+
+fieldset {
+  margin: 1.2rem 0 0;
+  padding: 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+}
+
+legend {
+  float: none;
+  width: auto;
+  padding: 0 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.grados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--superficie);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.chip:hover {
+  border-color: var(--naranja);
+}
+
+.chip:has(input:checked) {
+  border-color: var(--naranja);
+  background: var(--color-orange-50);
+  color: var(--color-primary-dark);
+}
+
+.chip input {
+  accent-color: var(--naranja);
+}
+
+.boton {
+  margin-top: 1.2rem;
+  width: 100%;
+  padding: 0.8rem;
+  font-weight: 700;
+  color: var(--color-white);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px var(--primary-soft-25);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.boton:hover {
+  background: linear-gradient(135deg, var(--color-primary-strong), var(--color-primary));
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px var(--primary-soft-30);
+}
+
+.error {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--rojo);
+}
+
+.mensaje {
+  padding: 0.65rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-size: 0.88rem;
+}
+
+.mensaje.ok {
+  background: var(--color-emerald-50);
+  border-color: var(--color-emerald-200);
+  color: var(--color-success-strong);
+}
+
+.mensaje.fallo {
+  background: var(--color-rose-50);
+  border-color: var(--color-rose-200);
+  color: var(--color-danger-strong);
+}
+
+.aulas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.aula {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.aula:last-child {
+  border-bottom: 0;
+}
+
+.aula-codigo {
+  color: var(--color-purple-600);
+  letter-spacing: 2px;
+}
+

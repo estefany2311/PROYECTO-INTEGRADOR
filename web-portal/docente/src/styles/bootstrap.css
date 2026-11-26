@@ -1,0 +1,144 @@
+/* Ajustes de Bootstrap: botones, formularios, tablas y foco. */
+
+/* botón principal en naranja */
+.btn-primary {
+  --bs-btn-color: var(--color-white);
+  --bs-btn-bg: var(--color-primary);
+  --bs-btn-border-color: var(--color-primary);
+  --bs-btn-hover-color: var(--color-white);
+  --bs-btn-hover-bg: var(--color-primary-strong);
+  --bs-btn-hover-border-color: var(--color-primary-strong);
+  --bs-btn-active-color: var(--color-white);
+  --bs-btn-active-bg: var(--color-primary-dark);
+  --bs-btn-active-border-color: var(--color-primary-dark);
+  --bs-btn-disabled-color: var(--color-white);
+  --bs-btn-disabled-bg: var(--color-primary);
+  --bs-btn-disabled-border-color: var(--color-primary);
+  background-image: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  border: 0;
+  border-radius: 12px;
+  font-weight: 700;
+  padding: 0.55rem 1.15rem;
+  box-shadow: 0 6px 14px var(--primary-soft-25);
+}
+
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  background-image: linear-gradient(135deg, var(--color-primary-strong), var(--color-primary));
+  box-shadow: 0 8px 18px var(--primary-soft-32);
+}
+
+.btn-primary:disabled {
+  background-image: none;
+  background-color: var(--color-gray-200);
+  border-color: var(--color-gray-200);
+  color: var(--color-gray-400);
+  opacity: 1;
+  box-shadow: none;
+}
+
+.btn-sm.btn-primary {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.btn.rounded-pill {
+  border-radius: 999px;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--color-primary-dark);
+  --bs-btn-border-color: var(--color-primary);
+  --bs-btn-hover-color: var(--color-white);
+  --bs-btn-hover-bg: var(--color-primary);
+  --bs-btn-hover-border-color: var(--color-primary);
+  --bs-btn-active-color: var(--color-white);
+  --bs-btn-active-bg: var(--color-primary-strong);
+  --bs-btn-active-border-color: var(--color-primary-strong);
+  --bs-btn-disabled-color: var(--color-primary-dark);
+  --bs-btn-disabled-border-color: var(--color-amber-300);
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--color-text-muted);
+  --bs-btn-border-color: var(--color-gray-300);
+  --bs-btn-hover-color: var(--color-text);
+  --bs-btn-hover-bg: var(--color-gray-100);
+  --bs-btn-hover-border-color: var(--color-gray-300);
+  --bs-btn-active-color: var(--color-text);
+  --bs-btn-active-bg: var(--color-gray-200);
+  --bs-btn-active-border-color: var(--color-gray-300);
+}
+
+.btn-outline-success {
+  --bs-btn-color: var(--color-success-strong);
+  --bs-btn-border-color: var(--color-success);
+  --bs-btn-hover-color: var(--color-white);
+  --bs-btn-hover-bg: var(--color-success);
+  --bs-btn-hover-border-color: var(--color-success);
+  --bs-btn-active-color: var(--color-white);
+  --bs-btn-active-bg: var(--color-emerald-600);
+  --bs-btn-active-border-color: var(--color-emerald-600);
+}
+
+.btn-outline-danger {
+  --bs-btn-color: var(--color-danger-strong);
+  --bs-btn-border-color: var(--color-danger);
+  --bs-btn-hover-color: var(--color-white);
+  --bs-btn-hover-bg: var(--color-danger);
+  --bs-btn-hover-border-color: var(--color-danger);
+  --bs-btn-active-color: var(--color-white);
+  --bs-btn-active-bg: var(--color-rose-600);
+  --bs-btn-active-border-color: var(--color-rose-600);
+}
+
+.form-control,
+.form-select {
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background-color: var(--superficie);
+  color: var(--texto);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.form-select {
+  padding-right: 2.2rem;
+}
+
+.form-control::placeholder {
+  color: var(--color-gray-400);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--naranja);
+  background-color: var(--color-white);
+  box-shadow: 0 0 0 0.2rem var(--primary-soft-18);
+}
+
+.form-select.rounded-pill {
+  border-radius: 999px;
+  padding-left: 1rem;
+  padding-right: 2.2rem;
+}
+
+.form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.form-text {
+  color: var(--muted);
+}
+
+.form-check-input:checked {
+  background-color: var(--naranja);
+  border-color: var(--naranja);
+}
+
+.form-check-input:focus {
+  border-color: var(--naranja);
+  box-shadow: 0 0 0 0.2rem var(--primary-soft-18);
+}

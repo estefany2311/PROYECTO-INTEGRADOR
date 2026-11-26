@@ -1,0 +1,237 @@
+/* ==========================================================================
+   Design tokens del Portal Docente
+   --------------------------------------------------------------------------
+   Este es el único archivo con valores de color literales del portal.
+   Las pantallas y componentes consumen estos tokens con var(--token).
+   Al cambiar un token aquí, el cambio se aplica en todo el portal.
+   ========================================================================== */
+
+:root {
+  /* ------------------------------------------------------------------ *
+   * 1. Paleta base                                                     *
+   * ------------------------------------------------------------------ */
+
+  /* Neutros */
+  --color-white: #FFFFFF;
+  --color-white-soft: #FDFDFD;
+  --color-gray-50: #F9FAFB;
+  --color-gray-100: #F3F4F6;
+  --color-gray-200: #E5E7EB;
+  --color-gray-300: #D1D5DB;
+  --color-gray-400: #9CA3AF;
+  --color-gray-500: #6B7280;
+  --color-gray-600: #4B5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1F2937;
+  --color-gray-900: #111827;
+  --color-slate-50: #F8FAFC;
+  --color-slate-100: #F1F3F7;
+  --color-slate-200: #E2E8F0;
+  --color-slate-300: #CBD5E1;
+  --color-slate-500: #64748B;
+  --color-slate-900: #0F172A;
+
+  /* Ámbar (marca) */
+  --color-amber-50: #FFFBEB;
+  --color-amber-100: #FEF3C7;
+  --color-amber-200: #FDE68A;
+  --color-amber-300: #FCD34D;
+  --color-amber-400: #FBBF24;
+  --color-amber-500: #F59E0B;
+  --color-amber-600: #D97706;
+  --color-amber-700: #B45309;
+  --color-amber-800: #92400E;
+
+  /* Naranja y amarillo */
+  --color-orange-50: #FFF7ED;
+  --color-orange-100: #FFEDD5;
+  --color-orange-500: #F97316;
+  --color-orange-600: #EA580C;
+  --color-orange-700: #C2410C;
+  --color-yellow-200: #FEF08A;
+
+  /* Rosa, rojo y rosa fuerte */
+  --color-rose-25: #FFF7F7;
+  --color-rose-50: #FFF1F2;
+  --color-rose-100: #FFE4E6;
+  --color-rose-200: #FECDD3;
+  --color-rose-300: #FDA4AF;
+  --color-rose-500: #F43F5E;
+  --color-rose-600: #E11D48;
+  --color-rose-700: #BE123C;
+  --color-rose-800: #9F1239;
+  --color-red-100: #FEE2E2;
+  --color-red-500: #F51E38;
+  --color-red-600: #C0152B;
+  --color-red-700: #B91C1C;
+  --color-pink-100: #FCE7F3;
+  --color-pink-500: #EC4899;
+  --color-pink-600: #DB2777;
+
+  /* Verde, esmeralda y teal */
+  --color-green-25: #F7FEF9;
+  --color-green-50: #F0FDF4;
+  --color-green-500: #22C55E;
+  --color-emerald-50: #ECFDF5;
+  --color-emerald-100: #D1FAE5;
+  --color-emerald-200: #A7F3D0;
+  --color-emerald-300: #6EE7B7;
+  --color-emerald-500: #10B981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-teal-100: #CCFBF1;
+  --color-teal-500: #14B8A6;
+  --color-teal-600: #0D9488;
+
+  /* Oliva */
+  --color-olive-50: #F2F7EA;
+  --color-olive-100: #E3EAD6;
+  --color-olive-500: #6B7C4A;
+  --color-olive-700: #4D5E2E;
+
+  /* Azul, celeste e índigo */
+  --color-blue-50: #EFF6FF;
+  --color-blue-100: #DBEAFE;
+  --color-blue-200: #BFDBFE;
+  --color-blue-500: #3B82F6;
+  --color-blue-600: #2563EB;
+  --color-blue-700: #1D4ED8;
+  --color-blue-900: #1E3A8A;
+  --color-sky-50: #F0F9FF;
+  --color-sky-100: #E0F2FE;
+  --color-sky-500: #0EA5E9;
+  --color-sky-600: #0284C7;
+  --color-sky-700: #0369A1;
+  --color-sky-900: #0C4A6E;
+  --color-cyan-400: #2FC5F6;
+  --color-cyan-700: #0B7FA6;
+  --color-indigo-500: #6366F1;
+
+  /* Violeta y púrpura */
+  --color-violet-50: #F5F3FF;
+  --color-violet-100: #EDE9FE;
+  --color-violet-200: #DDD6FE;
+  --color-violet-300: #C4B5FD;
+  --color-violet-500: #8B5CF6;
+  --color-violet-600: #7C3AED;
+  --color-violet-700: #6D28D9;
+  --color-purple-50: #FAF5FF;
+  --color-purple-600: #9B22E1;
+
+  /* Superficies y bordes cálidos */
+  --color-bg: #F7F5EF;
+  --color-surface: #FFFDF8;
+  --color-surface-soft: #F8F5EE;
+  --color-surface-hover: #FBF8F1;
+  --color-surface-head: #FAF7F0;
+  --color-surface-alt: #FBF7EF;
+  --color-cream: #FDF6E7;
+  --color-white-rose: #FFFDFD;
+  --color-border: #EAE6DC;
+  --color-border-soft: #F1EDE4;
+  --color-border-strong: #E5DED0;
+  --color-border-warm: #EDE7DA;
+
+  /* ------------------------------------------------------------------ *
+   * 2. Tokens semánticos                                               *
+   * ------------------------------------------------------------------ */
+  --color-text: var(--color-gray-800);
+  --color-text-strong: var(--color-gray-700);
+  --color-text-soft: var(--color-gray-600);
+  --color-text-muted: var(--color-gray-500);
+  --color-text-faint: var(--color-gray-400);
+
+  /* amber(es amarillo) Paleta principal del portal (cambia el número: más bajo = más claro, más alto = más oscuro) */
+    --color-primary: var(--color-amber-300);        /* Color base: botón, menú activo, logo y bordes */
+    --color-primary-strong: var(--color-amber-400); /* Color al pasar el mouse encima del botón (hover) */
+    --color-primary-dark: var(--color-amber-500);   /* Color al presionar/hacer clic en el botón (active) */
+    --color-primary-light: var(--color-amber-200);  /* Tono más claro para el degradado del botón */
+  --color-success: var(--color-emerald-500);
+  --color-success-strong: var(--color-emerald-700);
+  --color-danger: var(--color-rose-500);
+  --color-danger-strong: var(--color-rose-700);
+  --color-info: var(--color-blue-500);
+  --color-violet: var(--color-violet-500);
+  --color-pink: var(--color-pink-500);
+  --color-teal: var(--color-teal-500);
+
+  /* Semáforo */
+  --semaforo-verde: var(--color-green-500);
+  --semaforo-amarillo: var(--color-amber-500);
+  --semaforo-rojo: var(--color-rose-500);
+  --semaforo-gris: var(--color-gray-400);
+
+  /* Gráfico de evolución */
+  --competencia-lectura: var(--color-violet-500);
+  --competencia-escritura: var(--color-amber-500);
+  --competencia-oralidad: var(--color-pink-500);
+
+  /* Avatares (se consumen desde JS) */
+  --avatar-1: var(--color-violet-500);
+  --avatar-2: var(--color-cyan-400);
+  --avatar-3: var(--color-amber-500);
+  --avatar-4: var(--color-pink-500);
+  --avatar-5: var(--color-emerald-500);
+  --avatar-6: var(--color-indigo-500);
+  --inicial-1: var(--color-purple-600);
+  --inicial-2: var(--color-cyan-400);
+  --inicial-3: var(--color-amber-500);
+  --inicial-4: var(--color-red-500);
+  --inicial-5: var(--color-green-500);
+  --inicial-6: var(--color-indigo-500);
+
+  /* Estadísticas de alumnos */
+  --stat-morado-bg: rgba(155, 34, 225, 0.12);
+  --stat-morado-fg: var(--color-purple-600);
+  --stat-celeste-bg: rgba(47, 197, 246, 0.16);
+  --stat-celeste-fg: var(--color-cyan-700);
+  --stat-rojo-bg: rgba(245, 30, 56, 0.12);
+  --stat-rojo-fg: var(--color-red-600);
+
+  /* ------------------------------------------------------------------ *
+   * 3. Sombras y capas con transparencia                               *
+   * ------------------------------------------------------------------ */
+  --overlay: rgba(31, 41, 55, 0.45);
+  --shadow-xs: rgba(31, 41, 55, 0.035);
+  --shadow-sm: rgba(31, 41, 55, 0.04);
+  --shadow-md: rgba(31, 41, 55, 0.05);
+  --shadow-lg: rgba(31, 41, 55, 0.06);
+  --shadow-xl: rgba(31, 41, 55, 0.14);
+  --shadow-2xl: rgba(31, 41, 55, 0.18);
+  --shadow-blue: rgba(15, 23, 42, 0.04);
+  --primary-soft-14: rgba(245, 158, 11, 0.14);
+  --primary-soft-16: rgba(245, 158, 11, 0.16);
+  --primary-soft-18: rgba(245, 158, 11, 0.18);
+  --primary-soft-25: rgba(245, 158, 11, 0.25);
+  --primary-soft-28: rgba(245, 158, 11, 0.28);
+  --primary-soft-30: rgba(245, 158, 11, 0.3);
+  --primary-soft-32: rgba(245, 158, 11, 0.32);
+  --danger-soft-06: rgba(190, 18, 60, 0.06);
+  --danger-soft-10: rgba(244, 63, 94, 0.10);
+  --danger-soft-14: rgba(244, 63, 94, 0.14);
+  --success-soft-16: rgba(34, 197, 94, 0.16);
+  --neutral-soft-14: rgba(156, 163, 175, 0.14);
+  --surface-translucent-82: rgba(255, 253, 248, 0.82);
+  --surface-translucent-92: rgba(255, 253, 248, 0.92);
+  --white-translucent-22: rgba(255, 255, 255, 0.22);
+  --white-translucent-72: rgba(255, 255, 255, 0.72);
+
+  /* ------------------------------------------------------------------ *
+   * 4. Alias heredados                                                 *
+   * ------------------------------------------------------------------ */
+  --morado: var(--color-violet-500);
+  --azul: var(--color-blue-500);
+  --amarillo: var(--color-amber-500);
+  --rojo: var(--color-rose-500);
+  --fondo: var(--color-bg);
+  --superficie: var(--color-surface);
+  --tarjeta: var(--color-white);
+  --borde: var(--color-border);
+  --texto: var(--color-text);
+  --muted: var(--color-text-muted);
+  --naranja: var(--color-primary);
+  --naranja-oscuro: var(--color-primary-strong);
+  --verde: var(--color-success);
+  --teal: var(--color-teal);
+  --rosa: var(--color-pink);
+}

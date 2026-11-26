@@ -112,14 +112,6 @@ export default function Layout() {
           </div>
 
           <div className="topbar-actions">
-            <span className="sprint-pill">
-              <i className="bi bi-stars" />
-              Sprint 3
-            </span>
-            <span className="icon-btn" aria-hidden="true" title="Notificaciones">
-              <i className="bi bi-bell" />
-              <span className="dot" />
-            </span>
             <div className="user-chip">
               <span className="circulo">N</span>
               <div className="user-chip-text">
@@ -172,26 +164,6 @@ export default function Layout() {
               </div>
             ))}
           </nav>
-
-          <div className="sprint-card">
-            <div className="sprint-card-top">
-              <span>Sprint 3</span>
-              <span className="sprint-status">En curso</span>
-            </div>
-            <b>Módulo Docente</b>
-            <div className="sprint-bar">
-              <span />
-            </div>
-            <small>Dashboard y evidencias disponibles</small>
-          </div>
-
-          <div className="sidebar-note">
-            <i className="bi bi-lightbulb-fill" />
-            <span>
-              <b>Consejo:</b> comparte el código de tu aula con tus alumnos para que
-              encuentren sus lecturas.
-            </span>
-          </div>
         </aside>
 
         <div className="content-wrap">

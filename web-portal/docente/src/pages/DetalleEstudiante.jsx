@@ -4,6 +4,7 @@ import { obtenerDetalleEstudiante } from "../api";
 import { seleccionarAula } from "../aulaSeleccionada";
 import GraficoEvolucion from "../components/GraficoEvolucion";
 import FortalezasDificultades from "../components/FortalezasDificultades";
+import Avatar from "../components/Avatar";
 
 // T-292 (US-29): pantalla de detalle del estudiante con el resumen por
 // competencia que devuelve el endpoint de T-290. El semáforo no se recalcula
@@ -55,22 +56,11 @@ const ESTADOS_NIVEL = {
   },
 };
 
-const COLORES_AVATAR = ["#8B5CF6", "#2FC5F6", "#F59E0B", "#EC4899", "#10B981", "#6366F1"];
-
 const datosSemaforo = (color) => SEMAFORO[color] || SEMAFORO.gris;
 const estadoDeNivel = (estado) => ESTADOS_NIVEL[estado] || ESTADOS_NIVEL.bloqueado;
 
 const nombreCompleto = (estudiante) =>
   [estudiante?.nombres, estudiante?.apellidos].filter(Boolean).join(" ").trim();
-
-const iniciales = (nombres = "", apellidos = "") => {
-  const primera = nombres.trim().charAt(0);
-  const segunda = apellidos.trim().charAt(0);
-  return `${primera}${segunda}`.toUpperCase() || "?";
-};
-
-const colorAvatar = (id) =>
-  COLORES_AVATAR[Number(id || 0) % COLORES_AVATAR.length];
 
 const promedioVisible = (valor) => (valor == null ? "—" : Math.round(valor));
 
@@ -153,13 +143,12 @@ export default function DetalleEstudiante() {
     <div className="detalle-page">
       <section className="dashboard-hero detalle-hero" aria-labelledby="titulo-detalle">
         <div className="detalle-hero-main">
-          <span
+          <Avatar
             className="detalle-avatar"
-            style={{ background: colorAvatar(detalle?.estudianteId || estudianteId) }}
-            aria-hidden="true"
-          >
-            {detalle ? iniciales(detalle.nombres, detalle.apellidos) : "?"}
-          </span>
+            nombres={detalle?.nombres}
+            apellidos={detalle?.apellidos}
+            colorId={detalle?.estudianteId || estudianteId}
+          />
           <div>
             <Link to="/dashboard" className="detalle-volver">
               <i className="bi bi-arrow-left" aria-hidden="true" />

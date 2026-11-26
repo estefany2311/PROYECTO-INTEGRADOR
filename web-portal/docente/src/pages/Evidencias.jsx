@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { listarAulas, listarEvidenciasPendientes } from "../api";
 import { obtenerAulaSeleccionada, seleccionarAula } from "../aulaSeleccionada";
 import ReproductorAudio from "../components/ReproductorAudio";
+import Avatar from "../components/Avatar";
 
 // T-299 (US-31): lista de evidencias pendientes de revisión con filtro por tipo.
 // Consume el endpoint de T-298, que ya devuelve el alumno, su grado, el nivel y
@@ -12,23 +13,12 @@ const TIPOS = [
   { clave: "texto", texto: "Texto", icono: "bi-pencil-fill" },
 ];
 
-const COLORES_AVATAR = ["#8B5CF6", "#2FC5F6", "#F59E0B", "#EC4899", "#10B981", "#6366F1"];
-
 const tipoDe = (clave) =>
   TIPOS.find(({ clave: valor }) => valor === clave) || {
     clave: clave || "texto",
     texto: clave || "Evidencia",
     icono: "bi-file-earmark-text-fill",
   };
-
-const iniciales = (nombres = "", apellidos = "") => {
-  const primera = nombres.trim().charAt(0);
-  const segunda = apellidos.trim().charAt(0);
-  return `${primera}${segunda}`.toUpperCase() || "?";
-};
-
-const colorAvatar = (id) =>
-  COLORES_AVATAR[Number(id || 0) % COLORES_AVATAR.length];
 
 const nombreCompleto = (evidencia) =>
   [evidencia?.nombres, evidencia?.apellidos].filter(Boolean).join(" ").trim();
@@ -319,13 +309,12 @@ function TarjetaEvidencia({ evidencia, aulaId }) {
         aria-label={`Evidencia de ${nombre || "estudiante"}`}
       >
         <div className="evidencia-head">
-          <span
+          <Avatar
             className="evidencia-avatar"
-            style={{ background: colorAvatar(evidencia.estudianteId) }}
-            aria-hidden="true"
-          >
-            {iniciales(evidencia.nombres, evidencia.apellidos)}
-          </span>
+            nombres={evidencia.nombres}
+            apellidos={evidencia.apellidos}
+            colorId={evidencia.estudianteId}
+          />
           <div className="evidencia-datos">
             <h3 className="evidencia-nombre">{nombre || "Estudiante"}</h3>
             <span className="evidencia-meta">{meta || "Sin nivel"}</span>
