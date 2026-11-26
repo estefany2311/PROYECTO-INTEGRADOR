@@ -17,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -53,8 +52,15 @@ private val HojaDerecha = Color(0xFFF4FAFF)
 private val LineaHoja = Color(0xFFB8C4D6)
 private val Estrella = Color(0xFFFF9F1C)
 
+// T-441: soloCara dibuja solo la cabeza (como en el mockup) y feliz cierra los ojos y abre la boca
 @Composable
-fun Koala(modifier: Modifier = Modifier, tamano: Dp = 180.dp, saludando: Boolean = true) {
+fun Koala(
+    modifier: Modifier = Modifier,
+    tamano: Dp = 180.dp,
+    saludando: Boolean = true,
+    soloCara: Boolean = false,
+    feliz: Boolean = false
+) {
     val animacion = rememberInfiniteTransition(label = "koala")
     // Flota 8 de 200 unidades hacia arriba y vuelve (3,5 s la vuelta completa)
     val flota by animacion.animateFloat(
@@ -80,18 +86,24 @@ fun Koala(modifier: Modifier = Modifier, tamano: Dp = 180.dp, saludando: Boolean
         label = "mano"
     )
 
+    // Sin cuerpo, la cabeza termina en 160 de 200: el lienzo es más bajo para no dejar un hueco abajo
     Canvas(
         modifier
-            .size(tamano)
-            .graphicsLayer { translationY = flota / 200f * size.height }
+            .size(width = tamano, height = if (soloCara) tamano * 0.8f else tamano)
+            .graphicsLayer { translationY = flota / 200f * size.width }
             .semantics { contentDescription = "Koala, la mascota de la plataforma" }
     ) {
-        dibujarKoala(escala = size.width / 200f, anguloMano = if (saludando) mano else null)
+        dibujarKoala(
+            escala = size.width / 200f,
+            anguloMano = if (saludando && !soloCara) mano else null,
+            soloCara = soloCara,
+            feliz = feliz
+        )
     }
 }
 
 // Dibuja el koala. Las coordenadas son las del SVG original (0..200) multiplicadas por la escala
-private fun DrawScope.dibujarKoala(escala: Float, anguloMano: Float?) {
+private fun DrawScope.dibujarKoala(escala: Float, anguloMano: Float?, soloCara: Boolean, feliz: Boolean) {
     fun p(x: Float, y: Float) = Offset(x * escala, y * escala)
     fun circulo(color: Color, cx: Float, cy: Float, r: Float, alfa: Float = 1f) =
         drawCircle(color, radius = r * escala, center = p(cx, cy), alpha = alfa)
@@ -113,28 +125,51 @@ private fun DrawScope.dibujarKoala(escala: Float, anguloMano: Float?) {
     circulo(GrisOreja, 152f, 62f, 34f); circulo(RosaOreja, 152f, 62f, 20f)
 
     // Cuerpo
-    ovalo(GrisOreja, 100f, 168f, 52f, 34f)
-    ovalo(GrisPanza, 100f, 172f, 32f, 22f)
+    if (!soloCara) {
+        ovalo(GrisOreja, 100f, 168f, 52f, 34f)
+        ovalo(GrisPanza, 100f, 172f, 32f, 22f)
+    }
 
     // Cabeza
     ovalo(GrisCabeza, 100f, 98f, 60f, 54f)
 
-    // Ojos con brillo
-    circulo(Ojo, 76f, 92f, 8f); circulo(Ojo, 124f, 92f, 8f)
-    circulo(Color.White, 79f, 89f, 3f); circulo(Color.White, 127f, 89f, 3f)
+    // Ojos con brillo; feliz: ojitos cerrados como arcos
+    if (feliz) {
+        for (cx in listOf(76f, 124f)) {
+            val ojo = Path().apply {
+                moveTo((cx - 9f) * escala, 95f * escala)
+                quadraticTo(cx * escala, 84f * escala, (cx + 9f) * escala, 95f * escala)
+            }
+            drawPath(ojo, Ojo, style = Stroke(width = 4.5f * escala, cap = StrokeCap.Round))
+        }
+    } else {
+        circulo(Ojo, 76f, 92f, 8f); circulo(Ojo, 124f, 92f, 8f)
+        circulo(Color.White, 79f, 89f, 3f); circulo(Color.White, 127f, 89f, 3f)
+    }
 
     // Nariz y sonrisa
     ovalo(Nariz, 100f, 112f, 15f, 18f)
     ovalo(BrilloNariz, 95f, 104f, 4f, 5f)
-    val sonrisa = Path().apply {
-        moveTo(90f * escala, 134f * escala)
-        quadraticTo(100f * escala, 142f * escala, 110f * escala, 134f * escala)
+    if (feliz) {
+        // Boca abierta de alegría
+        val boca = Path().apply {
+            moveTo(86f * escala, 132f * escala)
+            quadraticTo(100f * escala, 152f * escala, 114f * escala, 132f * escala)
+            close()
+        }
+        drawPath(boca, Nariz)
+    } else {
+        val sonrisa = Path().apply {
+            moveTo(90f * escala, 134f * escala)
+            quadraticTo(100f * escala, 142f * escala, 110f * escala, 134f * escala)
+        }
+        drawPath(sonrisa, Nariz, style = Stroke(width = 3.5f * escala, cap = StrokeCap.Round))
     }
-    drawPath(sonrisa, Nariz, style = Stroke(width = 3.5f * escala, cap = StrokeCap.Round))
 
     // Cachetes
     circulo(Cachete, 62f, 118f, 9f, alfa = 0.7f); circulo(Cachete, 138f, 118f, 9f, alfa = 0.7f)
 
+    if (!soloCara) {
     // Libro abierto
     poligono(TapaIzquierda, 100f, 160f, 58f, 150f, 58f, 186f, 100f, 196f)
     poligono(TapaDerecha, 100f, 160f, 142f, 150f, 142f, 186f, 100f, 196f)
@@ -150,6 +185,7 @@ private fun DrawScope.dibujarKoala(escala: Float, anguloMano: Float?) {
     } else {
         ovalo(GrisOreja, 140f, 166f, 11f, 9f)
     }
+    }
 
     // Estrellita naranja
     poligono(
@@ -159,37 +195,43 @@ private fun DrawScope.dibujarKoala(escala: Float, anguloMano: Float?) {
     )
 }
 
-// Globo de diálogo blanco con la puntita hacia el koala
+// Globo de diálogo blanco con relieve (T-441) y la puntita hacia el koala
 @Composable
 fun BurbujaKoala(texto: String, modifier: Modifier = Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            texto,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = ColoresAventura.TextoOscuro,
-            modifier = Modifier
-                .shadow(6.dp, RoundedCornerShape(16.dp))
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color.White)
-                .padding(horizontal = 18.dp, vertical = 10.dp)
-        )
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(18.dp))
+                .background(ColoresAventura.Linea)
+                .padding(start = 2.dp, end = 2.dp, top = 2.dp, bottom = 5.dp)
+        ) {
+            Text(
+                texto,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Black,
+                color = ColoresAventura.TextoOscuro,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White)
+                    .padding(horizontal = 18.dp, vertical = 10.dp)
+            )
+        }
         Canvas(Modifier.size(width = 18.dp, height = 9.dp)) {
             val punta = Path().apply {
                 moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(size.width / 2, size.height); close()
             }
-            drawPath(punta, Color.White)
+            drawPath(punta, ColoresAventura.Linea)
         }
     }
 }
 
 // El koala con su saludo, como en el inicio del portal Admin
 @Composable
-fun KoalaSaludando(mensaje: String, modifier: Modifier = Modifier, tamano: Dp = 180.dp) {
+fun KoalaSaludando(mensaje: String, modifier: Modifier = Modifier, tamano: Dp = 180.dp, soloCara: Boolean = false) {
     Column(modifier.testTag("koala"), horizontalAlignment = Alignment.CenterHorizontally) {
         BurbujaKoala(mensaje)
         Spacer(Modifier.height(4.dp))
-        Koala(tamano = tamano)
+        Koala(tamano = tamano, soloCara = soloCara)
     }
 }
 
