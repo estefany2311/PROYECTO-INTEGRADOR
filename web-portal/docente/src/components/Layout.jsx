@@ -6,6 +6,8 @@ import {
   seleccionarAula,
   suscribirAulaSeleccionada,
 } from "../aulaSeleccionada";
+import { salir } from "../auth";
+import { obtenerSesion } from "../sesion";
 
 const textoContador = (n) => `${n} ${n === 1 ? "alumno" : "alumnos"} en rojo`;
 
@@ -46,6 +48,7 @@ const MENU = [
 
 export default function Layout() {
   const [alumnosEnRojo, setAlumnosEnRojo] = useState(0);
+  const nombreDocente = obtenerSesion()?.docente?.nombre || "Docente";
 
   // T-284: contador del aula activa usando el filtro soloRojo de T-282.
   useEffect(() => {
@@ -113,12 +116,22 @@ export default function Layout() {
 
           <div className="topbar-actions">
             <div className="user-chip">
-              <span className="circulo">N</span>
+              <span className="circulo" aria-hidden="true">
+                {nombreDocente.charAt(0).toUpperCase()}
+              </span>
               <div className="user-chip-text">
-                <b>Noemí De la Cruz</b>
+                <b>{nombreDocente}</b>
                 <span>Docente</span>
               </div>
             </div>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary rounded-pill"
+              onClick={salir}
+            >
+              <i className="bi bi-box-arrow-right me-1" aria-hidden="true" />
+              Cerrar sesión
+            </button>
           </div>
         </div>
       </header>

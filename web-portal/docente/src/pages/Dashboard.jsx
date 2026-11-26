@@ -246,7 +246,7 @@ export default function Dashboard() {
             </span>
           </h1>
           <p className="dashboard-sub">
-            ¡Hola, Noemí! 👋 Este es el resumen de rendimiento de tu aula hoy
+            Este es el resumen de rendimiento de tu aula hoy
             {detallesAula ? ` · ${detallesAula}` : ""}.
           </p>
         </div>

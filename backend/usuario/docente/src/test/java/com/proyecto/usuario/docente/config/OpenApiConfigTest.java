@@ -20,7 +20,7 @@ class OpenApiConfigTest {
     void defineLaInformacionDelModuloDocente() {
         assertEquals("API Docente", api.getInfo().getTitle());
         assertEquals("1.0.0", api.getInfo().getVersion());
-        assertTrue(api.getInfo().getDescription().contains("X-Docente-Id"));
+        assertTrue(api.getInfo().getDescription().contains("Authorization: Bearer"));
     }
 
     @Test
@@ -29,14 +29,13 @@ class OpenApiConfigTest {
     }
 
     @Test
-    void defineElHeaderDelDocenteYElTokenDelAlumno() {
+    void defineElTokenDelDocenteYElDelAlumno() {
         SecurityScheme docente = api.getComponents().getSecuritySchemes().get("docenteId");
         SecurityScheme alumno = api.getComponents().getSecuritySchemes().get("tokenEstudiante");
 
         assertNotNull(docente);
-        assertEquals(SecurityScheme.Type.APIKEY, docente.getType());
-        assertEquals(SecurityScheme.In.HEADER, docente.getIn());
-        assertEquals("X-Docente-Id", docente.getName());
+        assertEquals(SecurityScheme.Type.HTTP, docente.getType());
+        assertEquals("bearer", docente.getScheme());
 
         assertNotNull(alumno);
         assertEquals(SecurityScheme.Type.HTTP, alumno.getType());

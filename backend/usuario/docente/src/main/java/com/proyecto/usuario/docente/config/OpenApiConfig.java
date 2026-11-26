@@ -6,6 +6,7 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
+import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +28,17 @@ public class OpenApiConfig {
     @Value("${app.openapi.servidor:http://localhost:8081}")
     private String servidor = "http://localhost:8081";
 
+    // X-Docente-Id lo escribe FiltroSesionDocente a partir del token: no se pide en Swagger
+    @Bean
+    public OperationCustomizer ocultarCabeceraDocente() {
+        return (operacion, metodo) -> {
+            if (operacion.getParameters() != null) {
+                operacion.getParameters().removeIf(p -> "X-Docente-Id".equals(p.getName()));
+            }
+            return operacion;
+        };
+    }
+
     @Bean
     public OpenAPI docenteOpenAPI() {
         return new OpenAPI()
@@ -38,17 +50,17 @@ public class OpenApiConfig {
                                 asignaciones, grupos, avatares, PIN, dashboard, detalle,
                                 evidencias y el mapa de la tablet.
 
-                                Las rutas /api/docente requieren el header X-Docente-Id.
+                                Las rutas /api/docente requieren Authorization: Bearer <token>
+                                de POST /api/auth/login (cuenta con rol DOCENTE).
                                 GET /api/estudiante/mapa requiere Authorization: Bearer <token>.
-                                GET /api/docente/grados y /api/docente/avatares no piden header.
+                                GET /api/docente/grados y /api/docente/avatares no piden token.
                                 """))
                 .servers(List.of(new Server().url(servidor).description("Módulo Docente")))
                 .components(new Components()
                         .addSecuritySchemes("docenteId", new SecurityScheme()
-                                .type(SecurityScheme.Type.APIKEY)
-                                .in(SecurityScheme.In.HEADER)
-                                .name("X-Docente-Id")
-                                .description("Id del docente autenticado."))
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .description("Token de acceso de POST /api/auth/login."))
                         .addSecuritySchemes("tokenEstudiante", new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")

@@ -1,0 +1,48 @@
+/* Login docente */
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 16px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 32px 28px;
+}
+
+.login-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 16px;
+  background: var(--color-amber-500);
+  color: var(--color-white);
+  font-size: 1.6rem;
+}
+
+.login-titulo {
+  margin-bottom: 4px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.login-sub {
+  margin-bottom: 20px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* ámbar sólido y texto oscuro: el degradado claro de los botones no se leía bien */
+.login-card .btn-primary {
+  background: var(--color-amber-500);
+  color: var(--texto);
+  font-weight: 800;
+}

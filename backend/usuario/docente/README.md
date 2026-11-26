@@ -8,6 +8,7 @@ Paquete sugerido: com.proyecto.usuario.docente
 
 - Swagger UI: http://localhost:8081/swagger-ui.html
 - OpenAPI JSON: http://localhost:8081/v3/api-docs
+- Login docente: `docs/login-docente.md`
 - Postman del Sprint 4: `docs/postman-docente-sprint4.json`
 - Postman del Sprint 3: `docs/postman-docente-sprint3.json`
 - Postman del Sprint 2: `docs/postman-docente-sprint2.json`
@@ -19,7 +20,8 @@ Paquete sugerido: com.proyecto.usuario.docente
 - Resumen del Sprint 4 (US-34, US-38, US-15, US-22): `docs/sprint4.md`
 - Texto del PR del Sprint 4: `docs/pull-request-sprint4.md`
 
-Las rutas `/api/docente/**` requieren el header `X-Docente-Id` con el id del docente.
+Las rutas `/api/docente/**` requieren `Authorization: Bearer <access>` con el token
+de `POST /api/auth/login` (ver `docs/login-docente.md`).
 La colección del Sprint 3 incluye aulas, alumnos, catálogo, asignaciones, grupos,
 dashboard, detalle, evidencias y el mapa de la tablet; ajusta sus variables
 (`aulaId`, `estudianteId`, `lecturaId`, `grupoId`, `avatarId`, `tokenEstudiante`)

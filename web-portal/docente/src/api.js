@@ -1,13 +1,32 @@
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8081";
-const DOCENTE_ID = 1; // provisional, hasta que exista el login
+import { renovarSesion } from "./auth";
+import { cerrarSesion, obtenerSesion } from "./sesion";
 
-const headers = {
-  "Content-Type": "application/json",
-  "X-Docente-Id": DOCENTE_ID,
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8081";
+
+const conToken = (cabeceras = {}) => {
+  const token = obtenerSesion()?.access;
+  return token ? { ...cabeceras, Authorization: `Bearer ${token}` } : cabeceras;
 };
 
+// Llama a la API con el token del docente. El backend saca de ese token quién es.
+// Si el token venció, lo renueva y repite la petición una sola vez.
+async function llamar(ruta, { headers, ...opciones } = {}) {
+  const enviar = () =>
+    fetch(`${BASE_URL}${ruta}`, { ...opciones, headers: conToken(headers) });
+
+  let res = await enviar();
+  if (res.status === 401 && (await renovarSesion())) {
+    res = await enviar();
+    if (res.status === 401) cerrarSesion();
+  }
+  return res;
+}
+
 async function pedir(ruta, opciones = {}) {
-  const res = await fetch(`${BASE_URL}${ruta}`, { headers, ...opciones });
+  const res = await llamar(ruta, {
+    headers: { "Content-Type": "application/json" },
+    ...opciones,
+  });
   const datos = await res.json().catch(() => null);
   if (!res.ok) {
     throw new Error(datos?.mensaje || "Ocurrió un error en el servidor");
@@ -45,13 +64,12 @@ export const listarEvidenciasPendientes = (aulaId, filtros = {}) => {
   return pedir(`/api/docente/aulas/${aulaId}/evidencias${query ? `?${query}` : ""}`);
 };
 
-// T-373: audio de una evidencia (endpoint de T-372). El endpoint exige el
-// header X-Docente-Id, que un <audio src> no puede enviar, así que el archivo
-// se descarga con fetch y se reproduce desde un blob local.
+// T-373: audio de una evidencia (endpoint de T-372). El endpoint exige el token
+// del docente, que un <audio src> no puede enviar, así que el archivo se
+// descarga con fetch y se reproduce desde un blob local.
 export const descargarAudioEvidencia = async (aulaId, evidenciaId) => {
-  const res = await fetch(
-    `${BASE_URL}/api/docente/aulas/${aulaId}/evidencias/${evidenciaId}/audio`,
-    { headers: { "X-Docente-Id": DOCENTE_ID } }
+  const res = await llamar(
+    `/api/docente/aulas/${aulaId}/evidencias/${evidenciaId}/audio`
   );
   if (!res.ok) {
     const datos = await res.json().catch(() => null);
