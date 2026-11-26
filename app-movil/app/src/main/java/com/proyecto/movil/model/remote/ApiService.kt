@@ -8,6 +8,7 @@ import com.proyecto.movil.model.ConsignaNivel
 import com.proyecto.movil.model.EnviarTextoRequest
 import com.proyecto.movil.model.InicioSesionRequest
 import com.proyecto.movil.model.LecturaNivel
+import com.proyecto.movil.model.MensajeDocente
 import com.proyecto.movil.model.NivelDetalle
 import com.proyecto.movil.model.Perfil
 import com.proyecto.movil.model.RespuestaOrtografia
@@ -89,4 +90,8 @@ interface ApiService {
     // T-435: con el texto ya calificado registra el intento y desbloquea el siguiente nivel
     @POST("api/estudiante/evidencias/{evidenciaId}/completar")
     suspend fun completarEscritura(@Path("evidenciaId") evidenciaId: Long): Response<ResultadoReto>
+
+    // Comentarios del profesor para el alumno del token (los escribe el portal docente)
+    @GET("api/estudiante/mensajes")
+    suspend fun mensajes(): Response<List<MensajeDocente>>
 }

@@ -26,19 +26,24 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.proyecto.movil.model.NivelMapa
 import com.proyecto.movil.ui.theme.ColoresAventura
 import com.proyecto.movil.view.componentes.AvisoNivelBloqueado
-import com.proyecto.movil.view.componentes.BarraEstudiante
+import com.proyecto.movil.view.componentes.BarraAventura
+import com.proyecto.movil.view.componentes.MenuInferior
+import com.proyecto.movil.view.componentes.Pestana
 import com.proyecto.movil.view.componentes.DialogoSalir
 import com.proyecto.movil.view.componentes.RecorridoNiveles
 import com.proyecto.movil.viewmodel.MapaUiState
 import com.proyecto.movil.viewmodel.MapaViewModel
+import com.proyecto.movil.viewmodel.MensajesViewModel
 import kotlinx.coroutines.delay
 
-// Inicio después del PIN: barra del alumno + mapa de aventura (T-210, US-05)
+// Inicio después del PIN: barra con los contadores, la pestaña elegida y el menú inferior.
+// Aventura = mapa (T-210, US-05); Logros y Perfil usan el mismo mapa ya cargado
 @Composable
 fun PantallaMapa(
     onSalir: (codigoAula: String?) -> Unit,
     onAbrirNivel: (nivelId: Int) -> Unit = {},
-    viewModel: MapaViewModel = viewModel()
+    viewModel: MapaViewModel = viewModel(),
+    mensajesViewModel: MensajesViewModel = viewModel()
 ) {
     val sesion = viewModel.sesion
     val estado by viewModel.uiState.collectAsStateWithLifecycle()
@@ -52,6 +57,14 @@ fun PantallaMapa(
     // Se pide el mapa una vez al abrir la pantalla
     LaunchedEffect(Unit) { viewModel.cargarMapa() }
 
+    // Pestaña del menú inferior; rememberSaveable la mantiene al girar la tablet
+    var pestana by rememberSaveable { mutableStateOf(Pestana.AVENTURA) }
+    val mapa = (estado as? MapaUiState.Exito)?.mapa
+    val mensajes by mensajesViewModel.mensajes.collectAsStateWithLifecycle()
+
+    // Cada vez que se abre Logros se piden los mensajes del profesor (puede haber escrito uno nuevo)
+    LaunchedEffect(pestana) { if (pestana == Pestana.LOGROS) mensajesViewModel.cargar() }
+
     // T-240: el mensaje del nivel bloqueado se oculta solo (si se toca otro, el tiempo empieza de nuevo)
     LaunchedEffect(aviso) {
         if (aviso != null) {
@@ -60,22 +73,43 @@ fun PantallaMapa(
         }
     }
 
-    Box(Modifier.fillMaxSize().background(ColoresAventura.pasto)) {
+    Box(Modifier.fillMaxSize().background(ColoresAventura.Cielo)) {
         Column(Modifier.fillMaxSize()) {
-            BarraEstudiante(
+            // La racha llega con su endpoint; mientras tanto no se muestra
+            BarraAventura(
                 nombre = sesion?.nombre ?: "",
                 avatarUrl = sesion?.avatarUrl ?: "",
-                onSalir = { if (!saliendo) preguntandoSalir = true }
+                racha = null,
+                estrellas = mapa?.estrellas ?: 0,
+                puntos = mapa?.puntos ?: 0
             )
-            ContenidoMapa(
-                estado = estado,
-                onReintentar = { viewModel.cargarMapa() },
-                // T-215: un nivel disponible abre su detalle; uno bloqueado muestra el aviso (T-240)
-                onAnimacionTerminada = viewModel::animacionDesbloqueoMostrada,
-                onNivelTocado = { nivel ->
-                    if (nivel.disponible) onAbrirNivel(nivel.id) else viewModel.tocarNivel(nivel)
+            Box(Modifier.weight(1f)) {
+                val contenidoMapa = @Composable {
+                    ContenidoMapa(
+                        estado = estado,
+                        onReintentar = { viewModel.cargarMapa() },
+                        // T-215: un nivel disponible abre su detalle; uno bloqueado muestra el aviso (T-240)
+                        onAnimacionTerminada = viewModel::animacionDesbloqueoMostrada,
+                        onNivelTocado = { nivel ->
+                            if (nivel.disponible) onAbrirNivel(nivel.id) else viewModel.tocarNivel(nivel)
+                        }
+                    )
                 }
-            )
+                when (pestana) {
+                    Pestana.AVENTURA -> contenidoMapa()
+                    // Sin mapa (cargando o error) se muestra lo mismo que en Aventura: carga o reintentar
+                    Pestana.LOGROS -> if (mapa != null) ContenidoLogros(mapa, mensajes) else contenidoMapa()
+                    // Perfil no depende del mapa: siempre se puede salir
+                    Pestana.PERFIL -> ContenidoPerfilAlumno(
+                        nombre = sesion?.nombre ?: "",
+                        avatarUrl = sesion?.avatarUrl ?: "",
+                        completados = mapa?.completados ?: 0,
+                        totalNiveles = mapa?.totalNiveles ?: 0,
+                        onSalir = { if (!saliendo) preguntandoSalir = true }
+                    )
+                }
+            }
+            MenuInferior(actual = pestana, onElegir = { pestana = it })
         }
         aviso?.let { mensaje ->
             AvisoNivelBloqueado(

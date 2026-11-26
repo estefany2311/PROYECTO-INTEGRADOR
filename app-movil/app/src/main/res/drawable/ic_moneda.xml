@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Barra de arriba: puntos (moneda azul) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF4EA8DE"
+        android:pathData="M12,2a10,10 0,1 1,0 20a10,10 0,1 1,0 -20z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,7l1.5,3.1l3.4,0.4l-2.5,2.3l0.7,3.4L12,14.5l-3.1,1.7l0.7,-3.4L7.1,10.5l3.4,-0.4z" />
+</vector>
