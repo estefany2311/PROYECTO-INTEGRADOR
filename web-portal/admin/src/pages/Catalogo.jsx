@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { listarLecturas, listarRecursosOficiales, sincronizarRecursos } from "../api";
+import { cambiarEstadoLibro, listarLecturas, listarRecursosOficiales, sincronizarRecursos } from "../api";
 import LibrosOficiales from "../components/LibrosOficiales";
 import ModalEliminar from "../components/ModalEliminar";
-import ModalImportar from "../components/ModalImportar";
 import ModalLectura from "../components/ModalLectura";
 import ModalRecursos from "../components/ModalRecursos";
 
@@ -24,14 +23,13 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
   const [error, setError] = useState("");
   const [exito, setExito] = useState("");
   const [recarga, setRecarga] = useState(0);
-  const [modalAbierto, setModalAbierto] = useState(false);
   const [porEliminar, setPorEliminar] = useState(null);
   const [porEditar, setPorEditar] = useState(null);
   const [porRecursos, setPorRecursos] = useState(null);
   const [recursos, setRecursos] = useState([]);
   const [cargandoRecursos, setCargandoRecursos] = useState(true);
   const [recargaRecursos, setRecargaRecursos] = useState(0);
-  const [porImportar, setPorImportar] = useState(null);
+  const [cambiando, setCambiando] = useState(null);
   const [actualizando, setActualizando] = useState(false);
 
   const hayFiltros = Object.values(filtros).some((v) => v);
@@ -88,7 +86,6 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
   const cambiarFiltro = (e) => setFiltros({ ...filtros, [e.target.name]: e.target.value });
 
   const alGuardar = (_lectura, mensaje) => {
-    setModalAbierto(false);
     setPorEditar(null);
     setExito(mensaje);
     setRecarga((n) => n + 1);
@@ -112,11 +109,22 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
     }
   };
 
-  const alImportar = (mensaje) => {
-    setPorImportar(null);
-    setExito(mensaje);
-    setRecarga((n) => n + 1);
-    setRecargaRecursos((n) => n + 1);
+  // Activa o desactiva un libro para los docentes
+  const cambiarEstado = async (libro) => {
+    setCambiando(libro.id);
+    setError("");
+    try {
+      const actualizado = await cambiarEstadoLibro(libro.id, !libro.activo);
+      setRecursos((lista) => lista.map((r) => (r.id === actualizado.id ? actualizado : r)));
+      setExito(actualizado.activo
+        ? "Libro activado: los docentes ya pueden usarlo."
+        : "Libro desactivado: los docentes ya no lo verán.");
+    } catch (err) {
+      if (err.estado === 401) onNoAutorizado();
+      else setError(err.datos?.detail ?? err.mensaje ?? "No se pudo cambiar el estado del libro.");
+    } finally {
+      setCambiando(null);
+    }
   };
 
   const alEliminar = (mensaje) => {
@@ -133,12 +141,6 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
           <div className="breadcrumb text-secondary">Contenido / Catálogo</div>
         </div>
         <div className="d-flex flex-wrap gap-2">
-          {puede("catalogo.crear") && (
-            <button type="button" className="btn btn-light" onClick={() => setModalAbierto(true)}>
-              <i className="bi bi-plus-lg me-1"></i>Agregar manual
-            </button>
-            
-          )}
           {puede("catalogo.editar") && (
             <button type="button" className="btn btn-primary" onClick={actualizarCatalogo} disabled={actualizando}>
               {actualizando ? (
@@ -160,8 +162,9 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
       <LibrosOficiales
         recursos={recursos}
         cargando={cargandoRecursos}
-        puedeImportar={puede("catalogo.crear")}
-        onImportar={setPorImportar}
+        puedeCambiar={puede("catalogo.desactivar")}
+        cambiando={cambiando}
+        onCambiarEstado={cambiarEstado}
       />
 
       <div className="card">
@@ -210,7 +213,7 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
         {!error && !cargando && lecturas.length === 0 && (
           <div className="text-center text-secondary py-5">
             <i className="bi bi-journal-richtext fs-2 d-block mb-2"></i>
-            {hayFiltros ? "Ninguna lectura coincide con los filtros." : "Aún no hay lecturas en el catálogo."}
+            {hayFiltros ? "Ninguna lectura coincide con los filtros." : "Aún no hay lecturas: las sacan los docentes de los libros activos."}
           </div>
         )}
 
@@ -254,7 +257,7 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
                       <td>
                         <span className={`badge-soft ${l.activo ? "bs-ok" : "bs-off"}`}>{l.activo ? "Activa" : "Inactiva"}</span>
                       </td>
-                      <td className="note">{l.creado_por ?? "—"}</td>
+                      <td className="note">{l.docente_id ? "Docente" : l.creado_por ?? "—"}</td>
                       <td className="text-end text-nowrap">
                         {l.asignada && <span className="badge-soft bs-info me-2" title="Asignada a alumnos">Asignada</span>}
                         <button type="button" className="icon-btn me-1" title="Imágenes y audios" onClick={() => setPorRecursos(l)}>
@@ -299,19 +302,10 @@ export default function Catalogo({ onNoAutorizado, puede = () => true }) {
         />
       )}
 
-      {porImportar && (
-        <ModalImportar
-          recurso={porImportar}
-          onCerrar={() => setPorImportar(null)}
-          onImportada={alImportar}
-          onNoAutorizado={onNoAutorizado}
-        />
-      )}
-
-        {(modalAbierto || porEditar) && (
+      {porEditar && (
         <ModalLectura
           lectura={porEditar}
-          onCerrar={() => { setModalAbierto(false); setPorEditar(null); }}
+          onCerrar={() => setPorEditar(null)}
           onGuardado={alGuardar}
           onNoAutorizado={onNoAutorizado}
         />

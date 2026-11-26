@@ -1,5 +1,5 @@
 // Componente: Modal
-// Padre: ModalLectura, ModalEliminar, ModalImportar, ModalColegio y ModalAsignar
+// Padre: ModalLectura, ModalEliminar, ModalColegio y ModalAsignar
 // Recibe (props): titulo, tamano ("lg" para una ventana ancha), pie (botones de abajo), children (el contenido)
 // Avisa al padre con: onCerrar() al presionar Esc, la X o fuera de la ventana
 import { useEffect } from "react";

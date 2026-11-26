@@ -184,10 +184,8 @@ export const obtenerMapaCalor = ({ agrupar = "region", grado = "" } = {}) => {
 // US-39 · Libros oficiales de la Biblioteca Escolar Digital (T-443)
 export const listarRecursosOficiales = () => pedir("/recursos-oficiales/");
 
-export const textoDeRecurso = (id, desde, hasta) =>
-  pedir(`/recursos-oficiales/${id}/texto/?${new URLSearchParams({ desde, hasta })}`);
-
-export const importarLectura = (id, datos) =>
-  pedir(`/recursos-oficiales/${id}/importar/`, { method: "POST", body: JSON.stringify(datos) });
+// El admin activa o desactiva un libro: desactivado = los docentes ya no lo ven
+export const cambiarEstadoLibro = (id, activo) =>
+  pedir(`/recursos-oficiales/${id}/estado/`, { method: "PATCH", body: JSON.stringify({ activo }) });
 
 export const sincronizarRecursos = () => pedir("/recursos-oficiales/sincronizar/", { method: "POST" });

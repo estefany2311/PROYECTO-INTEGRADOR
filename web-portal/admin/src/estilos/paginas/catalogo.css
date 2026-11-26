@@ -81,21 +81,10 @@
 .pagina-catalogo .libro-grado-5 { --lomo: #6D5BA8; }
 .pagina-catalogo .libro-grado-6 { --lomo: #2F8F5B; }
 
-/* Ventana de importar: pasos 1 y 2 */
-.pagina-catalogo .paso-importar { display: flex; align-items: flex-start; gap: 10px; }
-.pagina-catalogo .paso-importar .paso-numero {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #E3F2F0;
-  color: #08665E;
-  display: grid;
-  place-items: center;
-  font-weight: 900;
-  font-size: 13px;
-  flex: none;
-}
-
+/* Libro desactivado: los docentes no lo ven */
+.pagina-catalogo .libro-inactivo { background: #F6F7F7; }
+.pagina-catalogo .libro-inactivo .libro-grado,
+.pagina-catalogo .libro-inactivo .note { opacity: .55; }
 
 /* Recursos de una lectura: imágenes y audios (US-42, T-345) */
 .pagina-catalogo .zona-subir {
