@@ -12,6 +12,7 @@
 @import "./styles/shared.css";
 @import "./pages/Alumnos.css";
 @import "./pages/Catalogo.css";
+@import "./pages/Biblioteca.css";
 @import "./pages/FormularioAula.css";
 @import "./pages/Dashboard.css";
 @import "./pages/DetalleEstudiante.css";

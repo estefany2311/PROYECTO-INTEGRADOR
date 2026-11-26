@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import Alumnos from "./pages/Alumnos";
+import Biblioteca from "./pages/Biblioteca";
 import Catalogo from "./pages/Catalogo";
 import Dashboard from "./pages/Dashboard";
 import DetalleEstudiante from "./pages/DetalleEstudiante";
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/alumnos" element={<Alumnos />} />
         <Route path="/grupos" element={<Grupos />} />
         <Route path="/tareas" element={<Tareas />} />
+        <Route path="/biblioteca" element={<Biblioteca />} />
         <Route path="/catalogo" element={<Catalogo />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/evidencias" element={<Evidencias />} />

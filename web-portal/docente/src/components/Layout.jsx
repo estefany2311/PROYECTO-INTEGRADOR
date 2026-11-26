@@ -41,6 +41,7 @@ const MENU = [
   {
     seccion: "CONTENIDO",
     items: [
+      { ruta: "/biblioteca", icono: "bi-journals", color: "ico-morado", texto: "Biblioteca" },
       { ruta: "/catalogo", icono: "bi-book-fill", color: "ico-rosa", texto: "Catálogo" },
     ],
   },
