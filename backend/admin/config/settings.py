@@ -156,7 +156,8 @@ MAILERS = {
 
 }
 AUTH_USER_MODEL = 'usuarios.Usuario'
-CORS_ALLOWED_ORIGINS = ['http://localhost:5173', 'http://localhost:3000']
+# 5173 = portal docente (Noemi) · 5174 = portal admin (Daniela)
+CORS_ALLOWED_ORIGINS = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000']
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
